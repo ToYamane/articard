@@ -1,0 +1,93 @@
+// Prisma schema for Articard
+// https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                    String    @id @db.VarChar(128)
+  nickname              String    @unique @db.VarChar(20)
+  knowledgeBalance      Int       @default(100) @map("knowledge_balance")
+  isPremium             Boolean   @default(false) @map("is_premium")
+  premiumExpiresAt      DateTime? @map("premium_expires_at") @db.Timestamptz
+  createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt             DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  lastActiveAt          DateTime  @default(now()) @map("last_active_at") @db.Timestamptz
+
+  articles              Article[]
+  cards                 Card[]
+  knowledgeTransactions KnowledgeTransaction[]
+
+  @@index([createdAt])
+  @@index([isPremium])
+  @@map("users")
+}
+
+model Article {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String   @map("user_id") @db.VarChar(128)
+  theme       String   @db.VarChar(30)
+  content     String   @db.Text
+  openaiModel String   @map("openai_model") @db.VarChar(50)
+  tokenUsage  Int      @default(0) @map("token_usage")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cards Card[]
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("articles")
+}
+
+model Card {
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId             String   @map("user_id") @db.VarChar(128)
+  articleId          String   @map("article_id") @db.Uuid
+  keyword            String   @db.VarChar(50)
+  rarity             String   @db.VarChar(20)
+  flavorText         String   @map("flavor_text") @db.VarChar(100)
+  contextCategory    String   @map("context_category") @db.VarChar(30)
+  contextDescription String   @map("context_description") @db.Text
+  illustrationUrl    String   @map("illustration_url") @db.VarChar(500)
+  cardImageUrl       String   @map("card_image_url") @db.VarChar(500)
+  thumbnailUrl       String   @map("thumbnail_url") @db.VarChar(500)
+  fluxPrompt         String   @map("flux_prompt") @db.Text
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([articleId])
+  @@index([rarity])
+  @@index([createdAt])
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([userId, rarity])
+  @@index([keyword])
+  @@map("cards")
+}
+
+model KnowledgeTransaction {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId          String   @map("user_id") @db.VarChar(128)
+  amount          Int
+  transactionType String   @map("transaction_type") @db.VarChar(20)
+  description     String?  @db.VarChar(100)
+  balanceAfter    Int      @map("balance_after")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([transactionType])
+  @@map("knowledge_transactions")
+}

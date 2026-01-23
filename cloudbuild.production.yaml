@@ -1,0 +1,59 @@
+# ===================================
+# Articard Production Deployment
+# Manual trigger for production releases
+# ===================================
+
+steps:
+  # Step 1: Deploy to Cloud Run (Production)
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'gcloud'
+    args:
+      - 'run'
+      - 'deploy'
+      - 'articard'
+      - '--image=gcr.io/$PROJECT_ID/articard:${_IMAGE_TAG}'
+      - '--region=${_REGION}'
+      - '--platform=managed'
+      - '--allow-unauthenticated'
+      - '--set-env-vars=NODE_ENV=production'
+      - '--set-env-vars=NEXT_PUBLIC_APP_URL=${_APP_URL}'
+      - '--set-secrets=DATABASE_URL=articard-database-url:latest'
+      - '--set-secrets=OPENAI_API_KEY=articard-openai-key:latest'
+      - '--set-secrets=FLUX_API_KEY=articard-flux-key:latest'
+      - '--set-secrets=NEXT_PUBLIC_FIREBASE_API_KEY=articard-firebase-api-key:latest'
+      - '--set-secrets=NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=articard-firebase-auth-domain:latest'
+      - '--set-secrets=NEXT_PUBLIC_FIREBASE_PROJECT_ID=articard-firebase-project-id:latest'
+      - '--set-secrets=FIREBASE_ADMIN_PROJECT_ID=articard-firebase-admin-project-id:latest'
+      - '--set-secrets=FIREBASE_ADMIN_CLIENT_EMAIL=articard-firebase-admin-email:latest'
+      - '--set-secrets=FIREBASE_ADMIN_PRIVATE_KEY=articard-firebase-admin-key:latest'
+      - '--set-secrets=GCS_BUCKET_NAME=articard-gcs-bucket:latest'
+      - '--memory=2Gi'
+      - '--cpu=2'
+      - '--min-instances=1'
+      - '--max-instances=50'
+      - '--concurrency=100'
+      - '--timeout=60s'
+    id: 'deploy-production'
+
+  # Step 2: Run database migrations
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'sh'
+    args:
+      - '-c'
+      - |
+        echo "Database migrations should be run separately with proper credentials"
+        echo "Use: npx prisma migrate deploy"
+    id: 'migrate-reminder'
+    waitFor: ['deploy-production']
+
+# Substitutions
+substitutions:
+  _REGION: 'asia-northeast1'
+  _IMAGE_TAG: 'latest'
+  _APP_URL: 'https://articard.example.com'
+
+# Build options
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+timeout: '600s'
