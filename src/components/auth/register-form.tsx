@@ -64,7 +64,7 @@ export function RegisterForm() {
     try {
       await loginWithGoogle();
       router.push('/setup');
-    } catch (error) {
+    } catch {
       setGeneralError('Googleログインに失敗しました');
     }
   };

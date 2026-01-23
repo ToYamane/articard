@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { motion } from 'framer-motion';
 import { CardGrid } from '@/components/card';
 import {
   CollectionFilter,
@@ -113,7 +114,12 @@ export default function CollectionPage() {
   }
 
   return (
-    <div className="py-6">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      className="py-6"
+    >
       {/* ヘッダー */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
@@ -126,7 +132,13 @@ export default function CollectionPage() {
 
       {/* 統計情報 */}
       {!isLoadingStats && stats && (
-        <CollectionStats stats={stats} className="mb-6" />
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1, duration: 0.3 }}
+        >
+          <CollectionStats stats={stats} className="mb-6" />
+        </motion.div>
       )}
 
       {/* 検索・フィルターバー */}
@@ -220,6 +232,6 @@ export default function CollectionPage() {
         currentFilter={filter}
         onApply={handleFilterApply}
       />
-    </div>
+    </motion.div>
   );
 }

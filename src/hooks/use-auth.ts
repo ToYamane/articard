@@ -37,44 +37,56 @@ export function useAuth() {
   const isRegistered = useAuthStore(selectIsRegistered);
   const needsSetup = useAuthStore(selectNeedsSetup);
 
-  // Initialize auth state listener
-  useEffect(() => {
-    const unsubscribe = subscribeToAuthState(async (firebaseUser) => {
-      setUser(firebaseUser);
+  // Fetch profile in background (non-blocking)
+  const fetchProfileInBackground = useCallback(
+    async (firebaseUser: NonNullable<typeof user>) => {
+      try {
+        const token = await firebaseUser.getIdToken();
+        const response = await fetch('/api/users/me', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
-      if (firebaseUser) {
-        // Fetch user profile from our API
-        try {
-          const token = await firebaseUser.getIdToken();
-          const response = await fetch('/api/users/me', {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          });
-
-          if (response.ok) {
-            const data = await response.json();
-            if (data.success) {
-              setProfile(data.data);
-            }
-          } else if (response.status === 404) {
-            // User exists in Firebase but not in our DB
-            setProfile(null);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success) {
+            setProfile(data.data);
           }
-        } catch (error) {
-          console.error('Failed to fetch user profile:', error);
+        } else if (response.status === 404) {
+          // User exists in Firebase but not in our DB
           setProfile(null);
         }
+      } catch (error) {
+        console.error('Failed to fetch user profile:', error);
+        setProfile(null);
+      }
+    },
+    [setProfile]
+  );
+
+  // Initialize auth state listener
+  useEffect(() => {
+    const unsubscribe = subscribeToAuthState((firebaseUser) => {
+      setUser(firebaseUser);
+
+      // Set initialized immediately after Firebase auth state is confirmed
+      // This prevents blocking on API calls
+      if (!isInitialized) {
+        setInitialized(true);
+        setLoading(false);
+      }
+
+      if (firebaseUser) {
+        // Fetch profile in background (non-blocking)
+        fetchProfileInBackground(firebaseUser);
       } else {
         setProfile(null);
       }
-
-      setLoading(false);
-      setInitialized(true);
     });
 
     return () => unsubscribe();
-  }, [setUser, setProfile, setLoading, setInitialized]);
+  }, [setUser, setProfile, setLoading, setInitialized, isInitialized, fetchProfileInBackground]);
 
   // Login with email/password
   const loginWithEmail = useCallback(

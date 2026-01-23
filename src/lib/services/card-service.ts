@@ -107,13 +107,10 @@ export async function createCard({
     createdAt: new Date(),
   });
 
-  // 画像をアップロード
-  const [illustrationUpload, cardImageUpload, thumbnailUpload] =
-    await Promise.all([
-      uploadCardIllustration(illustrationBuffer, tempCardId),
-      uploadCardImage(cardImageBuffer, tempCardId),
-      uploadThumbnail(thumbnailBuffer, tempCardId),
-    ]);
+  // 画像をアップロード（GCS SDKのストリーム競合を避けるため順次実行）
+  const illustrationUpload = await uploadCardIllustration(illustrationBuffer, tempCardId);
+  const cardImageUpload = await uploadCardImage(cardImageBuffer, tempCardId);
+  const thumbnailUpload = await uploadThumbnail(thumbnailBuffer, tempCardId);
 
   // データベースに保存
   const card = await prisma.card.create({

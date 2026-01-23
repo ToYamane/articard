@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { motion } from 'framer-motion';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { Button, Input, ConfirmModal } from '@/components/ui';
@@ -57,13 +58,23 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="space-y-8">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      className="space-y-8"
+    >
       <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
         設定
       </h1>
 
       {/* Profile Section */}
-      <section className="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
+      <motion.section
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1, duration: 0.3 }}
+        className="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900"
+      >
         <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
           プロフィール
         </h2>
@@ -95,10 +106,15 @@ export default function SettingsPage() {
             </Button>
           </div>
         </div>
-      </section>
+      </motion.section>
 
       {/* Account Stats Section */}
-      <section className="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
+      <motion.section
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2, duration: 0.3 }}
+        className="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900"
+      >
         <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
           アカウント情報
         </h2>
@@ -125,10 +141,15 @@ export default function SettingsPage() {
             </span>
           </div>
         </div>
-      </section>
+      </motion.section>
 
       {/* Logout Section */}
-      <section className="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
+      <motion.section
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3, duration: 0.3 }}
+        className="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900"
+      >
         <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
           ログアウト
         </h2>
@@ -138,10 +159,15 @@ export default function SettingsPage() {
         <Button variant="secondary" onClick={handleLogout} disabled={isLoading}>
           ログアウト
         </Button>
-      </section>
+      </motion.section>
 
       {/* Danger Zone */}
-      <section className="rounded-xl border border-red-200 bg-red-50 p-6 dark:border-red-900 dark:bg-red-950/30">
+      <motion.section
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4, duration: 0.3 }}
+        className="rounded-xl border border-red-200 bg-red-50 p-6 dark:border-red-900 dark:bg-red-950/30"
+      >
         <h2 className="mb-4 text-lg font-semibold text-red-700 dark:text-red-400">
           危険な操作
         </h2>
@@ -156,7 +182,7 @@ export default function SettingsPage() {
         >
           アカウントを削除
         </Button>
-      </section>
+      </motion.section>
 
       {/* Delete Account Confirmation Modal */}
       <ConfirmModal
@@ -170,6 +196,6 @@ export default function SettingsPage() {
         variant="danger"
         isLoading={isDeleting}
       />
-    </div>
+    </motion.div>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ThemeInput, ArticleLoading, ArticleResult } from '@/components/article';
 import { useToast } from '@/hooks/use-toast';
 import { useAuthStore } from '@/stores/auth-store';
@@ -93,7 +94,12 @@ export default function CreatePage() {
   }, [article, router]);
 
   return (
-    <div className="flex flex-col items-center">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      className="flex flex-col items-center"
+    >
       <div className="w-full max-w-xl">
         <div className="mb-8 text-center">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
@@ -104,23 +110,49 @@ export default function CreatePage() {
           </p>
         </div>
 
-        {state === 'input' && (
-          <ThemeInput onSubmit={handleSubmit} />
-        )}
+        <AnimatePresence mode="wait">
+          {state === 'input' && (
+            <motion.div
+              key="input"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
+              transition={{ duration: 0.3 }}
+            >
+              <ThemeInput onSubmit={handleSubmit} />
+            </motion.div>
+          )}
 
-        {state === 'loading' && (
-          <ArticleLoading onCancel={handleCancel} />
-        )}
+          {state === 'loading' && (
+            <motion.div
+              key="loading"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.3 }}
+            >
+              <ArticleLoading onCancel={handleCancel} />
+            </motion.div>
+          )}
 
-        {state === 'result' && article && (
-          <ArticleResult
-            article={article}
-            onGenerateCard={handleGenerateCard}
-            onRegenerate={handleRegenerate}
-            isLoading={isGeneratingCard}
-          />
-        )}
+          {state === 'result' && article && (
+            <motion.div
+              key="result"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              <ArticleResult
+                article={article}
+                onGenerateCard={handleGenerateCard}
+                onRegenerate={handleRegenerate}
+                isLoading={isGeneratingCard}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
-    </div>
+    </motion.div>
   );
 }

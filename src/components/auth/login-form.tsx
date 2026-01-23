@@ -71,7 +71,7 @@ export function LoginForm() {
     try {
       await loginWithGoogle();
       handleOAuthSuccess();
-    } catch (error) {
+    } catch {
       setGeneralError('Googleログインに失敗しました');
     }
   };

@@ -47,14 +47,14 @@ export async function generateCardIllustration(
   const prompt = generateImagePrompt(input);
 
   // 生成リクエストを送信
-  const taskId = await requestImageGeneration({
+  const { pollingUrl } = await requestImageGeneration({
     prompt,
     width: 512,
     height: 768,
   });
 
-  // 結果を取得（ポーリング）
-  const imageUrl = await getGenerationResult(taskId);
+  // 結果を取得（polling_urlを使用）
+  const imageUrl = await getGenerationResult(pollingUrl);
 
   // 画像をダウンロード
   const imageBuffer = await downloadImage(imageUrl);

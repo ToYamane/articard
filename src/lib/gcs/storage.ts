@@ -1,6 +1,7 @@
 import { writeFile, mkdir, unlink } from 'fs/promises';
 import { join } from 'path';
 import { existsSync } from 'fs';
+import { tmpdir } from 'os';
 import { StorageError } from '@/lib/errors';
 
 // 環境に応じてストレージ方式を切り替え
@@ -8,6 +9,9 @@ const USE_GCS = process.env.GCS_BUCKET_NAME && process.env.GOOGLE_APPLICATION_CR
 
 // ローカルストレージのベースパス
 const LOCAL_STORAGE_PATH = join(process.cwd(), 'public', 'uploads');
+
+// 一時ファイル用ディレクトリ
+const TEMP_DIR = tmpdir();
 
 // GCS設定
 const GCS_BUCKET_NAME = process.env.GCS_BUCKET_NAME || '';
@@ -45,33 +49,50 @@ async function uploadToLocal(
 }
 
 /**
- * GCSに保存
+ * GCSに保存（一時ファイル経由でアップロード）
  */
 async function uploadToGCS(
   buffer: Buffer,
   fileName: string,
   folder: string
 ): Promise<UploadResult> {
-  // 動的インポートでGCS SDKを読み込む（必要な場合のみ）
-  const { Storage } = await import('@google-cloud/storage');
-  const storage = new Storage();
-  const bucket = storage.bucket(GCS_BUCKET_NAME);
+  // 一時ファイルに書き込み
+  const tempFileName = `gcs_upload_${Date.now()}_${Math.random().toString(36).slice(2)}_${fileName}`;
+  const tempFilePath = join(TEMP_DIR, tempFileName);
 
-  const path = `${folder}/${fileName}`;
-  const file = bucket.file(path);
+  try {
+    // バッファを一時ファイルに保存
+    await writeFile(tempFilePath, buffer);
 
-  await file.save(buffer, {
-    contentType: 'image/jpeg',
-    resumable: false,
-  });
+    // 動的インポートでGCS SDKを読み込む（必要な場合のみ）
+    const { Storage } = await import('@google-cloud/storage');
+    const storage = new Storage();
+    const bucket = storage.bucket(GCS_BUCKET_NAME);
 
-  // 公開URLを生成
-  const url = `https://storage.googleapis.com/${GCS_BUCKET_NAME}/${path}`;
+    const destinationPath = `${folder}/${fileName}`;
 
-  return {
-    url,
-    path,
-  };
+    // ファイルベースのアップロード（ストリーム競合を回避）
+    await bucket.upload(tempFilePath, {
+      destination: destinationPath,
+      contentType: 'image/jpeg',
+      resumable: false,
+    });
+
+    // 公開URLを生成
+    const url = `https://storage.googleapis.com/${GCS_BUCKET_NAME}/${destinationPath}`;
+
+    return {
+      url,
+      path: destinationPath,
+    };
+  } finally {
+    // 一時ファイルを削除
+    try {
+      await unlink(tempFilePath);
+    } catch {
+      // 削除失敗は無視
+    }
+  }
 }
 
 /**

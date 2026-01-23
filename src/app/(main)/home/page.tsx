@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { motion } from 'framer-motion';
 import { CardGrid } from '@/components/card';
 import { CollectionStats, type CollectionStatsData } from '@/components/collection';
 import { Button, LoadingSpinner } from '@/components/ui';
@@ -83,22 +84,37 @@ export default function HomePage() {
   }
 
   return (
-    <div className="py-6">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      className="py-6"
+    >
       {/* ウェルカムメッセージ */}
-      <div className="mb-8">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.1, duration: 0.3 }}
+        className="mb-8"
+      >
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
           ようこそ、{user?.displayName || 'ゲスト'}さん
         </h1>
         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
           今日も新しい知識をカードにしましょう
         </p>
-      </div>
+      </motion.div>
 
       {/* クイックアクション */}
-      <div className="mb-8 grid gap-4 sm:grid-cols-2">
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2, duration: 0.3 }}
+        className="mb-8 grid gap-4 sm:grid-cols-2"
+      >
         <button
           onClick={() => router.push('/create')}
-          className="flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-4 text-left transition-shadow hover:shadow-md dark:border-gray-800 dark:bg-gray-900"
+          className="flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-4 text-left transition-all hover:scale-[1.02] hover:shadow-md dark:border-gray-800 dark:bg-gray-900"
         >
           <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100 text-2xl dark:bg-blue-900">
             ✍️
@@ -115,7 +131,7 @@ export default function HomePage() {
 
         <button
           onClick={() => router.push('/collection')}
-          className="flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-4 text-left transition-shadow hover:shadow-md dark:border-gray-800 dark:bg-gray-900"
+          className="flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-4 text-left transition-all hover:scale-[1.02] hover:shadow-md dark:border-gray-800 dark:bg-gray-900"
         >
           <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-purple-100 text-2xl dark:bg-purple-900">
             📚
@@ -129,20 +145,29 @@ export default function HomePage() {
             </p>
           </div>
         </button>
-      </div>
+      </motion.div>
 
       {/* 統計情報 */}
       {stats && (
-        <div className="mb-8">
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3, duration: 0.3 }}
+          className="mb-8"
+        >
           <h2 className="mb-4 text-lg font-bold text-gray-900 dark:text-gray-100">
             あなたの統計
           </h2>
           <CollectionStats stats={stats} />
-        </div>
+        </motion.div>
       )}
 
       {/* 最近のカード */}
-      <div>
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4, duration: 0.3 }}
+      >
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">
             最近のカード
@@ -171,7 +196,7 @@ export default function HomePage() {
             </Button>
           </div>
         )}
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }

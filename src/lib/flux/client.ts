@@ -1,15 +1,18 @@
-const BFL_API_BASE_URL = 'https://api.bfl.ml/v1';
+const BFL_API_BASE_URL = 'https://api.bfl.ai/v1';
 
 interface FluxGenerationParams {
   prompt: string;
   width?: number;
   height?: number;
-  steps?: number;
-  guidance?: number;
+  prompt_upsampling?: boolean;
+  seed?: number;
+  safety_tolerance?: number; // 0 (most strict) to 6 (more permissive)
+  output_format?: 'jpeg' | 'png';
 }
 
 interface FluxGenerationResponse {
   id: string;
+  polling_url: string;
 }
 
 interface FluxResultResponse {
@@ -30,14 +33,20 @@ function getApiKey(): string {
   return apiKey;
 }
 
+export interface FluxRequestResult {
+  taskId: string;
+  pollingUrl: string;
+}
+
 /**
  * FLUX APIで画像生成リクエストを送信
  */
 export async function requestImageGeneration(
   params: FluxGenerationParams
-): Promise<string> {
+): Promise<FluxRequestResult> {
   const apiKey = getApiKey();
 
+  // FLUX 1.1 [pro] - https://docs.bfl.ai/flux_models/flux_1_1_pro
   const response = await fetch(`${BFL_API_BASE_URL}/flux-pro-1.1`, {
     method: 'POST',
     headers: {
@@ -48,47 +57,62 @@ export async function requestImageGeneration(
       prompt: params.prompt,
       width: params.width || 512,
       height: params.height || 768,
-      steps: params.steps || 30,
-      guidance: params.guidance || 7.5,
-      safety_tolerance: 2, // Moderate safety settings
-      output_format: 'jpeg',
+      prompt_upsampling: params.prompt_upsampling ?? false,
+      safety_tolerance: params.safety_tolerance ?? 2, // 0-6, default 2
+      output_format: params.output_format || 'jpeg',
+      ...(params.seed !== undefined && { seed: params.seed }),
     }),
   });
 
   if (!response.ok) {
     const error = await response.text();
-    console.error('FLUX API request error:', error);
-    throw new Error('イラストの生成リクエストに失敗しました');
+    console.error('FLUX API request error:', {
+      status: response.status,
+      statusText: response.statusText,
+      body: error,
+      prompt: params.prompt.substring(0, 100),
+    });
+    throw new Error(`イラストの生成リクエストに失敗しました (HTTP ${response.status}): ${error}`);
   }
 
   const data: FluxGenerationResponse = await response.json();
-  return data.id;
+  console.log('FLUX API request success:', { taskId: data.id, pollingUrl: data.polling_url });
+  return { taskId: data.id, pollingUrl: data.polling_url };
 }
 
 /**
  * 生成結果を取得（ポーリング）
+ * @param pollingUrl - APIレスポンスから取得したpolling_url
  */
-export async function getGenerationResult(taskId: string): Promise<string> {
+export async function getGenerationResult(pollingUrl: string): Promise<string> {
   const apiKey = getApiKey();
 
   const maxAttempts = 60; // 最大60回（約60秒）
   const pollInterval = 1000; // 1秒間隔
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    const response = await fetch(`${BFL_API_BASE_URL}/get_result?id=${taskId}`, {
+    const response = await fetch(pollingUrl, {
       headers: {
         'X-Key': apiKey,
       },
     });
 
     if (!response.ok) {
-      throw new Error('結果の取得に失敗しました');
+      const errorText = await response.text();
+      console.error('FLUX API get_result error:', {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorText,
+        pollingUrl,
+      });
+      throw new Error(`結果の取得に失敗しました (HTTP ${response.status}): ${errorText}`);
     }
 
     const data: FluxResultResponse = await response.json();
 
     switch (data.status) {
       case 'Ready':
+        console.log('FLUX API generation ready, imageUrl:', data.result?.sample?.substring(0, 50));
         if (data.result?.sample) {
           return data.result.sample;
         }

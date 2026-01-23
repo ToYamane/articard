@@ -20,7 +20,7 @@ const authOnlyRoutes = ['/setup'];
 export function AuthGuard({ children, requireAuth = true, requireSetup = true }: AuthGuardProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const { isAuthenticated, isRegistered, isInitialized, isLoading } = useAuth();
+  const { isAuthenticated, isRegistered, isInitialized } = useAuth();
 
   useEffect(() => {
     if (!isInitialized) return;
@@ -66,8 +66,8 @@ export function AuthGuard({ children, requireAuth = true, requireSetup = true }:
     }
   }, [isInitialized, isAuthenticated, isRegistered, pathname, router, requireAuth, requireSetup]);
 
-  // Show loading while initializing
-  if (!isInitialized || isLoading) {
+  // Show loading only during initial auth check (not during API calls)
+  if (!isInitialized) {
     return <FullPageLoader message="認証情報を確認中..." />;
   }
 
