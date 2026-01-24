@@ -1,32 +1,23 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { CardGrid } from '@/components/card';
 import {
   CollectionFilter,
   CollectionSearch,
-  CollectionStats,
   CollectionEmpty,
   type FilterState,
-  type CollectionStatsData,
 } from '@/components/collection';
 import { Button, LoadingSpinner } from '@/components/ui';
 import { useCollection } from '@/hooks/use-collection';
-import { useAuthStore } from '@/stores/auth-store';
-import { useToast } from '@/hooks/use-toast';
-import { getIdToken } from '@/lib/firebase/client';
 import type { Card } from '@prisma/client';
 
 export default function CollectionPage() {
   const router = useRouter();
-  const { user } = useAuthStore();
-  const { addToast } = useToast();
 
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [stats, setStats] = useState<CollectionStatsData | null>(null);
-  const [isLoadingStats, setIsLoadingStats] = useState(true);
 
   const {
     cards,
@@ -43,44 +34,6 @@ export default function CollectionPage() {
     hasActiveFilter,
     clearFilter,
   } = useCollection();
-
-  // 統計情報を取得
-  useEffect(() => {
-    async function fetchStats() {
-      if (!user) return;
-
-      try {
-        const token = await getIdToken();
-        if (!token) {
-          throw new Error('認証トークンの取得に失敗しました');
-        }
-
-        const response = await fetch('/api/stats', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        const data = await response.json();
-
-        if (!data.success) {
-          throw new Error(data.error?.message || '統計情報の取得に失敗しました');
-        }
-
-        setStats(data.data);
-      } catch (err) {
-        console.error('Fetch stats error:', err);
-        addToast(
-          err instanceof Error ? err.message : '統計情報の取得に失敗しました',
-          'error'
-        );
-      } finally {
-        setIsLoadingStats(false);
-      }
-    }
-
-    fetchStats();
-  }, [user, addToast]);
 
   // カードクリック時
   const handleCardClick = useCallback(
@@ -129,17 +82,6 @@ export default function CollectionPage() {
           あなたが生成したカードを一覧で確認できます
         </p>
       </div>
-
-      {/* 統計情報 */}
-      {!isLoadingStats && stats && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1, duration: 0.3 }}
-        >
-          <CollectionStats stats={stats} className="mb-6" />
-        </motion.div>
-      )}
 
       {/* 検索・フィルターバー */}
       <div className="mb-6 flex gap-3">

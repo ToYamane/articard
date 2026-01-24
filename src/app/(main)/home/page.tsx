@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { CardGrid } from '@/components/card';
-import { CollectionStats, type CollectionStatsData } from '@/components/collection';
 import { Button, LoadingSpinner } from '@/components/ui';
 import { useAuthStore } from '@/stores/auth-store';
 import { useToast } from '@/hooks/use-toast';
@@ -17,7 +16,6 @@ export default function HomePage() {
   const { addToast } = useToast();
 
   const [recentCards, setRecentCards] = useState<Card[]>([]);
-  const [stats, setStats] = useState<CollectionStatsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   // データを取得
@@ -31,24 +29,11 @@ export default function HomePage() {
           throw new Error('認証トークンの取得に失敗しました');
         }
 
-        // 統計情報と最近のカードを並列取得
-        const [statsResponse, cardsResponse] = await Promise.all([
-          fetch('/api/stats', {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-          fetch('/api/cards?limit=6&sortBy=createdAt&sortOrder=desc', {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-        ]);
+        const cardsResponse = await fetch('/api/cards?limit=6&sortBy=createdAt&sortOrder=desc', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
-        const [statsData, cardsData] = await Promise.all([
-          statsResponse.json(),
-          cardsResponse.json(),
-        ]);
-
-        if (statsData.success) {
-          setStats(statsData.data);
-        }
+        const cardsData = await cardsResponse.json();
 
         if (cardsData.success) {
           setRecentCards(cardsData.data.cards);
@@ -147,26 +132,11 @@ export default function HomePage() {
         </button>
       </motion.div>
 
-      {/* 統計情報 */}
-      {stats && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3, duration: 0.3 }}
-          className="mb-8"
-        >
-          <h2 className="mb-4 text-lg font-bold text-gray-900 dark:text-gray-100">
-            あなたの統計
-          </h2>
-          <CollectionStats stats={stats} />
-        </motion.div>
-      )}
-
       {/* 最近のカード */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4, duration: 0.3 }}
+        transition={{ delay: 0.3, duration: 0.3 }}
       >
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">
