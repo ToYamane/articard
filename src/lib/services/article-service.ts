@@ -62,6 +62,11 @@ export async function getArticlesByUser({
     where: { userId },
     orderBy: { createdAt: 'desc' },
     take: limit + 1,
+    include: {
+      _count: {
+        select: { cards: true },
+      },
+    },
     ...(cursor && {
       cursor: { id: cursor },
       skip: 1,

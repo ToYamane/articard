@@ -19,6 +19,12 @@ export default function MainLayout({ children }: { children: ReactNode }) {
                 記事作成
               </a>
               <a
+                href="/articles"
+                className="text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+              >
+                記事履歴
+              </a>
+              <a
                 href="/collection"
                 className="text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
               >

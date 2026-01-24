@@ -10,7 +10,7 @@ import { ERROR_MESSAGES } from '@/lib/errors';
 import { useToast } from '@/hooks/use-toast';
 import { useAuthStore } from '@/stores/auth-store';
 import { getIdToken } from '@/lib/firebase/client';
-import type { Card } from '@prisma/client';
+import type { CardWithArticle } from '@/lib/services/card-service';
 import type { Rarity } from '@/types/database';
 
 export default function CardPage() {
@@ -20,7 +20,7 @@ export default function CardPage() {
   const { addToast } = useToast();
   const { user } = useAuthStore();
 
-  const [card, setCard] = useState<Card | null>(null);
+  const [card, setCard] = useState<CardWithArticle | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -129,16 +129,40 @@ export default function CardPage() {
     >
       <CardDetailDisplay card={card} />
 
+      {/* 元の記事情報 */}
+      {card.article && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.15, duration: 0.3 }}
+          className="mx-auto mt-6 max-w-md rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800"
+        >
+          <p className="text-sm text-gray-600 dark:text-gray-300">
+            <span className="mr-1">📄</span>
+            元の記事: 「{card.article.theme}」
+          </p>
+        </motion.div>
+      )}
+
       {/* アクションボタン */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.2, duration: 0.3 }}
-        className="mx-auto mt-8 flex max-w-md flex-col gap-3 sm:flex-row"
+        className="mx-auto mt-6 flex max-w-md flex-col gap-3 sm:flex-row sm:flex-wrap"
       >
         <Button onClick={() => router.push('/collection')} variant="secondary" className="flex-1">
           コレクションに戻る
         </Button>
+        {card.article && (
+          <Button
+            onClick={() => router.push(`/articles/${card.article!.id}`)}
+            variant="secondary"
+            className="flex-1"
+          >
+            元の記事を見る
+          </Button>
+        )}
         <Button onClick={() => setShowShareModal(true)} className="flex-1">
           共有する
         </Button>

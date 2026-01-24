@@ -11,6 +11,7 @@ import { composeCardImage } from '@/lib/card/image-composer';
 import {
   uploadCardIllustration,
   uploadCardImage,
+  uploadCardBackImage,
   uploadThumbnail,
   deleteCardImages,
 } from '@/lib/gcs/storage';
@@ -72,11 +73,8 @@ export async function createCard({
   // 文脈分析
   const contextAnalysis = await analyzeContext(keyword, article.content);
 
-  // レア度計算
-  const rarity = calculateRarity({
-    contextCategory: contextAnalysis.contextCategory,
-    uniquenessScore: contextAnalysis.uniquenessScore,
-  });
+  // レア度決定（確率ベース）
+  const rarity = calculateRarity();
 
   // フレーバーテキスト生成
   const flavorText = await generateFlavorText({
@@ -86,30 +84,40 @@ export async function createCard({
     emotionalTone: contextAnalysis.emotionalTone,
   });
 
-  // イラスト生成
-  const { imageBuffer: illustrationBuffer, prompt: fluxPrompt } =
-    await generateCardIllustration({
-      keyword,
-      contextDescription: contextAnalysis.contextDescription,
-      rarity,
-      emotionalTone: contextAnalysis.emotionalTone,
-    });
+  // イラスト生成（レアリティに応じたモデルを使用）
+  const {
+    imageBuffer: illustrationBuffer,
+    prompt: imagePrompt,
+    model: imageModel,
+    provider: imageProvider,
+    estimatedCost: imageCost,
+  } = await generateCardIllustration({
+    keyword,
+    contextDescription: contextAnalysis.contextDescription,
+    rarity,
+    emotionalTone: contextAnalysis.emotionalTone,
+  });
+
+  console.log(`Image generated with ${imageModel} (${imageProvider}), estimated cost: $${imageCost.toFixed(4)}`);
 
   // 仮のカードIDを生成（UUIDは後で取得）
   const tempCardId = crypto.randomUUID();
+  const createdAt = new Date();
 
-  // カード画像合成
-  const { cardImageBuffer, thumbnailBuffer } = await composeCardImage({
+  // カード画像合成（表面・裏面・サムネイル）
+  const { cardImageBuffer, cardBackImageBuffer, thumbnailBuffer } = await composeCardImage({
     illustrationBuffer,
     keyword,
     rarity,
     flavorText,
-    createdAt: new Date(),
+    contextDescription: contextAnalysis.contextDescription,
+    createdAt,
   });
 
   // 画像をアップロード（GCS SDKのストリーム競合を避けるため順次実行）
   const illustrationUpload = await uploadCardIllustration(illustrationBuffer, tempCardId);
   const cardImageUpload = await uploadCardImage(cardImageBuffer, tempCardId);
+  const cardBackImageUpload = await uploadCardBackImage(cardBackImageBuffer, tempCardId);
   const thumbnailUpload = await uploadThumbnail(thumbnailBuffer, tempCardId);
 
   // データベースに保存
@@ -125,8 +133,9 @@ export async function createCard({
       contextDescription: contextAnalysis.contextDescription,
       illustrationUrl: illustrationUpload.url,
       cardImageUrl: cardImageUpload.url,
+      cardBackImageUrl: cardBackImageUpload.url,
       thumbnailUrl: thumbnailUpload.url,
-      fluxPrompt,
+      fluxPrompt: imagePrompt,
     },
   });
 
@@ -166,15 +175,24 @@ export async function getCardsByUser({
   };
 }
 
+export type CardWithArticle = Card & {
+  article: { id: string; theme: string } | null;
+};
+
 /**
  * カードを取得
  */
 export async function getCardById(
   cardId: string,
   userId?: string
-): Promise<Card | null> {
+): Promise<CardWithArticle | null> {
   const card = await prisma.card.findUnique({
     where: { id: cardId },
+    include: {
+      article: {
+        select: { id: true, theme: true },
+      },
+    },
   });
 
   // ユーザーIDが指定されている場合は所有者チェック
@@ -233,7 +251,6 @@ export async function getCardStatsByUser(userId: string) {
 
   const byRarity: Record<string, number> = {
     common: 0,
-    uncommon: 0,
     rare: 0,
     super_rare: 0,
     legend: 0,

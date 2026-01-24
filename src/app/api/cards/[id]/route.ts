@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth';
 import { cardIdSchema } from '@/lib/validations/card';
-import { getCardById, deleteCard } from '@/lib/services/card-service';
+import { getCardById, deleteCard, type CardWithArticle } from '@/lib/services/card-service';
 import { handleApiError } from '@/lib/errors';
 import type { ApiResponse } from '@/types/api';
-import type { Card } from '@prisma/client';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -14,7 +13,7 @@ interface RouteContext {
 export async function GET(
   req: NextRequest,
   context: RouteContext
-): Promise<NextResponse<ApiResponse<Card>>> {
+): Promise<NextResponse<ApiResponse<CardWithArticle>>> {
   try {
     const authUser = await verifyAuth(req);
     if (!authUser) {
