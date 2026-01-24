@@ -71,8 +71,8 @@ describe('/api/stats', () => {
         mockCount.mockResolvedValue(10);
         mockGroupBy.mockResolvedValue([
           { rarity: 'common', _count: { rarity: 5 } },
-          { rarity: 'uncommon', _count: { rarity: 3 } },
-          { rarity: 'rare', _count: { rarity: 2 } },
+          { rarity: 'rare', _count: { rarity: 3 } },
+          { rarity: 'super_rare', _count: { rarity: 2 } },
         ]);
 
         const req = createAuthenticatedRequest('/api/stats');
@@ -82,8 +82,8 @@ describe('/api/stats', () => {
         expect(data.totalCards).toBe(10);
         expect(data.rarityBreakdown).toBeDefined();
         expect(data.rarityBreakdown.common).toBe(5);
-        expect(data.rarityBreakdown.uncommon).toBe(3);
-        expect(data.rarityBreakdown.rare).toBe(2);
+        expect(data.rarityBreakdown.rare).toBe(3);
+        expect(data.rarityBreakdown.super_rare).toBe(2);
       });
 
       it('カードがない場合は0を返す', async () => {
@@ -97,17 +97,15 @@ describe('/api/stats', () => {
         expect(data.totalCards).toBe(0);
         expect(data.rarityBreakdown).toBeDefined();
         expect(data.rarityBreakdown.common).toBe(0);
-        expect(data.rarityBreakdown.uncommon).toBe(0);
         expect(data.rarityBreakdown.rare).toBe(0);
         expect(data.rarityBreakdown.super_rare).toBe(0);
         expect(data.rarityBreakdown.legend).toBe(0);
       });
 
       it('全てのレア度が統計に含まれる', async () => {
-        mockCount.mockResolvedValue(15);
+        mockCount.mockResolvedValue(11);
         mockGroupBy.mockResolvedValue([
           { rarity: 'common', _count: { rarity: 5 } },
-          { rarity: 'uncommon', _count: { rarity: 4 } },
           { rarity: 'rare', _count: { rarity: 3 } },
           { rarity: 'super_rare', _count: { rarity: 2 } },
           { rarity: 'legend', _count: { rarity: 1 } },
@@ -117,9 +115,8 @@ describe('/api/stats', () => {
         const response = await GET(req);
         const data = await expectSuccessResponse(response, 200);
 
-        expect(data.totalCards).toBe(15);
+        expect(data.totalCards).toBe(11);
         expect(data.rarityBreakdown.common).toBe(5);
-        expect(data.rarityBreakdown.uncommon).toBe(4);
         expect(data.rarityBreakdown.rare).toBe(3);
         expect(data.rarityBreakdown.super_rare).toBe(2);
         expect(data.rarityBreakdown.legend).toBe(1);

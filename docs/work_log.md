@@ -8,14 +8,15 @@
 
 | フェーズ | ステータス | 完了日 |
 |---------|-----------|--------|
-| Phase 1-A: プロジェクト基盤構築 | 完了 | 2026-01-22 |
-| Phase 1-B: 認証機能 | 完了 | 2026-01-22 |
-| Phase 1-C: 記事生成機能 | 完了 | 2026-01-22 |
-| Phase 1-D: カード生成機能 | 完了 | 2026-01-22 |
-| Phase 1-E: コレクション機能 | 完了 | 2026-01-23 |
-| Phase 1-F: 共有機能 | 未着手 | - |
-| Phase 1-G: 削除機能・UI仕上げ | 未着手 | - |
-| Phase 1-H: テスト・デプロイ準備 | 未着手 | - |
+| Phase 1-A: プロジェクト基盤構築 | ✅ 完了 | 2026-01-22 |
+| Phase 1-B: 認証機能 | ✅ 完了 | 2026-01-22 |
+| Phase 1-C: 記事生成機能 | ✅ 完了 | 2026-01-22 |
+| Phase 1-D: カード生成機能 | ✅ 完了 | 2026-01-22 |
+| Phase 1-E: コレクション機能 | ✅ 完了 | 2026-01-23 |
+| Phase 1-F: 共有機能 | ✅ 完了 | 2026-01-23 |
+| Phase 1-G: 削除機能・UI仕上げ | ✅ 完了 | 2026-01-23 |
+| Phase 1-H: テスト・デプロイ準備 | ✅ 完了 | 2026-01-23 |
+| **レアリティ別画像生成モデル** | ✅ 完了 | 2026-01-24 |
 
 ---
 
@@ -1041,6 +1042,191 @@ npm run type-check  # パス
 
 ---
 
+---
+
+## Phase 1-F: 共有機能 [完了]
+
+**実施日**: 2026-01-23
+
+### 実施内容
+
+#### 1. 共有API
+
+**ファイル:** `src/app/api/cards/[id]/share/route.ts`
+
+**GET /api/cards/:id/share:**
+- 認証不要（公開エンドポイント）
+- カード情報 + OGPメタデータを返却
+
+#### 2. 共有コンポーネント
+
+| コンポーネント | ファイル | 機能 |
+|---------------|----------|------|
+| `ShareModal` | `share-modal.tsx` | 共有オプション選択モーダル |
+| `ShareButtons` | `share-buttons.tsx` | X/LINE共有、画像DL、リンクコピー |
+| `ShareCard` | `share-card.tsx` | 公開ページ用カード表示 |
+
+#### 3. 公開ページ
+
+**ファイル:** `src/app/(public)/share/[id]/page.tsx`
+
+- 認証不要アクセス
+- OGPメタデータ動的生成
+- カード画像表示
+- 「自分も作ってみる」CTAボタン
+
+### 作成ファイル一覧
+
+```
+src/
+├── app/
+│   ├── (public)/
+│   │   ├── layout.tsx              # 公開ページレイアウト
+│   │   └── share/[id]/
+│   │       └── page.tsx            # 共有カード閲覧ページ
+│   └── api/cards/[id]/share/
+│       └── route.ts                # 共有API
+├── components/share/
+│   ├── share-modal.tsx
+│   ├── share-buttons.tsx
+│   ├── share-card.tsx
+│   └── index.ts
+└── lib/share/
+    └── utils.ts                    # 共有ユーティリティ
+```
+
+---
+
+## Phase 1-G: 削除機能・UI仕上げ [完了]
+
+**実施日**: 2026-01-23
+
+### 実施内容
+
+#### 1. 削除機能
+
+- **カード削除**: `src/lib/services/card-service.ts` - ConfirmModal、Cloud Storage連携
+- **記事削除**: `src/lib/services/article-service.ts` - カスケード削除、トランザクション対応
+- **アカウント削除**: `src/app/api/users/me/route.ts` - Firebase Auth削除、全データクリーンアップ
+
+#### 2. FLUX API修正
+
+- `polling_url` を使用するよう修正
+- `FluxGenerationResponse` インターフェースに `polling_url` 追加
+- `requestImageGeneration` の戻り値を `{ taskId, pollingUrl }` に変更
+- `getGenerationResult` の引数を `pollingUrl` に変更
+
+#### 3. アニメーション追加
+
+以下のページにFramer Motionアニメーションを追加:
+- `/create` - AnimatePresenceで状態遷移アニメーション
+- `/home` - セクション単位のスタガードアニメーション
+- `/collection` - フェードインアニメーション
+- `/settings` - カスケードアニメーション
+
+### 修正ファイル一覧
+
+- `src/lib/flux/client.ts` - polling_url対応
+- `src/lib/flux/image-generation.ts` - polling_url対応
+- `src/app/(main)/create/page.tsx` - アニメーション追加
+- `src/app/(main)/home/page.tsx` - アニメーション追加
+- `src/app/(main)/collection/page.tsx` - アニメーション追加
+- `src/app/(main)/settings/page.tsx` - アニメーション追加
+
+---
+
+## Phase 1-H: テスト・デプロイ準備 [完了]
+
+**実施日**: 2026-01-23
+
+### 実施内容
+
+#### 1. テストヘルパー
+
+- `__tests__/helpers/api-test-helpers.ts` - リクエスト生成、レスポンス検証
+- `__tests__/helpers/db-helpers.ts` - Prismaモック設定
+- `src/__tests__/helpers/` - @/エイリアス対応
+
+#### 2. APIルートテスト（8ファイル）
+
+| ファイル | テスト数 | カバー範囲 |
+|----------|----------|-----------|
+| `auth/register/route.test.ts` | 11 | 認証、バリデーション、重複チェック |
+| `users/me/route.test.ts` | 15 | GET/PATCH/DELETE、権限、エラー |
+| `articles/route.test.ts` | 10 | POST/GET、ページネーション |
+| `articles/[id]/route.test.ts` | 8 | GET/DELETE、権限チェック |
+| `cards/route.test.ts` | 12 | POST/GET、フィルター |
+| `cards/[id]/route.test.ts` | 10 | GET/DELETE、権限チェック |
+| `cards/[id]/share/route.test.ts` | 6 | 公開API、OGP生成 |
+| `stats/route.test.ts` | 8 | 統計取得、空データ |
+
+#### 3. サービス層テスト（2ファイル）
+
+| ファイル | テスト数 | カバー範囲 |
+|----------|----------|-----------|
+| `article-service.test.ts` | 15 | CRUD、トランザクション |
+| `card-service.test.ts` | 18 | CRUD、画像削除連携 |
+
+#### 4. デプロイ設定
+
+- `cloudbuild.production.yaml` にDBマイグレーションステップ追加
+
+### 最終検証結果
+
+```
+Test Suites: 16 passed, 16 total
+Tests:       244 passed, 244 total
+Snapshots:   0 total
+Time:        ~4.5s
+
+npm run type-check: ✅ パス
+npm run lint: ✅ 警告なし
+```
+
+---
+
+## レアリティ別画像生成モデル [完了]
+
+**実施日**: 2026-01-24
+
+**詳細ドキュメント**: [13_rarity_image_models.md](./13_rarity_image_models.md)
+
+### 概要
+
+レアリティに応じて異なる画像生成モデルを使用し、レアカードほど高品質な画像を生成する。
+
+### レアリティ別モデル設定
+
+| レアリティ | 出現率 | モデル | プロバイダー | 推定コスト |
+|-----------|--------|--------|-------------|-----------|
+| legend | 5% | DALL-E 3 HD | OpenAI | ~$0.10 |
+| super_rare | 10% | FLUX.2 Pro | BFL | ~$0.04 |
+| rare | 25% | Nano Banana (Gemini 2.5 Flash) | Google | ~$0.03 |
+| common | 60% | FLUX.2 Klein | BFL | ~$0.005 |
+
+**平均コスト: ~$0.0195/カード**
+
+### 作成ファイル
+
+| ファイル | 説明 |
+|----------|------|
+| `src/lib/openai/dalle.ts` | DALL-E 3 HD/Standard クライアント |
+| `src/lib/gemini/client.ts` | Nano Banana (Gemini) クライアント |
+| `src/lib/image-generation/types.ts` | 型定義・モデル設定 |
+| `src/lib/image-generation/router.ts` | レアリティ別ルーター |
+| `src/lib/image-generation/index.ts` | 統一エクスポート |
+
+### 修正ファイル
+
+| ファイル | 変更内容 |
+|----------|----------|
+| `src/lib/flux/client.ts` | FLUX.2 klein/pro/dev モデル対応追加 |
+| `src/lib/flux/image-generation.ts` | レアリティルーター経由に変更 |
+| `src/lib/services/card-service.ts` | モデル・コスト情報をログ出力 |
+| `.env.example` | `GOOGLE_GEMINI_API_KEY` 追加 |
+
+---
+
 ## 変更履歴
 
 | 日付 | 変更内容 |
@@ -1050,3 +1236,7 @@ npm run type-check  # パス
 | 2026-01-22 | Phase 1-C 完了 |
 | 2026-01-22 | Phase 1-D 完了 |
 | 2026-01-23 | Phase 1-E 完了 |
+| 2026-01-23 | Phase 1-F 完了 |
+| 2026-01-23 | Phase 1-G 完了 |
+| 2026-01-23 | Phase 1-H 完了 - MVP完成 |
+| 2026-01-24 | レアリティ別画像生成モデル機能追加 |

@@ -16,10 +16,12 @@ import {
   deleteCardImages,
 } from '@/lib/gcs/storage';
 import type { Card } from '@prisma/client';
+import type { Rarity } from '@/types/database';
 
 export interface CreateCardParams {
   userId: string;
   articleId: string;
+  specifiedRarity?: Rarity;
 }
 
 export interface CardListParams {
@@ -41,6 +43,7 @@ export interface CardListResult {
 export async function createCard({
   userId,
   articleId,
+  specifiedRarity,
 }: CreateCardParams): Promise<Card> {
   // 記事を取得
   const article = await prisma.article.findUnique({
@@ -73,8 +76,8 @@ export async function createCard({
   // 文脈分析
   const contextAnalysis = await analyzeContext(keyword, article.content);
 
-  // レア度決定（確率ベース）
-  const rarity = calculateRarity();
+  // レア度決定（指定がなければ確率ベース）
+  const rarity = calculateRarity(specifiedRarity);
 
   // フレーバーテキスト生成
   const flavorText = await generateFlavorText({
@@ -85,6 +88,7 @@ export async function createCard({
   });
 
   // イラスト生成（レアリティに応じたモデルを使用）
+  // 英語の詳細プロンプトを使用して画像品質を向上
   const {
     imageBuffer: illustrationBuffer,
     prompt: imagePrompt,
@@ -92,8 +96,9 @@ export async function createCard({
     provider: imageProvider,
     estimatedCost: imageCost,
   } = await generateCardIllustration({
-    keyword,
-    contextDescription: contextAnalysis.contextDescription,
+    imageSubject: contextAnalysis.imageSubject,
+    imageScene: contextAnalysis.imageScene,
+    imageDetails: contextAnalysis.imageDetails,
     rarity,
     emotionalTone: contextAnalysis.emotionalTone,
   });

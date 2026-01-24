@@ -1,135 +1,90 @@
 import { calculateRarity, getRarityColor, getRarityGradient } from '@/lib/card/rarity';
-import type { ContextCategory, Rarity } from '@/types/database';
+import type { Rarity } from '@/types/database';
 
 describe('calculateRarity', () => {
-  // ランダム要素をモックして予測可能なテストにする
-  beforeEach(() => {
-    jest.spyOn(Math, 'random').mockReturnValue(0.5); // ±10のランダムが0になる
-  });
-
   afterEach(() => {
     jest.restoreAllMocks();
   });
 
-  describe('レア度の境界値テスト', () => {
-    it('神話カテゴリ + 高ユニークネス + 低頻度 = legend', () => {
-      const result = calculateRarity({
-        contextCategory: 'mythology',
-        uniquenessScore: 10,
-        keywordFrequency: 0,
-      });
-      // 40 + 30 + 30 = 100 (ランダム0) -> legend
-      expect(result).toBe('legend');
+  describe('確率ベースのレア度決定', () => {
+    it('ランダム値 < 5 の場合は legend を返す', () => {
+      jest.spyOn(Math, 'random').mockReturnValue(0.04); // 4%
+      expect(calculateRarity()).toBe('legend');
     });
 
-    it('一般カテゴリ + 低ユニークネス + 高頻度 = common', () => {
-      const result = calculateRarity({
-        contextCategory: 'general',
-        uniquenessScore: 1,
-        keywordFrequency: 10,
-      });
-      // 0 + 3 + 0 = 3 (ランダム0) -> common
-      expect(result).toBe('common');
+    it('ランダム値 5-15 の場合は super_rare を返す', () => {
+      jest.spyOn(Math, 'random').mockReturnValue(0.10); // 10%
+      expect(calculateRarity()).toBe('super_rare');
     });
 
-    it('歴史イベントカテゴリ + 中ユニークネス = rare以上', () => {
-      const result = calculateRarity({
-        contextCategory: 'historical_event',
-        uniquenessScore: 5,
-        keywordFrequency: 5,
-      });
-      // 35 + 15 + 15 = 65 (ランダム0) -> super_rare
-      expect(result).toBe('super_rare');
+    it('ランダム値 15-40 の場合は rare を返す', () => {
+      jest.spyOn(Math, 'random').mockReturnValue(0.30); // 30%
+      expect(calculateRarity()).toBe('rare');
     });
 
-    it('文化カテゴリ + 中ユニークネス = rare', () => {
-      const result = calculateRarity({
-        contextCategory: 'cultural',
-        uniquenessScore: 5,
-        keywordFrequency: 5,
-      });
-      // 20 + 15 + 15 = 50 (ランダム0) -> rare
-      expect(result).toBe('rare');
-    });
-
-    it('科学カテゴリ + 中ユニークネス = uncommon', () => {
-      const result = calculateRarity({
-        contextCategory: 'scientific',
-        uniquenessScore: 3,
-        keywordFrequency: 7,
-      });
-      // 10 + 9 + 9 = 28 (ランダム0) -> uncommon
-      expect(result).toBe('uncommon');
+    it('ランダム値 40-100 の場合は common を返す', () => {
+      jest.spyOn(Math, 'random').mockReturnValue(0.60); // 60%
+      expect(calculateRarity()).toBe('common');
     });
   });
 
-  describe('デフォルト値テスト', () => {
-    it('keywordFrequencyが未指定の場合は5として計算される', () => {
-      const result = calculateRarity({
-        contextCategory: 'general',
-        uniquenessScore: 5,
-      });
-      // 0 + 15 + 15 = 30 (ランダム0) -> uncommon
-      expect(result).toBe('uncommon');
+  describe('境界値テスト', () => {
+    it('ランダム値 0 の場合は legend を返す', () => {
+      jest.spyOn(Math, 'random').mockReturnValue(0);
+      expect(calculateRarity()).toBe('legend');
+    });
+
+    it('ランダム値 0.05 (境界) の場合は super_rare を返す', () => {
+      jest.spyOn(Math, 'random').mockReturnValue(0.05);
+      expect(calculateRarity()).toBe('super_rare');
+    });
+
+    it('ランダム値 0.15 (境界) の場合は rare を返す', () => {
+      jest.spyOn(Math, 'random').mockReturnValue(0.15);
+      expect(calculateRarity()).toBe('rare');
+    });
+
+    it('ランダム値 0.40 (境界) の場合は common を返す', () => {
+      jest.spyOn(Math, 'random').mockReturnValue(0.40);
+      expect(calculateRarity()).toBe('common');
+    });
+
+    it('ランダム値 0.99 の場合は common を返す', () => {
+      jest.spyOn(Math, 'random').mockReturnValue(0.99);
+      expect(calculateRarity()).toBe('common');
     });
   });
 
-  describe('カテゴリボーナステスト', () => {
-    const testCases: { category: ContextCategory; expectedBonus: number }[] = [
-      { category: 'mythology', expectedBonus: 40 },
-      { category: 'historical_event', expectedBonus: 35 },
-      { category: 'biographical', expectedBonus: 25 },
-      { category: 'cultural', expectedBonus: 20 },
-      { category: 'metaphorical', expectedBonus: 15 },
-      { category: 'scientific', expectedBonus: 10 },
-      { category: 'general', expectedBonus: 0 },
-    ];
+  describe('確率分布テスト', () => {
+    it('多数回実行で期待される確率分布に近づく', () => {
+      jest.restoreAllMocks(); // 実際のランダムを使用
 
-    testCases.forEach(({ category, expectedBonus }) => {
-      it(`${category}のボーナスは${expectedBonus}`, () => {
-        // 同じ条件でカテゴリだけ変更
-        const baseResult = calculateRarity({
-          contextCategory: 'general',
-          uniquenessScore: 1,
-          keywordFrequency: 10,
-        });
+      const counts: Record<Rarity, number> = {
+        common: 0,
+        rare: 0,
+        super_rare: 0,
+        legend: 0,
+      };
 
-        const categoryResult = calculateRarity({
-          contextCategory: category,
-          uniquenessScore: 1,
-          keywordFrequency: 10,
-        });
+      const iterations = 10000;
+      for (let i = 0; i < iterations; i++) {
+        const rarity = calculateRarity();
+        counts[rarity]++;
+      }
 
-        // generalとの差分がカテゴリボーナスに相当
-        // ただしレア度が変わる可能性があるので、特定の入力でテスト
-        expect(typeof categoryResult).toBe('string');
-      });
-    });
-  });
+      // 期待値: common 60%, rare 25%, super_rare 10%, legend 5%
+      // 許容誤差: ±3%
+      expect(counts.common / iterations).toBeGreaterThan(0.55);
+      expect(counts.common / iterations).toBeLessThan(0.65);
 
-  describe('ランダム要素テスト', () => {
-    it('ランダム値が高い場合、レア度が上がる可能性がある', () => {
-      jest.spyOn(Math, 'random').mockReturnValue(1); // +10のランダム
+      expect(counts.rare / iterations).toBeGreaterThan(0.20);
+      expect(counts.rare / iterations).toBeLessThan(0.30);
 
-      const result = calculateRarity({
-        contextCategory: 'cultural',
-        uniquenessScore: 5,
-        keywordFrequency: 5,
-      });
-      // 20 + 15 + 15 + 10 = 60 -> super_rare
-      expect(result).toBe('super_rare');
-    });
+      expect(counts.super_rare / iterations).toBeGreaterThan(0.07);
+      expect(counts.super_rare / iterations).toBeLessThan(0.13);
 
-    it('ランダム値が低い場合、レア度が下がる可能性がある', () => {
-      jest.spyOn(Math, 'random').mockReturnValue(0); // -10のランダム
-
-      const result = calculateRarity({
-        contextCategory: 'cultural',
-        uniquenessScore: 5,
-        keywordFrequency: 5,
-      });
-      // 20 + 15 + 15 - 10 = 40 -> rare
-      expect(result).toBe('rare');
+      expect(counts.legend / iterations).toBeGreaterThan(0.02);
+      expect(counts.legend / iterations).toBeLessThan(0.08);
     });
   });
 });
@@ -137,7 +92,6 @@ describe('calculateRarity', () => {
 describe('getRarityColor', () => {
   const expectedColors: Record<Rarity, string> = {
     common: '#9CA3AF',
-    uncommon: '#10B981',
     rare: '#3B82F6',
     super_rare: '#8B5CF6',
     legend: '#F59E0B',
@@ -153,7 +107,6 @@ describe('getRarityColor', () => {
 describe('getRarityGradient', () => {
   const expectedGradients: Record<Rarity, [string, string]> = {
     common: ['#9CA3AF', '#6B7280'],
-    uncommon: ['#10B981', '#059669'],
     rare: ['#3B82F6', '#2563EB'],
     super_rare: ['#8B5CF6', '#7C3AED'],
     legend: ['#F59E0B', '#D97706'],

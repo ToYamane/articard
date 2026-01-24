@@ -3,6 +3,7 @@ import { z } from 'zod';
 // カード生成リクエストスキーマ
 export const createCardSchema = z.object({
   articleId: z.string().uuid('無効な記事IDです'),
+  rarity: z.enum(['common', 'rare', 'super_rare', 'legend']).optional(),
 });
 
 // カード一覧取得クエリスキーマ
@@ -10,7 +11,7 @@ export const getCardsQuerySchema = z.object({
   cursor: z.string().uuid().optional(),
   limit: z.coerce.number().int().min(1).max(50).default(20),
   rarity: z
-    .enum(['common', 'uncommon', 'rare', 'super_rare', 'legend'])
+    .enum(['common', 'rare', 'super_rare', 'legend'])
     .optional(),
 });
 

@@ -83,9 +83,11 @@
 |-----|------|---------|
 | OpenAI GPT-4o-mini | 記事生成 | ~$0.01/記事 |
 | OpenAI Moderation | コンテンツフィルター | 無料 |
-| FLUX API (BFL公式) | イラスト生成 | ~$0.03/枚 |
+| OpenAI DALL-E 3 HD | イラスト生成（legend） | ~$0.10/枚 |
+| FLUX API (BFL公式) | イラスト生成（super_rare/common） | ~$0.005-0.04/枚 |
+| Google Gemini (Nano Banana) | イラスト生成（rare） | ~$0.03/枚 |
 
-> **Note**: FLUX APIはBlack Forest Labs (BFL) の公式APIを使用します。
+> **Note**: レアリティに応じて異なる画像生成モデルを使用。詳細は [13_rarity_image_models.md](./13_rarity_image_models.md) を参照。
 
 ### 画像アクセス方式
 
@@ -143,8 +145,9 @@
 - Firebase CLI
 
 # 環境変数
-OPENAI_API_KEY=
-FLUX_API_KEY=
+OPENAI_API_KEY=          # 記事生成 + DALL-E 3（legend画像）
+BFL_API_KEY=             # FLUX画像生成
+GOOGLE_GEMINI_API_KEY=   # Gemini画像生成（rare画像）
 DATABASE_URL=
 NEXT_PUBLIC_FIREBASE_CONFIG=
 GOOGLE_CLOUD_PROJECT=

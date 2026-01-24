@@ -4,3 +4,4 @@ export { Modal, type ModalProps } from './modal';
 export { ConfirmModal, type ConfirmModalProps } from './confirm-modal';
 export { Toast, ToastContainer, type ToastProps, type ToastContainerProps } from './toast';
 export { LoadingSpinner, FullPageLoader, type LoadingSpinnerProps, type FullPageLoaderProps } from './loading-spinner';
+export { ToggleSwitch, type ToggleSwitchProps } from './toggle-switch';

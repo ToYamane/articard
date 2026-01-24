@@ -19,7 +19,6 @@ const FLAVOR_TEXT_PROMPT = `以下の条件でトレーディングカードの�
 // レア度の日本語表示
 const RARITY_JAPANESE: Record<Rarity, string> = {
   common: 'コモン',
-  uncommon: 'アンコモン',
   rare: 'レア',
   super_rare: 'スーパーレア',
   legend: 'レジェンド',

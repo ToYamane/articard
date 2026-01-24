@@ -2,7 +2,6 @@ export {
   calculateRarity,
   getRarityColor,
   getRarityGradient,
-  type RarityInput,
 } from './rarity';
 export {
   composeCardImage,

@@ -1,22 +1,38 @@
 import { getOpenAIClient } from './client';
 import type { ContextCategory, EmotionalTone } from '@/types/database';
 
-const CONTEXT_ANALYSIS_PROMPT = `以下の記事において、キーワード「{keyword}」がどのような文脈で使われているか分析してください。
+const CONTEXT_ANALYSIS_PROMPT = `Analyze the context of the keyword "{keyword}" in the following Japanese article. Generate detailed image description in English for AI image generation.
 
-記事:
+Article:
 {content}
 
-出力形式（JSON）:
+Output format (JSON):
 {
   "context_category": "historical_event" | "mythology" | "scientific" | "cultural" | "biographical" | "general" | "metaphorical",
-  "context_description": "このキーワードの文脈を1文で説明",
+  "image_subject": "Main subject to illustrate - what should be drawn (15-30 words, English)",
+  "image_scene": "Scene description - setting, atmosphere, background (15-25 words, English)",
+  "image_details": "Visual details - colors, textures, lighting hints (15-25 words, English)",
   "uniqueness_score": 1-10,
-  "emotional_tone": "epic" | "mysterious" | "scientific" | "warm" | "dramatic" | "neutral"
-}`;
+  "emotional_tone": "epic" | "mysterious" | "scientific" | "warm" | "dramatic" | "neutral",
+  "context_description_ja": "日本語での文脈説明（カード表示用、1文、30文字以内）"
+}
+
+Important:
+- image_subject/scene/details must be in English and visually descriptive
+- Focus on what can be visually represented, not abstract concepts
+- Make descriptions vivid and specific for image generation`;
 
 export interface ContextAnalysisResult {
   contextCategory: ContextCategory;
+
+  // 画像生成用（英語、詳細）
+  imageSubject: string;
+  imageScene: string;
+  imageDetails: string;
+
+  // カード表示用（日本語）
   contextDescription: string;
+
   uniquenessScore: number;
   emotionalTone: EmotionalTone;
 }
@@ -56,10 +72,20 @@ export async function analyzeContext(
     const contextCategory = validateContextCategory(parsed.context_category);
     const emotionalTone = validateEmotionalTone(parsed.emotional_tone);
     const uniquenessScore = Math.min(10, Math.max(1, Number(parsed.uniqueness_score) || 5));
-    const contextDescription = String(parsed.context_description || '');
+
+    // 画像生成用（英語）
+    const imageSubject = String(parsed.image_subject || 'a symbolic representation of the concept');
+    const imageScene = String(parsed.image_scene || 'dramatic atmospheric setting');
+    const imageDetails = String(parsed.image_details || 'vibrant colors, detailed textures');
+
+    // カード表示用（日本語）
+    const contextDescription = String(parsed.context_description_ja || '');
 
     return {
       contextCategory,
+      imageSubject,
+      imageScene,
+      imageDetails,
       contextDescription,
       uniquenessScore,
       emotionalTone,

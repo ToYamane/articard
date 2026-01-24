@@ -233,25 +233,23 @@ describe('card-service', () => {
       mockCount.mockResolvedValue(10);
       mockGroupBy.mockResolvedValue([
         { rarity: 'common', _count: 5 },
-        { rarity: 'uncommon', _count: 3 },
-        { rarity: 'rare', _count: 2 },
+        { rarity: 'rare', _count: 3 },
+        { rarity: 'super_rare', _count: 2 },
       ]);
 
       const result = await getCardStatsByUser(mockUser.id);
 
       expect(result.total).toBe(10);
       expect(result.byRarity.common).toBe(5);
-      expect(result.byRarity.uncommon).toBe(3);
-      expect(result.byRarity.rare).toBe(2);
-      expect(result.byRarity.super_rare).toBe(0);
+      expect(result.byRarity.rare).toBe(3);
+      expect(result.byRarity.super_rare).toBe(2);
       expect(result.byRarity.legend).toBe(0);
     });
 
     it('全レア度の統計を取得できる', async () => {
-      mockCount.mockResolvedValue(15);
+      mockCount.mockResolvedValue(11);
       mockGroupBy.mockResolvedValue([
         { rarity: 'common', _count: 5 },
-        { rarity: 'uncommon', _count: 4 },
         { rarity: 'rare', _count: 3 },
         { rarity: 'super_rare', _count: 2 },
         { rarity: 'legend', _count: 1 },
@@ -259,9 +257,8 @@ describe('card-service', () => {
 
       const result = await getCardStatsByUser(mockUser.id);
 
-      expect(result.total).toBe(15);
+      expect(result.total).toBe(11);
       expect(result.byRarity.common).toBe(5);
-      expect(result.byRarity.uncommon).toBe(4);
       expect(result.byRarity.rare).toBe(3);
       expect(result.byRarity.super_rare).toBe(2);
       expect(result.byRarity.legend).toBe(1);
@@ -275,7 +272,6 @@ describe('card-service', () => {
 
       expect(result.total).toBe(0);
       expect(result.byRarity.common).toBe(0);
-      expect(result.byRarity.uncommon).toBe(0);
       expect(result.byRarity.rare).toBe(0);
       expect(result.byRarity.super_rare).toBe(0);
       expect(result.byRarity.legend).toBe(0);

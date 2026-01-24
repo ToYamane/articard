@@ -23,7 +23,6 @@ const SIZE_CLASSES = {
 
 const RARITY_GLOW: Record<Rarity, string> = {
   common: '',
-  uncommon: 'shadow-green-500/20',
   rare: 'shadow-blue-500/30',
   super_rare: 'shadow-purple-500/40',
   legend: 'shadow-yellow-500/50',
@@ -67,7 +66,7 @@ export function CardDisplay({ card, size = 'md', onClick, className }: CardDispl
   );
 }
 
-// カード詳細表示コンポーネント
+// カード詳細表示コンポーネント（表裏並列表示対応）
 interface CardDetailDisplayProps {
   card: Card;
   className?: string;
@@ -76,49 +75,114 @@ interface CardDetailDisplayProps {
 export function CardDetailDisplay({ card, className }: CardDetailDisplayProps) {
   const rarity = card.rarity as Rarity;
   const hasGlow = rarity !== 'common';
+  const hasBackImage = !!card.cardBackImageUrl;
 
   return (
     <div className={cn('flex flex-col items-center gap-6', className)}>
-      {/* カード画像（大） */}
+      {/* カード名とレアリティ */}
       <motion.div
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: 0.4, type: 'spring', stiffness: 200 }}
-        className={cn(
-          'relative h-96 w-64 overflow-hidden rounded-xl shadow-xl',
-          hasGlow && `shadow-2xl ${RARITY_GLOW[rarity]}`
-        )}
-      >
-        <Image
-          src={card.cardImageUrl}
-          alt={card.keyword}
-          fill
-          className="object-cover"
-          priority
-        />
-      </motion.div>
-
-      {/* カード情報 */}
-      <motion.div
-        initial={{ y: 20, opacity: 0 }}
+        initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.2, duration: 0.3 }}
-        className="w-full max-w-md space-y-4 text-center"
+        transition={{ duration: 0.3 }}
+        className="text-center"
       >
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
           {card.keyword}
         </h1>
-
-        <RarityBadge rarity={rarity} size="lg" />
-
-        <p className="text-sm italic text-gray-600 dark:text-gray-400">
-          「{card.flavorText}」
-        </p>
-
-        <div className="text-xs text-gray-500 dark:text-gray-500">
-          {formatRelativeTime(card.createdAt)}
-        </div>
+        <RarityBadge rarity={rarity} size="lg" className="mt-2" />
       </motion.div>
+
+      {/* カード画像（表裏並列） */}
+      <div
+        className={cn(
+          'flex flex-col items-center gap-6',
+          hasBackImage && 'md:flex-row md:items-start md:gap-8'
+        )}
+      >
+        {/* 表面 */}
+        <motion.div
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.4, type: 'spring', stiffness: 200 }}
+          className="flex flex-col items-center"
+        >
+          <p className="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">
+            表面
+          </p>
+          <div
+            className={cn(
+              'relative h-96 w-64 overflow-hidden rounded-xl shadow-xl',
+              hasGlow && `shadow-2xl ${RARITY_GLOW[rarity]}`
+            )}
+          >
+            <Image
+              src={card.cardImageUrl}
+              alt={`${card.keyword} - 表面`}
+              fill
+              className="object-cover"
+              priority
+            />
+          </div>
+        </motion.div>
+
+        {/* 裏面（存在する場合のみ） */}
+        {hasBackImage && (
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.4, delay: 0.1, type: 'spring', stiffness: 200 }}
+            className="flex flex-col items-center"
+          >
+            <p className="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">
+              裏面
+            </p>
+            <div
+              className={cn(
+                'relative h-96 w-64 overflow-hidden rounded-xl shadow-xl',
+                hasGlow && `shadow-2xl ${RARITY_GLOW[rarity]}`
+              )}
+            >
+              <Image
+                src={card.cardBackImageUrl!}
+                alt={`${card.keyword} - 裏面`}
+                fill
+                className="object-cover"
+                priority
+              />
+            </div>
+          </motion.div>
+        )}
+      </div>
+
+      {/* カード情報（裏面がない場合のみテキスト表示） */}
+      {!hasBackImage && (
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.2, duration: 0.3 }}
+          className="w-full max-w-md space-y-4 text-center"
+        >
+          <p className="text-sm italic text-gray-600 dark:text-gray-400">
+            「{card.flavorText}」
+          </p>
+
+          <div className="text-xs text-gray-500 dark:text-gray-500">
+            {formatRelativeTime(card.createdAt)}
+          </div>
+        </motion.div>
+      )}
+
+      {/* 裏面がある場合は日付のみ表示 */}
+      {hasBackImage && (
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.3, duration: 0.3 }}
+          className="text-xs text-gray-500 dark:text-gray-500"
+        >
+          {formatRelativeTime(card.createdAt)}
+        </motion.div>
+      )}
     </div>
   );
 }

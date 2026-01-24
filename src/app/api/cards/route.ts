@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
 import { createCardSchema, getCardsQuerySchema } from '@/lib/validations/card';
 import { createCard, getCardsByUser } from '@/lib/services/card-service';
 import { handleApiError } from '@/lib/errors';
@@ -47,11 +48,33 @@ export async function POST(
       );
     }
 
-    const { articleId } = validationResult.data;
+    const { articleId, rarity } = validationResult.data;
+
+    // レアリティ指定がある場合、開発者権限をチェック
+    if (rarity) {
+      const user = await prisma.user.findUnique({
+        where: { id: authUser.uid },
+        select: { isDeveloper: true },
+      });
+
+      if (!user?.isDeveloper) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: {
+              code: 'FORBIDDEN',
+              message: 'レアリティ指定は開発者のみ利用可能です',
+            },
+          },
+          { status: 403 }
+        );
+      }
+    }
 
     const card = await createCard({
       userId: authUser.uid,
       articleId,
+      specifiedRarity: rarity,
     });
 
     return NextResponse.json({

@@ -7,6 +7,7 @@ export interface UserProfile {
   nickname: string;
   knowledgeBalance: number;
   isPremium: boolean;
+  isDeveloper: boolean;
   premiumExpiresAt: string | null;
   createdAt: string;
 }

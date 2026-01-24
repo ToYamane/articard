@@ -1,6 +1,6 @@
 // Database types for Articard
 
-export type Rarity = 'common' | 'uncommon' | 'rare' | 'super_rare' | 'legend';
+export type Rarity = 'common' | 'rare' | 'super_rare' | 'legend';
 
 export type ContextCategory =
   | 'historical_event'
@@ -24,7 +24,6 @@ export type EmotionalTone =
 // Rarity display names in Japanese
 export const RARITY_DISPLAY_NAMES: Record<Rarity, string> = {
   common: 'コモン',
-  uncommon: 'アンコモン',
   rare: 'レア',
   super_rare: 'スーパーレア',
   legend: 'レジェンド',
@@ -33,10 +32,9 @@ export const RARITY_DISPLAY_NAMES: Record<Rarity, string> = {
 // Rarity star counts
 export const RARITY_STARS: Record<Rarity, number> = {
   common: 1,
-  uncommon: 2,
-  rare: 3,
-  super_rare: 4,
-  legend: 5,
+  rare: 2,
+  super_rare: 3,
+  legend: 4,
 };
 
 // Context category display names in Japanese

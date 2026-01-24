@@ -51,7 +51,7 @@ describe('getCardsQuerySchema', () => {
   });
 
   describe('rarityフィルター', () => {
-    const validRarities = ['common', 'uncommon', 'rare', 'super_rare', 'legend'];
+    const validRarities = ['common', 'rare', 'super_rare', 'legend'];
 
     validRarities.forEach((rarity) => {
       it(`レア度 ${rarity} を許可する`, () => {

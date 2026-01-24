@@ -224,7 +224,7 @@ export function mockCardStatsSuccess(total = 10) {
   mockPrisma.card.count.mockResolvedValue(total);
   mockPrisma.card.groupBy.mockResolvedValue([
     { rarity: 'common', _count: 5 },
-    { rarity: 'uncommon', _count: 3 },
-    { rarity: 'rare', _count: 2 },
+    { rarity: 'rare', _count: 3 },
+    { rarity: 'super_rare', _count: 2 },
   ]);
 }

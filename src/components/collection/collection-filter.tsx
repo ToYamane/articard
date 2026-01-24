@@ -19,7 +19,7 @@ interface CollectionFilterProps {
   onApply: (filter: FilterState) => void;
 }
 
-const RARITY_OPTIONS: Rarity[] = ['common', 'uncommon', 'rare', 'super_rare', 'legend'];
+const RARITY_OPTIONS: Rarity[] = ['common', 'rare', 'super_rare', 'legend'];
 const CONTEXT_OPTIONS: ContextCategory[] = [
   'historical_event',
   'mythology',

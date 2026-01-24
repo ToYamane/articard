@@ -1,7 +1,25 @@
 const BFL_API_BASE_URL = 'https://api.bfl.ai/v1';
 
+// FLUX モデルタイプ
+export type FluxModel =
+  | 'flux-pro-1.1'      // FLUX 1.1 Pro (現在使用中) ~$0.04
+  | 'flux-2-pro'        // FLUX.2 Pro (最高品質) ~$0.04
+  | 'flux-2-dev'        // FLUX.2 Dev (32Bパラメータ) ~$0.015
+  | 'flux-2-klein'      // FLUX.2 Klein (超高速) ~$0.01
+  | 'flux-schnell';     // FLUX.1 Schnell (最速・最安) ~$0.003
+
+// モデルごとのエンドポイント
+const MODEL_ENDPOINTS: Record<FluxModel, string> = {
+  'flux-pro-1.1': 'flux-pro-1.1',
+  'flux-2-pro': 'flux-2-pro',
+  'flux-2-dev': 'flux-2-dev',
+  'flux-2-klein': 'flux-2-klein',
+  'flux-schnell': 'flux-schnell',
+};
+
 interface FluxGenerationParams {
   prompt: string;
+  model?: FluxModel;
   width?: number;
   height?: number;
   prompt_upsampling?: boolean;
@@ -40,14 +58,19 @@ export interface FluxRequestResult {
 
 /**
  * FLUX APIで画像生成リクエストを送信
+ * @param params - 生成パラメータ
+ * @param params.model - 使用するFLUXモデル (デフォルト: flux-pro-1.1)
  */
 export async function requestImageGeneration(
   params: FluxGenerationParams
 ): Promise<FluxRequestResult> {
   const apiKey = getApiKey();
+  const model = params.model || 'flux-pro-1.1';
+  const endpoint = MODEL_ENDPOINTS[model];
 
-  // FLUX 1.1 [pro] - https://docs.bfl.ai/flux_models/flux_1_1_pro
-  const response = await fetch(`${BFL_API_BASE_URL}/flux-pro-1.1`, {
+  console.log(`FLUX API request starting with model: ${model}`);
+
+  const response = await fetch(`${BFL_API_BASE_URL}/${endpoint}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

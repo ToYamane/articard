@@ -39,7 +39,6 @@ export async function GET(request: NextRequest) {
     // レア度別内訳を整形
     const rarityBreakdown: Record<Rarity, number> = {
       common: 0,
-      uncommon: 0,
       rare: 0,
       super_rare: 0,
       legend: 0,

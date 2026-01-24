@@ -143,6 +143,17 @@ export async function uploadThumbnail(
 }
 
 /**
+ * カード裏面画像をアップロード
+ */
+export async function uploadCardBackImage(
+  buffer: Buffer,
+  cardId: string
+): Promise<UploadResult> {
+  const fileName = `${cardId}_back.jpg`;
+  return uploadImage(buffer, fileName, 'cards');
+}
+
+/**
  * 画像を削除
  */
 export async function deleteImage(path: string): Promise<void> {
@@ -224,6 +235,7 @@ export async function deleteCardImages(cardId: string): Promise<void> {
   const paths = [
     `illustrations/${cardId}_illustration.jpg`,
     `cards/${cardId}_card.jpg`,
+    `cards/${cardId}_back.jpg`,
     `thumbnails/${cardId}_thumb.jpg`,
   ];
 
