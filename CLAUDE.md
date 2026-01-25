@@ -117,3 +117,34 @@ npm run db:push
 # Production uses Cloud SQL (articard-ff673 project)
 # Connection configured via DATABASE_URL in .env
 ```
+
+## Infrastructure
+
+### GCP Project (Development)
+- **Project ID**: articard-ff673
+- **Region**: asia-northeast1
+
+### Cloud SQL
+- **Instance**: articard-db
+- **Database**: articard
+- **User**: articard_user
+
+### Cloud Storage
+- **Bucket**: articard-ff673.appspot.com (or custom bucket)
+- **Structure**:
+  - illustrations/{cardId}_illustration.jpg
+  - cards/{cardId}_card.jpg
+  - cards/{cardId}_back.jpg
+  - thumbnails/{cardId}_thumb.jpg
+
+### Firebase
+- **Project**: articard-ff673
+- **Auth**: Email/Password, Google OAuth
+
+### External APIs
+- **OpenAI**: GPT-4o-mini (articles), DALL-E 3 HD (legend cards)
+- **FLUX (BFL)**: flux-2-klein (common), flux-2-pro (super_rare)
+- **Gemini**: gemini-2.0-flash-exp (rare cards)
+
+### Related Docs
+- [Production Setup Guide](docs/production-setup.md)
