@@ -17,7 +17,7 @@
 | Phase 1-G: 削除機能・UI仕上げ | ✅ 完了 | 2026-01-23 |
 | Phase 1-H: テスト・デプロイ準備 | ✅ 完了 | 2026-01-23 |
 | **レアリティ別画像生成モデル** | ✅ 完了 | 2026-01-24 |
-| **アドベンチャーモード** | ✅ 完了 | 2026-01-25 |
+| **チャレンジモード** | ✅ 完了 | 2026-01-25 |
 
 ---
 
@@ -1230,11 +1230,11 @@ npm run lint: ✅ 警告なし
 
 ---
 
-## アドベンチャーモード [完了]
+## チャレンジモード [完了]
 
 **実施日**: 2026-01-25
 
-**詳細ドキュメント**: [12_adventure_mode.md](./12_adventure_mode.md)
+**詳細ドキュメント**: [12_challenge_mode.md](./12_challenge_mode.md)
 
 ### 概要
 
@@ -1248,45 +1248,45 @@ AIがチャレンジを生成し、カードの適合度を評価して面白お
 **新規テーブル:**
 | テーブル | 説明 |
 |----------|------|
-| `adventure_sessions` | ゲームセッション管理 |
-| `adventure_session_cards` | デッキ内カード |
-| `adventure_session_phases` | フェーズ結果 |
+| `challenge_sessions` | ゲームセッション管理 |
+| `challenge_session_cards` | デッキ内カード |
+| `challenge_session_phases` | フェーズ結果 |
 
 **既存テーブル変更:**
-- `User` に `adventureSessions` リレーション追加
-- `Card` に `adventureSessionCards` リレーション追加
+- `User` に `challengeSessions` リレーション追加
+- `Card` に `challengeSessionCards` リレーション追加
 
 #### 2. バックエンド
 
 | ファイル | 説明 |
 |----------|------|
-| `src/types/adventure.ts` | 型定義（セッション、フェーズ、スコアリング） |
-| `src/lib/adventure/scenarios.ts` | シナリオ定義（宇宙探査ミッション） |
-| `src/lib/adventure/index.ts` | エクスポート |
-| `src/lib/services/adventure-service.ts` | ビジネスロジック |
-| `src/lib/openai/adventure-ai.ts` | AI評価・チャレンジ生成 |
-| `src/lib/validations/adventure.ts` | Zodスキーマ |
+| `src/types/challenge.ts` | 型定義（セッション、フェーズ、スコアリング） |
+| `src/lib/challenge/scenarios.ts` | シナリオ定義（宇宙探査ミッション） |
+| `src/lib/challenge/index.ts` | エクスポート |
+| `src/lib/services/challenge-service.ts` | ビジネスロジック |
+| `src/lib/openai/challenge-ai.ts` | AI評価・チャレンジ生成 |
+| `src/lib/validations/challenge.ts` | Zodスキーマ |
 
 #### 3. API Routes
 
 | エンドポイント | メソッド | 説明 |
 |---------------|---------|------|
-| `/api/adventure/scenarios` | GET | シナリオ一覧 |
-| `/api/adventure/sessions` | POST | セッション作成 |
-| `/api/adventure/sessions` | GET | セッション一覧 |
-| `/api/adventure/sessions/[id]` | GET | セッション詳細 |
-| `/api/adventure/sessions/[id]` | DELETE | セッション中断 |
-| `/api/adventure/sessions/[id]/deck` | POST | デッキ設定 |
-| `/api/adventure/sessions/[id]/challenge` | GET | チャレンジ取得 |
-| `/api/adventure/sessions/[id]/submit` | POST | カード提出 |
+| `/api/challenge/scenarios` | GET | シナリオ一覧 |
+| `/api/challenge/sessions` | POST | セッション作成 |
+| `/api/challenge/sessions` | GET | セッション一覧 |
+| `/api/challenge/sessions/[id]` | GET | セッション詳細 |
+| `/api/challenge/sessions/[id]` | DELETE | セッション中断 |
+| `/api/challenge/sessions/[id]/deck` | POST | デッキ設定 |
+| `/api/challenge/sessions/[id]/challenge` | GET | チャレンジ取得 |
+| `/api/challenge/sessions/[id]/submit` | POST | カード提出 |
 
 #### 4. フロントエンド
 
 **ページ:**
 | ファイル | 説明 |
 |----------|------|
-| `src/app/(main)/adventure/page.tsx` | シナリオ選択 |
-| `src/app/(main)/adventure/[sessionId]/page.tsx` | ゲームプレイ |
+| `src/app/(main)/challenge/page.tsx` | シナリオ選択 |
+| `src/app/(main)/challenge/[sessionId]/page.tsx` | ゲームプレイ |
 
 **コンポーネント:**
 | ファイル | 説明 |
@@ -1297,31 +1297,31 @@ AIがチャレンジを生成し、カードの適合度を評価して面白お
 | `challenge-card.tsx` | チャレンジ表示 |
 | `card-selector.tsx` | カード選択UI |
 | `result-display.tsx` | 結果&AI実況 |
-| `adventure-complete.tsx` | 完了画面 |
+| `challenge-complete.tsx` | 完了画面 |
 
 #### 5. ナビゲーション
 
-- メインレイアウトに「アドベンチャー」リンク追加
+- メインレイアウトに「チャレンジ」リンク追加
 
 ### 作成ファイル一覧
 
 ```
 prisma/schema.prisma                    # スキーマ変更
 
-src/types/adventure.ts                  # 新規
+src/types/challenge.ts                  # 新規
 
-src/lib/adventure/
+src/lib/challenge/
 ├── scenarios.ts                        # 新規
 └── index.ts                            # 新規
 
-src/lib/openai/adventure-ai.ts          # 新規
+src/lib/openai/challenge-ai.ts          # 新規
 src/lib/openai/index.ts                 # 更新
 
-src/lib/services/adventure-service.ts   # 新規
+src/lib/services/challenge-service.ts   # 新規
 
-src/lib/validations/adventure.ts        # 新規
+src/lib/validations/challenge.ts        # 新規
 
-src/app/api/adventure/
+src/app/api/challenge/
 ├── scenarios/route.ts                  # 新規
 └── sessions/
     ├── route.ts                        # 新規
@@ -1331,18 +1331,18 @@ src/app/api/adventure/
         ├── challenge/route.ts          # 新規
         └── submit/route.ts             # 新規
 
-src/app/(main)/adventure/
+src/app/(main)/challenge/
 ├── page.tsx                            # 新規
 └── [sessionId]/page.tsx                # 新規
 
-src/components/adventure/
+src/components/challenge/
 ├── scenario-card.tsx                   # 新規
 ├── deck-builder.tsx                    # 新規
 ├── phase-display.tsx                   # 新規
 ├── challenge-card.tsx                  # 新規
 ├── card-selector.tsx                   # 新規
 ├── result-display.tsx                  # 新規
-├── adventure-complete.tsx              # 新規
+├── challenge-complete.tsx              # 新規
 └── index.ts                            # 新規
 
 src/app/(main)/layout.tsx               # 更新（ナビ追加）
@@ -1379,4 +1379,4 @@ npm run dev
 | 2026-01-23 | Phase 1-G 完了 |
 | 2026-01-23 | Phase 1-H 完了 - MVP完成 |
 | 2026-01-24 | レアリティ別画像生成モデル機能追加 |
-| 2026-01-25 | アドベンチャーモード機能追加 |
+| 2026-01-25 | チャレンジモード機能追加 |

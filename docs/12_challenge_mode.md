@@ -1,10 +1,10 @@
-# 12. アドベンチャーモード
+# 12. チャレンジモード
 
 ## 12.1 機能概要
 
 ### コンセプト
 
-アドベンチャーモードは、生成したカードを使って冒険に挑戦するゲームモード。
+チャレンジモードは、生成したカードを使って冒険に挑戦するゲームモード。
 
 **主な特徴:**
 - シナリオ（例：宇宙探査）を選択
@@ -37,12 +37,12 @@
 
 ### 詳細フロー
 
-1. **シナリオ選択** (`/adventure`)
+1. **シナリオ選択** (`/challenge`)
    - 利用可能なシナリオ一覧を表示
    - 難易度、フェーズ数、必要デッキサイズを確認
    - 進行中のセッションがある場合は続行/中断の選択
 
-2. **デッキ編成** (`/adventure/[sessionId]`)
+2. **デッキ編成** (`/challenge/[sessionId]`)
    - 自分のカードコレクションから6枚を選択
    - 選択したカードはプレビュー表示
    - 確定後、ゲーム開始
@@ -151,12 +151,12 @@
 
 ## 12.6 データベーススキーマ
 
-### AdventureSession
+### ChallengeSession
 
 ゲームセッションを管理。
 
 ```prisma
-model AdventureSession {
+model ChallengeSession {
   id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId       String    @map("user_id") @db.VarChar(128)
   scenarioId   String    @map("scenario_id") @db.VarChar(50)
@@ -167,39 +167,39 @@ model AdventureSession {
   completedAt  DateTime? @map("completed_at") @db.Timestamptz
 
   user      User                    @relation(...)
-  deckCards AdventureSessionCard[]
-  phases    AdventureSessionPhase[]
+  deckCards ChallengeSessionCard[]
+  phases    ChallengeSessionPhase[]
 
-  @@map("adventure_sessions")
+  @@map("challenge_sessions")
 }
 ```
 
-### AdventureSessionCard
+### ChallengeSessionCard
 
 デッキに入れたカードを管理。
 
 ```prisma
-model AdventureSessionCard {
+model ChallengeSessionCard {
   id          String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   sessionId   String  @map("session_id") @db.Uuid
   cardId      String  @map("card_id") @db.Uuid
   isUsed      Boolean @default(false) @map("is_used")
   usedInPhase Int?    @map("used_in_phase")
 
-  session AdventureSession @relation(...)
+  session ChallengeSession @relation(...)
   card    Card             @relation(...)
 
   @@unique([sessionId, cardId])
-  @@map("adventure_session_cards")
+  @@map("challenge_session_cards")
 }
 ```
 
-### AdventureSessionPhase
+### ChallengeSessionPhase
 
 各フェーズの結果を記録。
 
 ```prisma
-model AdventureSessionPhase {
+model ChallengeSessionPhase {
   id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   sessionId       String   @map("session_id") @db.Uuid
   phaseNumber     Int      @map("phase_number")
@@ -211,10 +211,10 @@ model AdventureSessionPhase {
   aiCommentary    String   @map("ai_commentary") @db.Text
   completedAt     DateTime @default(now()) @map("completed_at") @db.Timestamptz
 
-  session AdventureSession @relation(...)
+  session ChallengeSession @relation(...)
 
   @@unique([sessionId, phaseNumber])
-  @@map("adventure_session_phases")
+  @@map("challenge_session_phases")
 }
 ```
 
@@ -224,28 +224,28 @@ model AdventureSessionPhase {
 
 ```
 src/types/
-└── adventure.ts          # セッション、フェーズ、スコアリング等の型
+└── challenge.ts          # セッション、フェーズ、スコアリング等の型
 ```
 
 ### バックエンド
 
 ```
 src/lib/
-├── adventure/
+├── challenge/
 │   ├── scenarios.ts      # シナリオ定義
 │   └── index.ts
 ├── openai/
-│   └── adventure-ai.ts   # AI評価・実況生成
+│   └── challenge-ai.ts   # AI評価・実況生成
 ├── services/
-│   └── adventure-service.ts  # ビジネスロジック
+│   └── challenge-service.ts  # ビジネスロジック
 └── validations/
-    └── adventure.ts      # Zodスキーマ
+    └── challenge.ts      # Zodスキーマ
 ```
 
 ### API
 
 ```
-src/app/api/adventure/
+src/app/api/challenge/
 ├── scenarios/
 │   └── route.ts          # GET - シナリオ一覧
 └── sessions/
@@ -263,19 +263,19 @@ src/app/api/adventure/
 ### フロントエンド
 
 ```
-src/app/(main)/adventure/
+src/app/(main)/challenge/
 ├── page.tsx              # シナリオ選択ページ
 └── [sessionId]/
     └── page.tsx          # ゲームプレイページ
 
-src/components/adventure/
+src/components/challenge/
 ├── scenario-card.tsx     # シナリオ表示
 ├── deck-builder.tsx      # デッキ編成UI
 ├── phase-display.tsx     # フェーズ進行表示
 ├── challenge-card.tsx    # チャレンジ表示
 ├── card-selector.tsx     # カード選択UI
 ├── result-display.tsx    # 結果&AI実況表示
-├── adventure-complete.tsx # 完了画面
+├── challenge-complete.tsx # 完了画面
 └── index.ts
 ```
 

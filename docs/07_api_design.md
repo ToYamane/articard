@@ -90,18 +90,18 @@ interface ErrorResponse {
 |--------|----------|------|
 | GET | /api/stats | コレクション統計 |
 
-### アドベンチャーモード
+### チャレンジモード
 
 | Method | Endpoint | 説明 |
 |--------|----------|------|
-| GET | /api/adventure/scenarios | シナリオ一覧 |
-| POST | /api/adventure/sessions | セッション作成 |
-| GET | /api/adventure/sessions | セッション一覧 |
-| GET | /api/adventure/sessions/:id | セッション詳細 |
-| DELETE | /api/adventure/sessions/:id | セッション中断 |
-| POST | /api/adventure/sessions/:id/deck | デッキ設定 |
-| GET | /api/adventure/sessions/:id/challenge | 現在のチャレンジ取得 |
-| POST | /api/adventure/sessions/:id/submit | カード提出・評価 |
+| GET | /api/challenge/scenarios | シナリオ一覧 |
+| POST | /api/challenge/sessions | セッション作成 |
+| GET | /api/challenge/sessions | セッション一覧 |
+| GET | /api/challenge/sessions/:id | セッション詳細 |
+| DELETE | /api/challenge/sessions/:id | セッション中断 |
+| POST | /api/challenge/sessions/:id/deck | デッキ設定 |
+| GET | /api/challenge/sessions/:id/challenge | 現在のチャレンジ取得 |
+| POST | /api/challenge/sessions/:id/submit | カード提出・評価 |
 
 ---
 
@@ -655,9 +655,9 @@ export async function POST(req: NextRequest) {
 
 ---
 
-## 7.8 アドベンチャーモード API
+## 7.8 チャレンジモード API
 
-### GET /api/adventure/scenarios
+### GET /api/challenge/scenarios
 
 利用可能なシナリオ一覧を取得。
 
@@ -682,9 +682,9 @@ export async function POST(req: NextRequest) {
 
 ---
 
-### POST /api/adventure/sessions
+### POST /api/challenge/sessions
 
-新しいアドベンチャーセッションを作成。
+新しいチャレンジセッションを作成。
 
 **Request:**
 ```typescript
@@ -719,7 +719,7 @@ export async function POST(req: NextRequest) {
 
 ---
 
-### GET /api/adventure/sessions
+### GET /api/challenge/sessions
 
 自分のセッション一覧を取得。
 
@@ -751,7 +751,7 @@ export async function POST(req: NextRequest) {
 
 ---
 
-### GET /api/adventure/sessions/:id
+### GET /api/challenge/sessions/:id
 
 セッション詳細を取得（デッキ、フェーズ結果含む）。
 
@@ -804,7 +804,7 @@ export async function POST(req: NextRequest) {
 
 ---
 
-### DELETE /api/adventure/sessions/:id
+### DELETE /api/challenge/sessions/:id
 
 セッションを中断。
 
@@ -820,7 +820,7 @@ export async function POST(req: NextRequest) {
 
 ---
 
-### POST /api/adventure/sessions/:id/deck
+### POST /api/challenge/sessions/:id/deck
 
 デッキを設定してゲームを開始。
 
@@ -855,7 +855,7 @@ export async function POST(req: NextRequest) {
 
 ---
 
-### GET /api/adventure/sessions/:id/challenge
+### GET /api/challenge/sessions/:id/challenge
 
 現在のフェーズのチャレンジを取得（AI生成）。
 
@@ -898,7 +898,7 @@ export async function POST(req: NextRequest) {
 
 ---
 
-### POST /api/adventure/sessions/:id/submit
+### POST /api/challenge/sessions/:id/submit
 
 カードを提出して評価を受ける。
 
