@@ -14,3 +14,8 @@ export {
   generateFlavorText,
   type FlavorTextInput,
 } from './flavor-text';
+export {
+  generateThemes,
+  type GeneratedTheme,
+  type ThemeGenerationResult,
+} from './theme-generation';

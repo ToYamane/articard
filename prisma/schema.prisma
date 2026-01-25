@@ -53,6 +53,7 @@ model Card {
   userId             String   @map("user_id") @db.VarChar(128)
   articleId          String   @map("article_id") @db.Uuid
   keyword            String   @db.VarChar(50)
+  cardNumber         Int?     @map("card_number")
   rarity             String   @db.VarChar(20)
   flavorText         String   @map("flavor_text") @db.VarChar(100)
   contextCategory    String   @map("context_category") @db.VarChar(30)
@@ -67,6 +68,7 @@ model Card {
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
 
+  @@unique([keyword, cardNumber], name: "keyword_cardNumber_unique")
   @@index([userId])
   @@index([articleId])
   @@index([rarity])
@@ -92,4 +94,17 @@ model KnowledgeTransaction {
   @@index([createdAt])
   @@index([transactionType])
   @@map("knowledge_transactions")
+}
+
+model SuggestedTheme {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  theme      String   @db.VarChar(30)
+  category   String?  @db.VarChar(30)
+  isActive   Boolean  @default(true) @map("is_active")
+  usageCount Int      @default(0) @map("usage_count")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([isActive])
+  @@index([category])
+  @@map("suggested_themes")
 }

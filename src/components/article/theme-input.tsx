@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Button, Input, ToggleSwitch } from '@/components/ui';
+import { ThemeSuggestions } from './theme-suggestions';
 import { themeSchema } from '@/lib/validations/article';
 
 interface ThemeInputProps {
@@ -25,6 +26,11 @@ export function ThemeInput({
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setTheme(value);
+    setError('');
+  };
+
+  const handleSelectSuggestedTheme = (selectedTheme: string) => {
+    setTheme(selectedTheme);
     setError('');
   };
 
@@ -60,6 +66,11 @@ export function ThemeInput({
       <p className="text-xs text-gray-500 dark:text-gray-400">
         例: 「万有引力の発見」「恐竜の絶滅」「光合成のしくみ」
       </p>
+
+      <ThemeSuggestions
+        onSelectTheme={handleSelectSuggestedTheme}
+        disabled={disabled || isLoading}
+      />
 
       {/* カード同時生成トグル */}
       {onAutoCardToggle && (
