@@ -24,6 +24,7 @@ model User {
   articles              Article[]
   cards                 Card[]
   knowledgeTransactions KnowledgeTransaction[]
+  adventureSessions     AdventureSession[]
 
   @@index([createdAt])
   @@index([isPremium])
@@ -65,8 +66,9 @@ model Card {
   fluxPrompt         String   @map("flux_prompt") @db.Text
   createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz
 
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  user                   User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  article                Article                @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  adventureSessionCards  AdventureSessionCard[]
 
   @@unique([keyword, cardNumber], name: "keyword_cardNumber_unique")
   @@index([userId])
@@ -107,4 +109,58 @@ model SuggestedTheme {
   @@index([isActive])
   @@index([category])
   @@map("suggested_themes")
+}
+
+// Adventure Mode - セッション（ゲームプレイ）
+model AdventureSession {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId       String    @map("user_id") @db.VarChar(128)
+  scenarioId   String    @map("scenario_id") @db.VarChar(50)
+  status       String    @db.VarChar(20) // "deck_building" | "in_progress" | "completed" | "abandoned"
+  currentPhase Int       @default(0) @map("current_phase")
+  totalScore   Int       @default(0) @map("total_score")
+  startedAt    DateTime  @default(now()) @map("started_at") @db.Timestamptz
+  completedAt  DateTime? @map("completed_at") @db.Timestamptz
+
+  user      User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deckCards AdventureSessionCard[]
+  phases    AdventureSessionPhase[]
+
+  @@index([userId])
+  @@index([status])
+  @@map("adventure_sessions")
+}
+
+// Adventure Mode - デッキ内カード
+model AdventureSessionCard {
+  id          String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sessionId   String  @map("session_id") @db.Uuid
+  cardId      String  @map("card_id") @db.Uuid
+  isUsed      Boolean @default(false) @map("is_used")
+  usedInPhase Int?    @map("used_in_phase")
+
+  session AdventureSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  card    Card             @relation(fields: [cardId], references: [id])
+
+  @@unique([sessionId, cardId])
+  @@map("adventure_session_cards")
+}
+
+// Adventure Mode - フェーズ結果
+model AdventureSessionPhase {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sessionId       String   @map("session_id") @db.Uuid
+  phaseNumber     Int      @map("phase_number")
+  challenge       String   @db.Text
+  selectedCardIds Json     @map("selected_card_ids")
+  fitScore        Int      @map("fit_score")
+  bonusScore      Int      @default(0) @map("bonus_score")
+  totalScore      Int      @map("total_score")
+  aiCommentary    String   @map("ai_commentary") @db.Text
+  completedAt     DateTime @default(now()) @map("completed_at") @db.Timestamptz
+
+  session AdventureSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, phaseNumber])
+  @@map("adventure_session_phases")
 }

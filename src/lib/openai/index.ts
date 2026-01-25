@@ -19,3 +19,8 @@ export {
   type GeneratedTheme,
   type ThemeGenerationResult,
 } from './theme-generation';
+export {
+  generatePhaseChallenge,
+  evaluateCardSelection,
+  generateAdventureSummary,
+} from './adventure-ai';

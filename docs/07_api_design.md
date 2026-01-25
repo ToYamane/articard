@@ -90,6 +90,19 @@ interface ErrorResponse {
 |--------|----------|------|
 | GET | /api/stats | コレクション統計 |
 
+### アドベンチャーモード
+
+| Method | Endpoint | 説明 |
+|--------|----------|------|
+| GET | /api/adventure/scenarios | シナリオ一覧 |
+| POST | /api/adventure/sessions | セッション作成 |
+| GET | /api/adventure/sessions | セッション一覧 |
+| GET | /api/adventure/sessions/:id | セッション詳細 |
+| DELETE | /api/adventure/sessions/:id | セッション中断 |
+| POST | /api/adventure/sessions/:id/deck | デッキ設定 |
+| GET | /api/adventure/sessions/:id/challenge | 現在のチャレンジ取得 |
+| POST | /api/adventure/sessions/:id/submit | カード提出・評価 |
+
 ---
 
 ## 7.4 エンドポイント詳細
@@ -636,6 +649,291 @@ export async function POST(req: NextRequest) {
       { success: false, error: { code: 'INTERNAL_ERROR', message: '記事の生成に失敗しました' } },
       { status: 500 }
     );
+  }
+}
+```
+
+---
+
+## 7.8 アドベンチャーモード API
+
+### GET /api/adventure/scenarios
+
+利用可能なシナリオ一覧を取得。
+
+**Response:**
+```typescript
+{
+  success: true,
+  data: [
+    {
+      id: string;
+      title: string;
+      description: string;
+      icon: string;
+      difficulty: "easy" | "normal" | "hard";
+      totalPhases: number;
+      deckSize: number;
+      isAvailable: boolean;
+    }
+  ]
+}
+```
+
+---
+
+### POST /api/adventure/sessions
+
+新しいアドベンチャーセッションを作成。
+
+**Request:**
+```typescript
+{
+  scenarioId: string;
+}
+```
+
+**Response:**
+```typescript
+{
+  success: true,
+  data: {
+    id: string;
+    scenarioId: string;
+    status: "deck_building";
+  }
+}
+```
+
+**エラー:**
+```typescript
+// 進行中セッションがある場合
+{
+  success: false,
+  error: {
+    code: "VALIDATION_ERROR",
+    message: "進行中のセッションがあります。完了または中断してから新しいセッションを開始してください"
+  }
+}
+```
+
+---
+
+### GET /api/adventure/sessions
+
+自分のセッション一覧を取得。
+
+**Query Parameters:**
+| パラメータ | 型 | デフォルト | 説明 |
+|-----------|-----|-----------|------|
+| status | string | - | ステータスフィルター |
+| limit | number | 10 | 取得件数（最大50） |
+
+**Response:**
+```typescript
+{
+  success: true,
+  data: {
+    sessions: [
+      {
+        id: string;
+        scenarioId: string;
+        status: "deck_building" | "in_progress" | "completed" | "abandoned";
+        currentPhase: number;
+        totalScore: number;
+        startedAt: string;
+        completedAt: string | null;
+      }
+    ]
+  }
+}
+```
+
+---
+
+### GET /api/adventure/sessions/:id
+
+セッション詳細を取得（デッキ、フェーズ結果含む）。
+
+**Response:**
+```typescript
+{
+  success: true,
+  data: {
+    id: string;
+    userId: string;
+    scenarioId: string;
+    status: string;
+    currentPhase: number;
+    totalScore: number;
+    startedAt: string;
+    completedAt: string | null;
+    deckCards: [
+      {
+        id: string;
+        cardId: string;
+        isUsed: boolean;
+        usedInPhase: number | null;
+        card: {
+          id: string;
+          keyword: string;
+          rarity: string;
+          thumbnailUrl: string;
+          cardImageUrl: string;
+          flavorText: string;
+          contextDescription: string;
+        }
+      }
+    ];
+    phases: [
+      {
+        id: string;
+        phaseNumber: number;
+        challenge: string;
+        selectedCardIds: string[];
+        fitScore: number;
+        bonusScore: number;
+        totalScore: number;
+        aiCommentary: string;
+        completedAt: string;
+      }
+    ]
+  }
+}
+```
+
+---
+
+### DELETE /api/adventure/sessions/:id
+
+セッションを中断。
+
+**Response:**
+```typescript
+{
+  success: true,
+  data: {
+    message: "セッションを中断しました"
+  }
+}
+```
+
+---
+
+### POST /api/adventure/sessions/:id/deck
+
+デッキを設定してゲームを開始。
+
+**Request:**
+```typescript
+{
+  cardIds: string[];  // 6枚
+}
+```
+
+**Response:**
+```typescript
+{
+  success: true,
+  data: {
+    message: "デッキを設定しました"
+  }
+}
+```
+
+**エラー:**
+```typescript
+// カード数が不正
+{
+  success: false,
+  error: {
+    code: "VALIDATION_ERROR",
+    message: "デッキには6枚のカードが必要です"
+  }
+}
+```
+
+---
+
+### GET /api/adventure/sessions/:id/challenge
+
+現在のフェーズのチャレンジを取得（AI生成）。
+
+**Response:**
+```typescript
+{
+  success: true,
+  data: {
+    challenge: {
+      phaseNumber: number;
+      title: string;
+      situation: string;
+      challenge: string;
+      hint: string;
+    };
+    phaseDefinition: {
+      phaseNumber: number;
+      title: string;
+      description: string;
+      type: "single" | "combo";
+      cardCount: number;
+      consumesCard: boolean;
+      baseScore: number;
+    };
+    availableCards: [
+      {
+        id: string;
+        keyword: string;
+        rarity: string;
+        thumbnailUrl: string;
+        cardImageUrl: string;
+        flavorText: string;
+        contextDescription: string;
+      }
+    ];
+    totalPhases: number;
+  }
+}
+```
+
+---
+
+### POST /api/adventure/sessions/:id/submit
+
+カードを提出して評価を受ける。
+
+**Request:**
+```typescript
+{
+  cardIds: string[];  // 1-2枚（フェーズによる）
+}
+```
+
+**Response:**
+```typescript
+{
+  success: true,
+  data: {
+    phaseNumber: number;
+    challenge: string;
+    selectedCards: [
+      {
+        id: string;
+        keyword: string;
+        rarity: string;
+      }
+    ];
+    evaluation: {
+      fitScore: number;          // 0-100
+      bonusScore: number;
+      totalScore: number;
+      connectionExplanation: string;
+      narrativeDescription: string;
+      humorComment: string;
+    };
+    sessionTotalScore: number;
+    isComplete: boolean;
+    summary?: string;  // 完了時のみ
   }
 }
 ```

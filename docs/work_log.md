@@ -17,6 +17,7 @@
 | Phase 1-G: 削除機能・UI仕上げ | ✅ 完了 | 2026-01-23 |
 | Phase 1-H: テスト・デプロイ準備 | ✅ 完了 | 2026-01-23 |
 | **レアリティ別画像生成モデル** | ✅ 完了 | 2026-01-24 |
+| **アドベンチャーモード** | ✅ 完了 | 2026-01-25 |
 
 ---
 
@@ -1227,6 +1228,144 @@ npm run lint: ✅ 警告なし
 
 ---
 
+---
+
+## アドベンチャーモード [完了]
+
+**実施日**: 2026-01-25
+
+**詳細ドキュメント**: [12_adventure_mode.md](./12_adventure_mode.md)
+
+### 概要
+
+生成したカードを使ってシナリオベースの冒険に挑戦するゲームモード。
+AIがチャレンジを生成し、カードの適合度を評価して面白おかしく実況する。
+
+### 実装内容
+
+#### 1. データベーススキーマ
+
+**新規テーブル:**
+| テーブル | 説明 |
+|----------|------|
+| `adventure_sessions` | ゲームセッション管理 |
+| `adventure_session_cards` | デッキ内カード |
+| `adventure_session_phases` | フェーズ結果 |
+
+**既存テーブル変更:**
+- `User` に `adventureSessions` リレーション追加
+- `Card` に `adventureSessionCards` リレーション追加
+
+#### 2. バックエンド
+
+| ファイル | 説明 |
+|----------|------|
+| `src/types/adventure.ts` | 型定義（セッション、フェーズ、スコアリング） |
+| `src/lib/adventure/scenarios.ts` | シナリオ定義（宇宙探査ミッション） |
+| `src/lib/adventure/index.ts` | エクスポート |
+| `src/lib/services/adventure-service.ts` | ビジネスロジック |
+| `src/lib/openai/adventure-ai.ts` | AI評価・チャレンジ生成 |
+| `src/lib/validations/adventure.ts` | Zodスキーマ |
+
+#### 3. API Routes
+
+| エンドポイント | メソッド | 説明 |
+|---------------|---------|------|
+| `/api/adventure/scenarios` | GET | シナリオ一覧 |
+| `/api/adventure/sessions` | POST | セッション作成 |
+| `/api/adventure/sessions` | GET | セッション一覧 |
+| `/api/adventure/sessions/[id]` | GET | セッション詳細 |
+| `/api/adventure/sessions/[id]` | DELETE | セッション中断 |
+| `/api/adventure/sessions/[id]/deck` | POST | デッキ設定 |
+| `/api/adventure/sessions/[id]/challenge` | GET | チャレンジ取得 |
+| `/api/adventure/sessions/[id]/submit` | POST | カード提出 |
+
+#### 4. フロントエンド
+
+**ページ:**
+| ファイル | 説明 |
+|----------|------|
+| `src/app/(main)/adventure/page.tsx` | シナリオ選択 |
+| `src/app/(main)/adventure/[sessionId]/page.tsx` | ゲームプレイ |
+
+**コンポーネント:**
+| ファイル | 説明 |
+|----------|------|
+| `scenario-card.tsx` | シナリオカード表示 |
+| `deck-builder.tsx` | デッキ編成UI |
+| `phase-display.tsx` | フェーズ進行表示 |
+| `challenge-card.tsx` | チャレンジ表示 |
+| `card-selector.tsx` | カード選択UI |
+| `result-display.tsx` | 結果&AI実況 |
+| `adventure-complete.tsx` | 完了画面 |
+
+#### 5. ナビゲーション
+
+- メインレイアウトに「アドベンチャー」リンク追加
+
+### 作成ファイル一覧
+
+```
+prisma/schema.prisma                    # スキーマ変更
+
+src/types/adventure.ts                  # 新規
+
+src/lib/adventure/
+├── scenarios.ts                        # 新規
+└── index.ts                            # 新規
+
+src/lib/openai/adventure-ai.ts          # 新規
+src/lib/openai/index.ts                 # 更新
+
+src/lib/services/adventure-service.ts   # 新規
+
+src/lib/validations/adventure.ts        # 新規
+
+src/app/api/adventure/
+├── scenarios/route.ts                  # 新規
+└── sessions/
+    ├── route.ts                        # 新規
+    └── [id]/
+        ├── route.ts                    # 新規
+        ├── deck/route.ts               # 新規
+        ├── challenge/route.ts          # 新規
+        └── submit/route.ts             # 新規
+
+src/app/(main)/adventure/
+├── page.tsx                            # 新規
+└── [sessionId]/page.tsx                # 新規
+
+src/components/adventure/
+├── scenario-card.tsx                   # 新規
+├── deck-builder.tsx                    # 新規
+├── phase-display.tsx                   # 新規
+├── challenge-card.tsx                  # 新規
+├── card-selector.tsx                   # 新規
+├── result-display.tsx                  # 新規
+├── adventure-complete.tsx              # 新規
+└── index.ts                            # 新規
+
+src/app/(main)/layout.tsx               # 更新（ナビ追加）
+```
+
+### 検証方法
+
+```bash
+# 1. スキーマ適用
+npx prisma generate
+npm run db:push
+
+# 2. 開発サーバー起動
+npm run dev
+
+# 3. 動作確認
+# - シナリオ選択→デッキ編成→全5フェーズをプレイ
+# - AI実況が適切に生成されることを確認
+# - スコア計算が正しいことを確認
+```
+
+---
+
 ## 変更履歴
 
 | 日付 | 変更内容 |
@@ -1240,3 +1379,4 @@ npm run lint: ✅ 警告なし
 | 2026-01-23 | Phase 1-G 完了 |
 | 2026-01-23 | Phase 1-H 完了 - MVP完成 |
 | 2026-01-24 | レアリティ別画像生成モデル機能追加 |
+| 2026-01-25 | アドベンチャーモード機能追加 |
