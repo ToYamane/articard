@@ -14,7 +14,7 @@ Output format (JSON):
   "image_details": "Visual details - colors, textures, lighting hints (15-25 words, English)",
   "uniqueness_score": 1-10,
   "emotional_tone": "epic" | "mysterious" | "scientific" | "warm" | "dramatic" | "neutral",
-  "context_description_ja": "日本語での文脈説明（カード表示用、1文、30文字以内）"
+  "context_description_ja": "日本語での文脈説明（カード表示用、記事内容を反映した説明、2-3文、120文字以内）"
 }
 
 Important:
