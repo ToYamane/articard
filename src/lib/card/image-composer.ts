@@ -17,6 +17,7 @@ const TITLE_HEIGHT = 60;
 export interface CardCompositionInput {
   illustrationBuffer: Buffer;
   keyword: string;
+  cardNumber: number;
   rarity: Rarity;
   flavorText: string;
   contextDescription: string;
@@ -95,6 +96,7 @@ function wrapText(text: string, maxCharsPerLine: number): string[] {
 async function createCardFront(
   illustrationBuffer: Buffer,
   keyword: string,
+  cardNumber: number,
   rarity: Rarity
 ): Promise<Buffer> {
   const color = getRarityColor(rarity);
@@ -134,7 +136,7 @@ async function createCardFront(
             font-size="24"
             font-weight="bold"
             fill="${color}"
-            text-anchor="middle">${escapeXml(keyword)}</text>
+            text-anchor="middle">${escapeXml(keyword)} #${cardNumber}</text>
     </svg>
   `;
 
@@ -214,6 +216,7 @@ async function createCardFront(
  */
 async function createCardBack(
   keyword: string,
+  cardNumber: number,
   rarity: Rarity,
   contextDescription: string,
   flavorText: string,
@@ -316,7 +319,7 @@ async function createCardBack(
             font-size="32"
             font-weight="bold"
             fill="${color}"
-            text-anchor="middle">${escapeXml(keyword)}</text>
+            text-anchor="middle">${escapeXml(keyword)} #${cardNumber}</text>
 
       <!-- レアリティ表示 -->
       <text x="${CARD_WIDTH / 2}" y="100"
@@ -376,12 +379,14 @@ export async function composeCardImage(
   const cardImageBuffer = await createCardFront(
     input.illustrationBuffer,
     input.keyword,
+    input.cardNumber,
     input.rarity
   );
 
   // 裏面を生成
   const cardBackImageBuffer = await createCardBack(
     input.keyword,
+    input.cardNumber,
     input.rarity,
     input.contextDescription,
     input.flavorText,

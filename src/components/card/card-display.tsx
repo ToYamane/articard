@@ -59,7 +59,12 @@ export function CardDisplay({ card, size = 'md', onClick, className }: CardDispl
         whileHover={{ opacity: 1 }}
         className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/80 via-black/40 to-transparent p-3"
       >
-        <h3 className="text-sm font-bold text-white">{card.keyword}</h3>
+        <h3 className="text-sm font-bold text-white">
+          {card.keyword}
+          {card.cardNumber && (
+            <span className="ml-1 text-xs font-normal text-gray-400">#{card.cardNumber}</span>
+          )}
+        </h3>
         <RarityBadge rarity={rarity} size="sm" className="mt-1 w-fit" />
       </motion.div>
     </motion.div>
@@ -88,6 +93,9 @@ export function CardDetailDisplay({ card, className }: CardDetailDisplayProps) {
       >
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
           {card.keyword}
+          {card.cardNumber && (
+            <span className="ml-2 text-lg font-normal text-gray-500">#{card.cardNumber}</span>
+          )}
         </h1>
         <RarityBadge rarity={rarity} size="lg" className="mt-2" />
       </motion.div>

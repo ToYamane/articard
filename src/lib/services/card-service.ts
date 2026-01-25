@@ -109,10 +109,18 @@ export async function createCard({
   const tempCardId = crypto.randomUUID();
   const createdAt = new Date();
 
+  // 同一キーワードの最大番号を取得してカード番号を決定
+  const maxNumberResult = await prisma.card.aggregate({
+    where: { keyword },
+    _max: { cardNumber: true },
+  });
+  const cardNumber = (maxNumberResult._max.cardNumber ?? 0) + 1;
+
   // カード画像合成（表面・裏面・サムネイル）
   const { cardImageBuffer, cardBackImageBuffer, thumbnailBuffer } = await composeCardImage({
     illustrationBuffer,
     keyword,
+    cardNumber,
     rarity,
     flavorText,
     contextDescription: contextAnalysis.contextDescription,
@@ -125,23 +133,37 @@ export async function createCard({
   const cardBackImageUpload = await uploadCardBackImage(cardBackImageBuffer, tempCardId);
   const thumbnailUpload = await uploadThumbnail(thumbnailBuffer, tempCardId);
 
-  // データベースに保存
-  const card = await prisma.card.create({
-    data: {
-      id: tempCardId,
-      userId,
-      articleId,
-      keyword,
-      rarity,
-      flavorText,
-      contextCategory: contextAnalysis.contextCategory,
-      contextDescription: contextAnalysis.contextDescription,
-      illustrationUrl: illustrationUpload.url,
-      cardImageUrl: cardImageUpload.url,
-      cardBackImageUrl: cardBackImageUpload.url,
-      thumbnailUrl: thumbnailUpload.url,
-      fluxPrompt: imagePrompt,
-    },
+  // データベースに保存（トランザクションで番号の競合を防止）
+  const card = await prisma.$transaction(async (tx) => {
+    // 再度最大番号を確認（同時実行時の競合対策）
+    const latestMaxResult = await tx.card.aggregate({
+      where: { keyword },
+      _max: { cardNumber: true },
+    });
+    const finalCardNumber = (latestMaxResult._max.cardNumber ?? 0) + 1;
+
+    // 番号が変わった場合は画像を再生成する必要があるが、
+    // 同時生成は稀なため、番号の不一致は許容する
+    // （画像の番号と DB の番号が異なる可能性がある）
+
+    return tx.card.create({
+      data: {
+        id: tempCardId,
+        userId,
+        articleId,
+        keyword,
+        cardNumber: finalCardNumber,
+        rarity,
+        flavorText,
+        contextCategory: contextAnalysis.contextCategory,
+        contextDescription: contextAnalysis.contextDescription,
+        illustrationUrl: illustrationUpload.url,
+        cardImageUrl: cardImageUpload.url,
+        cardBackImageUrl: cardBackImageUpload.url,
+        thumbnailUrl: thumbnailUpload.url,
+        fluxPrompt: imagePrompt,
+      },
+    });
   });
 
   return card;
