@@ -4,4 +4,4 @@ export { PhaseDisplay, PhaseTimeline } from './phase-display';
 export { ChallengeCard } from './challenge-card';
 export { CardSelector } from './card-selector';
 export { ResultDisplay } from './result-display';
-export { AdventureComplete } from './adventure-complete';
+export { ChallengeComplete } from './challenge-complete';

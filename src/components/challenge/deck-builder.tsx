@@ -226,7 +226,7 @@ export function DeckBuilder({
           size="lg"
           className="shadow-lg"
         >
-          {isComplete ? 'アドベンチャー開始' : `残り${deckSize - selectedCardIds.size}枚選択`}
+          {isComplete ? 'チャレンジ開始' : `残り${deckSize - selectedCardIds.size}枚選択`}
         </Button>
       </div>
     </div>

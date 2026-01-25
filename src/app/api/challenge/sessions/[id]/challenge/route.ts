@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth';
-import { sessionIdSchema } from '@/lib/validations/adventure';
-import { getCurrentPhaseChallenge } from '@/lib/services/adventure-service';
+import { sessionIdSchema } from '@/lib/validations/challenge';
+import { getCurrentPhaseChallenge } from '@/lib/services/challenge-service';
 import { handleApiError } from '@/lib/errors';
 import type { ApiResponse } from '@/types/api';
-import type { PhaseChallenge, PhaseDefinition } from '@/types/adventure';
+import type { PhaseChallenge, PhaseDefinition } from '@/types/challenge';
 
 interface RouteParams {
   params: Promise<{ id: string }>;

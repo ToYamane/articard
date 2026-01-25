@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth';
-import { getScenarioList } from '@/lib/adventure';
+import { getScenarioList } from '@/lib/challenge';
 import { handleApiError } from '@/lib/errors';
 import type { ApiResponse } from '@/types/api';
-import type { ScenarioListItem } from '@/types/adventure';
+import type { ScenarioListItem } from '@/types/challenge';
 
 // シナリオ一覧取得
 export async function GET(

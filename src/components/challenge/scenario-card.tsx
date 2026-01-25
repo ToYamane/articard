@@ -3,8 +3,8 @@
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui';
-import type { ScenarioListItem } from '@/types/adventure';
-import { DIFFICULTY_DISPLAY_NAMES } from '@/types/adventure';
+import type { ScenarioListItem } from '@/types/challenge';
+import { DIFFICULTY_DISPLAY_NAMES } from '@/types/challenge';
 
 interface ScenarioCardProps {
   scenario: ScenarioListItem;
@@ -62,6 +62,7 @@ export function ScenarioCard({
 
       {/* アクションボタン */}
       <Button
+        type="button"
         onClick={onSelect}
         disabled={!scenario.isAvailable || isLoading}
         isLoading={isLoading}

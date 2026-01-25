@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth';
-import { sessionIdSchema, submitCardsSchema } from '@/lib/validations/adventure';
-import { submitPhaseCards } from '@/lib/services/adventure-service';
+import { sessionIdSchema, setDeckSchema } from '@/lib/validations/challenge';
+import { setSessionDeck } from '@/lib/services/challenge-service';
 import { handleApiError } from '@/lib/errors';
 import type { ApiResponse } from '@/types/api';
 
@@ -9,32 +9,11 @@ interface RouteParams {
   params: Promise<{ id: string }>;
 }
 
-interface SubmitResult {
-  phaseNumber: number;
-  challenge: string;
-  selectedCards: Array<{
-    id: string;
-    keyword: string;
-    rarity: string;
-  }>;
-  evaluation: {
-    fitScore: number;
-    bonusScore: number;
-    totalScore: number;
-    connectionExplanation: string;
-    narrativeDescription: string;
-    humorComment: string;
-  };
-  sessionTotalScore: number;
-  isComplete: boolean;
-  summary?: string;
-}
-
-// カード提出
+// デッキ設定
 export async function POST(
   req: NextRequest,
   { params }: RouteParams
-): Promise<NextResponse<ApiResponse<SubmitResult>>> {
+): Promise<NextResponse<ApiResponse<{ message: string }>>> {
   try {
     const authUser = await verifyAuth(req);
     if (!authUser) {
@@ -67,7 +46,7 @@ export async function POST(
     }
 
     const body = await req.json();
-    const bodyValidation = submitCardsSchema.safeParse(body);
+    const bodyValidation = setDeckSchema.safeParse(body);
 
     if (!bodyValidation.success) {
       return NextResponse.json(
@@ -82,14 +61,14 @@ export async function POST(
       );
     }
 
-    const result = await submitPhaseCards(id, authUser.uid, bodyValidation.data.cardIds);
+    await setSessionDeck(id, authUser.uid, bodyValidation.data.cardIds);
 
     return NextResponse.json({
       success: true,
-      data: result,
+      data: { message: 'デッキを設定しました' },
     });
   } catch (error) {
-    console.error('Submit cards error:', error);
+    console.error('Set deck error:', error);
     return handleApiError(error);
   }
 }

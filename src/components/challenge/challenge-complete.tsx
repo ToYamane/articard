@@ -10,7 +10,7 @@ interface PhaseResult {
   totalScore: number;
 }
 
-interface AdventureCompleteProps {
+interface ChallengeCompleteProps {
   scenarioTitle: string;
   totalScore: number;
   phaseResults: PhaseResult[];
@@ -32,7 +32,7 @@ function getScoreRank(score: number): {
   return { rank: 'D', emoji: '🌱', color: 'text-gray-500' };
 }
 
-export function AdventureComplete({
+export function ChallengeComplete({
   scenarioTitle,
   totalScore,
   phaseResults,
@@ -40,7 +40,7 @@ export function AdventureComplete({
   onPlayAgain,
   onBackToScenarios,
   className,
-}: AdventureCompleteProps) {
+}: ChallengeCompleteProps) {
   const { rank, emoji, color } = getScoreRank(totalScore);
 
   return (
@@ -57,7 +57,7 @@ export function AdventureComplete({
       >
         <div className="mb-4 text-6xl">{emoji}</div>
         <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-          アドベンチャー完了!
+          チャレンジ完了!
         </h1>
         <p className="mt-2 text-gray-600 dark:text-gray-400">{scenarioTitle}</p>
       </motion.div>
@@ -161,10 +161,10 @@ export function AdventureComplete({
         transition={{ delay: 1 }}
         className="flex flex-col items-center gap-3 pt-4"
       >
-        <Button onClick={onPlayAgain} size="lg">
+        <Button type="button" onClick={onPlayAgain} size="lg">
           もう一度挑戦
         </Button>
-        <Button onClick={onBackToScenarios} variant="ghost">
+        <Button type="button" onClick={onBackToScenarios} variant="ghost">
           シナリオ選択に戻る
         </Button>
       </motion.div>

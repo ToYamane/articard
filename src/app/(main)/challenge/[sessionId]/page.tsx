@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   DeckBuilder,
   PhaseDisplay,
@@ -10,18 +10,18 @@ import {
   ChallengeCard,
   CardSelector,
   ResultDisplay,
-  AdventureComplete,
-} from '@/components/adventure';
+  ChallengeComplete,
+} from '@/components/challenge';
 import { LoadingSpinner, Button } from '@/components/ui';
 import { useToast } from '@/hooks/use-toast';
 import { getIdToken } from '@/lib/firebase/client';
-import { getScenarioById } from '@/lib/adventure';
+import { getScenarioById } from '@/lib/challenge';
 import type { Card } from '@prisma/client';
 import type {
-  AdventureSessionWithDetails,
+  ChallengeSessionWithDetails,
   PhaseChallenge,
   PhaseDefinition,
-} from '@/types/adventure';
+} from '@/types/challenge';
 
 type GameState =
   | 'loading'
@@ -50,14 +50,14 @@ interface SubmitResult {
   summary?: string;
 }
 
-export default function AdventureGamePage() {
+export default function ChallengeGamePage() {
   const router = useRouter();
   const params = useParams();
   const sessionId = params.sessionId as string;
   const { addToast } = useToast();
 
   const [gameState, setGameState] = useState<GameState>('loading');
-  const [session, setSession] = useState<AdventureSessionWithDetails | null>(null);
+  const [session, setSession] = useState<ChallengeSessionWithDetails | null>(null);
   const [userCards, setUserCards] = useState<Card[]>([]);
   const [challenge, setChallenge] = useState<PhaseChallenge | null>(null);
   const [phaseDefinition, setPhaseDefinition] = useState<PhaseDefinition | null>(null);
@@ -79,7 +79,7 @@ export default function AdventureGamePage() {
       const token = await getIdToken();
       if (!token) throw new Error('認証トークンの取得に失敗しました');
 
-      const response = await fetch(`/api/adventure/sessions/${sessionId}`, {
+      const response = await fetch(`/api/challenge/sessions/${sessionId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -90,7 +90,7 @@ export default function AdventureGamePage() {
       }
 
       setSession(data.data);
-      return data.data as AdventureSessionWithDetails;
+      return data.data as ChallengeSessionWithDetails;
     } catch (err) {
       throw err;
     }
@@ -125,7 +125,7 @@ export default function AdventureGamePage() {
       if (!token) throw new Error('認証トークンの取得に失敗しました');
 
       const response = await fetch(
-        `/api/adventure/sessions/${sessionId}/challenge`,
+        `/api/challenge/sessions/${sessionId}/challenge`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -161,7 +161,7 @@ export default function AdventureGamePage() {
           await fetchChallenge();
         } else {
           // abandoned
-          router.push('/adventure');
+          router.push('/challenge');
         }
       } catch (err) {
         console.error('Init error:', err);
@@ -181,7 +181,7 @@ export default function AdventureGamePage() {
         if (!token) throw new Error('認証トークンの取得に失敗しました');
 
         const response = await fetch(
-          `/api/adventure/sessions/${sessionId}/deck`,
+          `/api/challenge/sessions/${sessionId}/deck`,
           {
             method: 'POST',
             headers: {
@@ -222,7 +222,7 @@ export default function AdventureGamePage() {
         if (!token) throw new Error('認証トークンの取得に失敗しました');
 
         const response = await fetch(
-          `/api/adventure/sessions/${sessionId}/submit`,
+          `/api/challenge/sessions/${sessionId}/submit`,
           {
             method: 'POST',
             headers: {
@@ -272,7 +272,7 @@ export default function AdventureGamePage() {
       if (!token) throw new Error('認証トークンの取得に失敗しました');
 
       // 新しいセッションを作成
-      const response = await fetch('/api/adventure/sessions', {
+      const response = await fetch('/api/challenge/sessions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -287,7 +287,7 @@ export default function AdventureGamePage() {
         throw new Error(data.error?.message || 'セッションの作成に失敗しました');
       }
 
-      router.push(`/adventure/${data.data.id}`);
+      router.push(`/challenge/${data.data.id}`);
     } catch (err) {
       addToast(
         err instanceof Error ? err.message : 'エラーが発生しました',
@@ -298,7 +298,7 @@ export default function AdventureGamePage() {
 
   // シナリオ選択に戻る
   const handleBackToScenarios = useCallback(() => {
-    router.push('/adventure');
+    router.push('/challenge');
   }, [router]);
 
   // シナリオ情報
@@ -318,7 +318,7 @@ export default function AdventureGamePage() {
       <div className="flex min-h-[60vh] flex-col items-center justify-center">
         <div className="mb-4 text-4xl">😢</div>
         <p className="mb-4 text-gray-600 dark:text-gray-400">{error}</p>
-        <Button onClick={handleBackToScenarios}>シナリオ選択に戻る</Button>
+        <Button type="button" onClick={handleBackToScenarios}>シナリオ選択に戻る</Button>
       </div>
     );
   }
@@ -413,7 +413,7 @@ export default function AdventureGamePage() {
 
       {/* 完了画面 */}
       {gameState === 'completed' && session && scenario && (
-        <AdventureComplete
+        <ChallengeComplete
           scenarioTitle={scenario.title}
           totalScore={session.totalScore}
           phaseResults={session.phases.map((p) => ({

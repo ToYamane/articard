@@ -1,9 +1,9 @@
-// Adventure Mode types for Articard
+// Challenge Mode types for Articard
 
 import type { Rarity } from './database';
 
 // Session status
-export type AdventureSessionStatus =
+export type ChallengeSessionStatus =
   | 'deck_building'
   | 'in_progress'
   | 'completed'
@@ -76,11 +76,11 @@ export const SCORE_THRESHOLDS = {
 } as const;
 
 // Session with deck and phase results (for API responses)
-export interface AdventureSessionWithDetails {
+export interface ChallengeSessionWithDetails {
   id: string;
   userId: string;
   scenarioId: string;
-  status: AdventureSessionStatus;
+  status: ChallengeSessionStatus;
   currentPhase: number;
   totalScore: number;
   startedAt: Date;
@@ -136,7 +136,7 @@ export const DIFFICULTY_DISPLAY_NAMES: Record<
 };
 
 export const SESSION_STATUS_DISPLAY_NAMES: Record<
-  AdventureSessionStatus,
+  ChallengeSessionStatus,
   string
 > = {
   deck_building: 'デッキ編成中',

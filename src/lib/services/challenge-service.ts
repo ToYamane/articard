@@ -1,11 +1,11 @@
 import { prisma } from '@/lib/prisma';
-import { getScenarioById, getPhaseDefinition, isScenarioComplete } from '@/lib/adventure';
+import { getScenarioById, getPhaseDefinition, isScenarioComplete } from '@/lib/challenge';
 import {
   generatePhaseChallenge,
   evaluateCardSelection,
-  generateAdventureSummary,
+  generateChallengeSummary,
 } from '@/lib/openai';
-import type { AdventureSessionStatus, AdventureSessionWithDetails } from '@/types/adventure';
+import type { ChallengeSessionStatus, ChallengeSessionWithDetails } from '@/types/challenge';
 import type { Rarity } from '@/types/database';
 
 // Card info type for internal use
@@ -18,19 +18,19 @@ interface CardInfo {
 }
 
 /**
- * Create a new adventure session
+ * Create a new challenge session
  */
 export async function createSession(
   userId: string,
   scenarioId: string
-): Promise<{ id: string; scenarioId: string; status: AdventureSessionStatus }> {
+): Promise<{ id: string; scenarioId: string; status: ChallengeSessionStatus }> {
   const scenario = getScenarioById(scenarioId);
   if (!scenario) {
     throw new Error('シナリオが見つかりません');
   }
 
   // Check for existing in-progress session
-  const existingSession = await prisma.adventureSession.findFirst({
+  const existingSession = await prisma.challengeSession.findFirst({
     where: {
       userId,
       status: { in: ['deck_building', 'in_progress'] },
@@ -41,7 +41,7 @@ export async function createSession(
     throw new Error('進行中のセッションがあります。完了または中断してから新しいセッションを開始してください');
   }
 
-  const session = await prisma.adventureSession.create({
+  const session = await prisma.challengeSession.create({
     data: {
       userId,
       scenarioId,
@@ -54,7 +54,7 @@ export async function createSession(
   return {
     id: session.id,
     scenarioId: session.scenarioId,
-    status: session.status as AdventureSessionStatus,
+    status: session.status as ChallengeSessionStatus,
   };
 }
 
@@ -64,8 +64,8 @@ export async function createSession(
 export async function getSessionById(
   sessionId: string,
   userId: string
-): Promise<AdventureSessionWithDetails | null> {
-  const session = await prisma.adventureSession.findUnique({
+): Promise<ChallengeSessionWithDetails | null> {
+  const session = await prisma.challengeSession.findUnique({
     where: { id: sessionId },
     include: {
       deckCards: {
@@ -97,7 +97,7 @@ export async function getSessionById(
     id: session.id,
     userId: session.userId,
     scenarioId: session.scenarioId,
-    status: session.status as AdventureSessionStatus,
+    status: session.status as ChallengeSessionStatus,
     currentPhase: session.currentPhase,
     totalScore: session.totalScore,
     startedAt: session.startedAt,
@@ -128,10 +128,10 @@ export async function getSessionById(
  */
 export async function getUserSessions(
   userId: string,
-  status?: AdventureSessionStatus,
+  status?: ChallengeSessionStatus,
   limit = 10
 ) {
-  const sessions = await prisma.adventureSession.findMany({
+  const sessions = await prisma.challengeSession.findMany({
     where: {
       userId,
       ...(status && { status }),
@@ -151,7 +151,7 @@ export async function getUserSessions(
 
   return sessions.map((s) => ({
     ...s,
-    status: s.status as AdventureSessionStatus,
+    status: s.status as ChallengeSessionStatus,
   }));
 }
 
@@ -163,7 +163,7 @@ export async function setSessionDeck(
   userId: string,
   cardIds: string[]
 ): Promise<void> {
-  const session = await prisma.adventureSession.findUnique({
+  const session = await prisma.challengeSession.findUnique({
     where: { id: sessionId },
   });
 
@@ -205,12 +205,12 @@ export async function setSessionDeck(
   // Transaction: Clear existing deck and add new cards, then update status
   await prisma.$transaction(async (tx) => {
     // Remove existing deck cards
-    await tx.adventureSessionCard.deleteMany({
+    await tx.challengeSessionCard.deleteMany({
       where: { sessionId },
     });
 
     // Add new deck cards
-    await tx.adventureSessionCard.createMany({
+    await tx.challengeSessionCard.createMany({
       data: cardIds.map((cardId) => ({
         sessionId,
         cardId,
@@ -219,7 +219,7 @@ export async function setSessionDeck(
     });
 
     // Update session status to in_progress
-    await tx.adventureSession.update({
+    await tx.challengeSession.update({
       where: { id: sessionId },
       data: {
         status: 'in_progress',
@@ -236,7 +236,7 @@ export async function getCurrentPhaseChallenge(
   sessionId: string,
   userId: string
 ) {
-  const session = await prisma.adventureSession.findUnique({
+  const session = await prisma.challengeSession.findUnique({
     where: { id: sessionId },
     include: {
       deckCards: {
@@ -303,7 +303,7 @@ export async function submitPhaseCards(
   userId: string,
   cardIds: string[]
 ) {
-  const session = await prisma.adventureSession.findUnique({
+  const session = await prisma.challengeSession.findUnique({
     where: { id: sessionId },
     include: {
       deckCards: {
@@ -385,7 +385,7 @@ export async function submitPhaseCards(
   // Transaction: Save phase result and update session
   const result = await prisma.$transaction(async (tx) => {
     // Create phase result
-    const phaseResult = await tx.adventureSessionPhase.create({
+    const phaseResult = await tx.challengeSessionPhase.create({
       data: {
         sessionId,
         phaseNumber: currentPhase,
@@ -400,7 +400,7 @@ export async function submitPhaseCards(
 
     // Mark cards as used if phase consumes cards
     if (phaseDefinition.consumesCard) {
-      await tx.adventureSessionCard.updateMany({
+      await tx.challengeSessionCard.updateMany({
         where: {
           sessionId,
           cardId: { in: cardIds },
@@ -417,7 +417,7 @@ export async function submitPhaseCards(
     const isComplete = isScenarioComplete(session.scenarioId, nextPhase - 1);
     const newTotalScore = session.totalScore + phaseScore;
 
-    const updatedSession = await tx.adventureSession.update({
+    const updatedSession = await tx.challengeSession.update({
       where: { id: sessionId },
       data: {
         currentPhase: isComplete ? currentPhase : nextPhase,
@@ -438,7 +438,7 @@ export async function submitPhaseCards(
   // Generate summary if complete
   let summary: string | undefined;
   if (result.isComplete) {
-    const allPhases = await prisma.adventureSessionPhase.findMany({
+    const allPhases = await prisma.challengeSessionPhase.findMany({
       where: { sessionId },
       orderBy: { phaseNumber: 'asc' },
     });
@@ -456,7 +456,7 @@ export async function submitPhaseCards(
       };
     });
 
-    summary = await generateAdventureSummary(
+    summary = await generateChallengeSummary(
       scenario.title,
       result.newTotalScore,
       phaseResults
@@ -492,7 +492,7 @@ export async function abandonSession(
   sessionId: string,
   userId: string
 ): Promise<void> {
-  const session = await prisma.adventureSession.findUnique({
+  const session = await prisma.challengeSession.findUnique({
     where: { id: sessionId },
   });
 
@@ -504,7 +504,7 @@ export async function abandonSession(
     throw new Error('このセッションは既に終了しています');
   }
 
-  await prisma.adventureSession.update({
+  await prisma.challengeSession.update({
     where: { id: sessionId },
     data: {
       status: 'abandoned',

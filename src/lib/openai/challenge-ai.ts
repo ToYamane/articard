@@ -1,9 +1,9 @@
-// Adventure Mode AI - Challenge generation and card evaluation
+// Challenge Mode AI - Challenge generation and card evaluation
 
 import { getOpenAIClient } from './client';
-import type { PhaseDefinition, PhaseChallenge, CardEvaluation } from '@/types/adventure';
+import type { PhaseDefinition, PhaseChallenge, CardEvaluation } from '@/types/challenge';
 import type { Rarity } from '@/types/database';
-import { RARITY_BONUS, PERFECT_FIT_THRESHOLD, PERFECT_FIT_BONUS, MAX_SYNERGY_BONUS } from '@/types/adventure';
+import { RARITY_BONUS, PERFECT_FIT_THRESHOLD, PERFECT_FIT_BONUS, MAX_SYNERGY_BONUS } from '@/types/challenge';
 
 // Card info for AI evaluation
 interface CardInfo {
@@ -15,7 +15,7 @@ interface CardInfo {
 }
 
 // Generate challenge prompt
-const CHALLENGE_GENERATION_PROMPT = `You are a creative game master for an adventure game. Generate an exciting challenge based on the phase information.
+const CHALLENGE_GENERATION_PROMPT = `You are a creative game master for a challenge game. Generate an exciting challenge based on the phase information.
 
 Scenario: {scenarioTitle}
 Phase {phaseNumber}: {phaseTitle}
@@ -200,9 +200,9 @@ export async function evaluateCardSelection(
 }
 
 /**
- * Generate a final summary for completed adventure
+ * Generate a final summary for completed challenge
  */
-export async function generateAdventureSummary(
+export async function generateChallengeSummary(
   scenarioTitle: string,
   totalScore: number,
   phaseResults: Array<{
@@ -220,7 +220,7 @@ export async function generateAdventureSummary(
     )
     .join('\n');
 
-  const prompt = `You are a dramatic adventure game narrator. Write a fun summary of the player's adventure.
+  const prompt = `You are a dramatic challenge game narrator. Write a fun summary of the player's challenge.
 
 Scenario: ${scenarioTitle}
 Total Score: ${totalScore}
@@ -228,7 +228,7 @@ Phase Results:
 ${phasesSummary}
 
 Write a 3-4 sentence summary that:
-1. Dramatically recaps the adventure
+1. Dramatically recaps the challenge
 2. Highlights the most memorable card usage
 3. Comments on the total score (800+ excellent, 600-799 good, 400-599 decent, <400 needs practice)
 4. Ends with an encouraging or humorous note
@@ -244,7 +244,7 @@ Respond in Japanese. Be entertaining!`;
 
   const content = response.choices[0]?.message?.content;
   if (!content) {
-    return '素晴らしい冒険でした！また挑戦してください。';
+    return '素晴らしいチャレンジでした！また挑戦してください。';
   }
 
   return content.trim();

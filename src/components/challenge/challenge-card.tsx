@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import type { PhaseChallenge } from '@/types/adventure';
+import type { PhaseChallenge } from '@/types/challenge';
 
 interface ChallengeCardProps {
   challenge: PhaseChallenge;

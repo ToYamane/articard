@@ -1,3 +1,3 @@
-// Adventure Mode exports
+// Challenge Mode exports
 
 export * from './scenarios';

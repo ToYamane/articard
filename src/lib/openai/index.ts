@@ -22,5 +22,5 @@ export {
 export {
   generatePhaseChallenge,
   evaluateCardSelection,
-  generateAdventureSummary,
-} from './adventure-ai';
+  generateChallengeSummary,
+} from './challenge-ai';

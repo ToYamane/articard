@@ -3,13 +3,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { ScenarioCard } from '@/components/adventure';
+import { ScenarioCard } from '@/components/challenge';
 import { LoadingSpinner, Button } from '@/components/ui';
 import { useToast } from '@/hooks/use-toast';
 import { getIdToken } from '@/lib/firebase/client';
-import type { ScenarioListItem, AdventureSessionStatus } from '@/types/adventure';
+import type { ScenarioListItem, ChallengeSessionStatus } from '@/types/challenge';
 
-export default function AdventurePage() {
+export default function ChallengePage() {
   const router = useRouter();
   const { addToast } = useToast();
 
@@ -19,7 +19,7 @@ export default function AdventurePage() {
   const [existingSession, setExistingSession] = useState<{
     id: string;
     scenarioId: string;
-    status: AdventureSessionStatus;
+    status: ChallengeSessionStatus;
   } | null>(null);
 
   // シナリオ一覧と進行中セッションを取得
@@ -33,10 +33,10 @@ export default function AdventurePage() {
 
         // シナリオ一覧とセッション一覧を並列取得
         const [scenariosRes, sessionsRes] = await Promise.all([
-          fetch('/api/adventure/scenarios', {
+          fetch('/api/challenge/scenarios', {
             headers: { Authorization: `Bearer ${token}` },
           }),
-          fetch('/api/adventure/sessions?status=in_progress&limit=1', {
+          fetch('/api/challenge/sessions?status=in_progress&limit=1', {
             headers: { Authorization: `Bearer ${token}` },
           }),
         ]);
@@ -54,7 +54,7 @@ export default function AdventurePage() {
 
         // deck_buildingステータスのセッションもチェック
         const deckBuildingRes = await fetch(
-          '/api/adventure/sessions?status=deck_building&limit=1',
+          '/api/challenge/sessions?status=deck_building&limit=1',
           { headers: { Authorization: `Bearer ${token}` } }
         );
         const deckBuildingData = await deckBuildingRes.json();
@@ -87,7 +87,7 @@ export default function AdventurePage() {
           throw new Error('認証トークンの取得に失敗しました');
         }
 
-        const response = await fetch('/api/adventure/sessions', {
+        const response = await fetch('/api/challenge/sessions', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -102,7 +102,7 @@ export default function AdventurePage() {
           throw new Error(data.error?.message || 'セッションの作成に失敗しました');
         }
 
-        router.push(`/adventure/${data.data.id}`);
+        router.push(`/challenge/${data.data.id}`);
       } catch (error) {
         console.error('Create session error:', error);
         addToast(
@@ -118,7 +118,7 @@ export default function AdventurePage() {
   // 進行中セッションを続行
   const handleContinueSession = useCallback(() => {
     if (existingSession) {
-      router.push(`/adventure/${existingSession.id}`);
+      router.push(`/challenge/${existingSession.id}`);
     }
   }, [existingSession, router]);
 
@@ -132,7 +132,7 @@ export default function AdventurePage() {
         throw new Error('認証トークンの取得に失敗しました');
         }
 
-      const response = await fetch(`/api/adventure/sessions/${existingSession.id}`, {
+      const response = await fetch(`/api/challenge/sessions/${existingSession.id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -172,7 +172,7 @@ export default function AdventurePage() {
       {/* ヘッダー */}
       <div className="mb-8 text-center">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          アドベンチャーモード
+          チャレンジモード
         </h1>
         <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
           カードを使って冒険に挑戦しよう！
@@ -189,7 +189,7 @@ export default function AdventurePage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="font-medium text-blue-900 dark:text-blue-100">
-                進行中のアドベンチャーがあります
+                進行中のチャレンジがあります
               </p>
               <p className="text-sm text-blue-700 dark:text-blue-300">
                 {existingSession.status === 'deck_building'
@@ -198,10 +198,10 @@ export default function AdventurePage() {
               </p>
             </div>
             <div className="flex gap-2">
-              <Button onClick={handleContinueSession} size="sm">
+              <Button type="button" onClick={handleContinueSession} size="sm">
                 続ける
               </Button>
-              <Button onClick={handleAbandonSession} variant="ghost" size="sm">
+              <Button type="button" onClick={handleAbandonSession} variant="ghost" size="sm">
                 中断
               </Button>
             </div>

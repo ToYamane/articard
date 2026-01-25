@@ -14,10 +14,10 @@ export default function MainLayout({ children }: { children: ReactNode }) {
             </Link>
             <nav className="flex items-center gap-4">
               <Link
-                href="/adventure"
+                href="/challenge"
                 className="text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
               >
-                アドベンチャー
+                チャレンジ
               </Link>
               <Link
                 href="/articles"

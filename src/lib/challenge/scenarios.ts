@@ -1,6 +1,6 @@
-// Scenario definitions for Adventure Mode
+// Scenario definitions for Challenge Mode
 
-import type { ScenarioDefinition, ScenarioListItem } from '@/types/adventure';
+import type { ScenarioDefinition, ScenarioListItem } from '@/types/challenge';
 
 // Space Exploration scenario
 export const SPACE_EXPLORATION_SCENARIO: ScenarioDefinition = {

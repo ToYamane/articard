@@ -1,23 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth';
+import { sessionIdSchema } from '@/lib/validations/challenge';
 import {
-  createSessionSchema,
-  getSessionsQuerySchema,
-} from '@/lib/validations/adventure';
-import {
-  createSession,
-  getUserSessions,
-} from '@/lib/services/adventure-service';
+  getSessionById,
+  abandonSession,
+} from '@/lib/services/challenge-service';
 import { handleApiError } from '@/lib/errors';
 import type { ApiResponse } from '@/types/api';
-import type { AdventureSessionStatus } from '@/types/adventure';
+import type { ChallengeSessionWithDetails } from '@/types/challenge';
 
-// セッション作成
-export async function POST(req: NextRequest): Promise<NextResponse<ApiResponse<{
-  id: string;
-  scenarioId: string;
-  status: AdventureSessionStatus;
-}>>> {
+interface RouteParams {
+  params: Promise<{ id: string }>;
+}
+
+// セッション詳細取得
+export async function GET(
+  req: NextRequest,
+  { params }: RouteParams
+): Promise<NextResponse<ApiResponse<ChallengeSessionWithDetails>>> {
   try {
     const authUser = await verifyAuth(req);
     if (!authUser) {
@@ -33,8 +33,8 @@ export async function POST(req: NextRequest): Promise<NextResponse<ApiResponse<{
       );
     }
 
-    const body = await req.json();
-    const validationResult = createSessionSchema.safeParse(body);
+    const { id } = await params;
+    const validationResult = sessionIdSchema.safeParse({ id });
 
     if (!validationResult.success) {
       return NextResponse.json(
@@ -49,32 +49,36 @@ export async function POST(req: NextRequest): Promise<NextResponse<ApiResponse<{
       );
     }
 
-    const { scenarioId } = validationResult.data;
+    const session = await getSessionById(id, authUser.uid);
 
-    const session = await createSession(authUser.uid, scenarioId);
+    if (!session) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: 'NOT_FOUND',
+            message: 'セッションが見つかりません',
+          },
+        },
+        { status: 404 }
+      );
+    }
 
     return NextResponse.json({
       success: true,
       data: session,
     });
   } catch (error) {
-    console.error('Create session error:', error);
+    console.error('Get session error:', error);
     return handleApiError(error);
   }
 }
 
-// セッション一覧取得
-export async function GET(req: NextRequest): Promise<NextResponse<ApiResponse<{
-  sessions: Array<{
-    id: string;
-    scenarioId: string;
-    status: AdventureSessionStatus;
-    currentPhase: number;
-    totalScore: number;
-    startedAt: Date;
-    completedAt: Date | null;
-  }>;
-}>>> {
+// セッション中断
+export async function DELETE(
+  req: NextRequest,
+  { params }: RouteParams
+): Promise<NextResponse<ApiResponse<{ message: string }>>> {
   try {
     const authUser = await verifyAuth(req);
     if (!authUser) {
@@ -90,13 +94,8 @@ export async function GET(req: NextRequest): Promise<NextResponse<ApiResponse<{
       );
     }
 
-    const { searchParams } = new URL(req.url);
-    const queryParams = {
-      status: searchParams.get('status') || undefined,
-      limit: searchParams.get('limit') || undefined,
-    };
-
-    const validationResult = getSessionsQuerySchema.safeParse(queryParams);
+    const { id } = await params;
+    const validationResult = sessionIdSchema.safeParse({ id });
 
     if (!validationResult.success) {
       return NextResponse.json(
@@ -111,18 +110,14 @@ export async function GET(req: NextRequest): Promise<NextResponse<ApiResponse<{
       );
     }
 
-    const sessions = await getUserSessions(
-      authUser.uid,
-      validationResult.data.status,
-      validationResult.data.limit
-    );
+    await abandonSession(id, authUser.uid);
 
     return NextResponse.json({
       success: true,
-      data: { sessions },
+      data: { message: 'セッションを中断しました' },
     });
   } catch (error) {
-    console.error('Get sessions error:', error);
+    console.error('Abandon session error:', error);
     return handleApiError(error);
   }
 }
