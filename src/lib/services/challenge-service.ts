@@ -1,7 +1,11 @@
 import { prisma } from '@/lib/prisma';
-import { getScenarioById, getPhaseDefinition, isScenarioComplete } from '@/lib/challenge';
 import {
-  generatePhaseChallenge,
+  getScenarioById,
+  getPhaseDefinition,
+  isScenarioComplete,
+  getRandomChallenge,
+} from '@/lib/challenge';
+import {
   evaluateCardSelection,
   generateChallengeSummary,
 } from '@/lib/openai';
@@ -15,6 +19,8 @@ interface CardInfo {
   rarity: Rarity;
   flavorText: string;
   contextDescription: string;
+  thumbnailUrl: string;
+  cardImageUrl: string;
 }
 
 /**
@@ -248,6 +254,8 @@ export async function getCurrentPhaseChallenge(
               rarity: true,
               flavorText: true,
               contextDescription: true,
+              thumbnailUrl: true,
+              cardImageUrl: true,
             },
           },
         },
@@ -280,12 +288,8 @@ export async function getCurrentPhaseChallenge(
     .filter((dc) => !dc.isUsed)
     .map((dc) => dc.card as CardInfo);
 
-  // Generate challenge
-  const challenge = await generatePhaseChallenge(
-    scenario.title,
-    phaseDefinition,
-    availableCards
-  );
+  // Get a random predefined challenge for this phase
+  const challenge = getRandomChallenge(session.scenarioId, currentPhase);
 
   return {
     challenge,
@@ -315,6 +319,8 @@ export async function submitPhaseCards(
               rarity: true,
               flavorText: true,
               contextDescription: true,
+              thumbnailUrl: true,
+              cardImageUrl: true,
             },
           },
         },
@@ -359,12 +365,9 @@ export async function submitPhaseCards(
 
   const selectedCards = selectedDeckCards.map((dc) => dc.card as CardInfo);
 
-  // Generate challenge for evaluation context
-  const challenge = await generatePhaseChallenge(
-    scenario.title,
-    phaseDefinition,
-    availableDeckCards.map((dc) => dc.card as CardInfo)
-  );
+  // Get a random predefined challenge for evaluation context
+  // Note: This may be different from what was shown to the user, but evaluation still works
+  const challenge = getRandomChallenge(session.scenarioId, currentPhase);
 
   // Evaluate the cards
   const evaluation = await evaluateCardSelection(

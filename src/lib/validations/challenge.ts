@@ -11,11 +11,12 @@ export const sessionIdSchema = z.object({
 });
 
 // デッキ設定スキーマ
+// Note: 実際のデッキサイズはシナリオごとに異なるため、サービス層で検証
 export const setDeckSchema = z.object({
   cardIds: z
     .array(z.string().uuid('無効なカードIDです'))
     .min(1, '少なくとも1枚のカードが必要です')
-    .max(6, '最大6枚までです'),
+    .max(10, '最大10枚までです'),
 });
 
 // カード提出スキーマ

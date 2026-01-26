@@ -137,7 +137,7 @@ export default function ArticlePage() {
           onClick={() => router.push(`/articles/${id}/card`)}
           className="flex-1"
         >
-          カードを生成する
+          この記事でもう一枚生成する
         </Button>
         <Button
           onClick={() => setShowDeleteModal(true)}

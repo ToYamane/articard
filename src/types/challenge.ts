@@ -10,7 +10,7 @@ export type ChallengeSessionStatus =
   | 'abandoned';
 
 // Phase type determines card requirements
-export type PhaseType = 'single' | 'combo';
+export type PhaseType = 'single' | 'combo' | 'triple';
 
 // Phase definition in a scenario
 export interface PhaseDefinition {
@@ -57,16 +57,19 @@ export interface CardEvaluation {
 // Scoring constants
 export const RARITY_BONUS: Record<Rarity, number> = {
   common: 0,
-  rare: 10,
-  super_rare: 20,
-  legend: 30,
+  rare: 3,
+  super_rare: 5,
+  legend: 10,
 };
 
 export const PERFECT_FIT_THRESHOLD = 95;
-export const PERFECT_FIT_BONUS = 25;
+export const PERFECT_FIT_BONUS = 10;
 
 // Combo synergy bonus (when 2 cards work well together)
-export const MAX_SYNERGY_BONUS = 20;
+export const MAX_SYNERGY_BONUS = 10;
+
+// Triple synergy bonus (when 3 cards work well together)
+export const MAX_TRIPLE_SYNERGY_BONUS = 15;
 
 // Score thresholds for different commentary styles
 export const SCORE_THRESHOLDS = {

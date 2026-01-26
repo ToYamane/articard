@@ -62,9 +62,9 @@ export function CardSelector({
     : null;
 
   return (
-    <div className={cn('space-y-4', className)}>
+    <div className={cn('flex flex-col', className)}>
       {/* 選択状況 */}
-      <div className="text-center">
+      <div className="flex-shrink-0 pb-2 text-center">
         <p className="text-sm text-gray-600 dark:text-gray-400">
           カードを{requiredCount}枚選択してください
         </p>
@@ -86,8 +86,9 @@ export function CardSelector({
         </div>
       </div>
 
-      {/* カード一覧 */}
-      <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5">
+      {/* カード一覧 - スクロール可能 */}
+      <div className="min-h-0 flex-1 overflow-y-auto pb-2">
+        <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5">
         {availableCards.map((card) => {
           const isSelected = selectedCardIds.includes(card.id);
           const canSelect = isSelected || selectedCardIds.length < requiredCount;
@@ -149,46 +150,11 @@ export function CardSelector({
             </motion.button>
           );
         })}
+        </div>
       </div>
 
-      {/* ホバー中のカード詳細 */}
-      <AnimatePresence>
-        {hoveredCard && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 10 }}
-            className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800"
-          >
-            <div className="flex items-start gap-4">
-              <div className="relative h-24 w-16 overflow-hidden rounded-lg">
-                <Image
-                  src={hoveredCard.cardImageUrl}
-                  alt={hoveredCard.keyword}
-                  fill
-                  className="object-cover"
-                />
-              </div>
-              <div className="flex-1">
-                <h4 className="font-bold text-gray-900 dark:text-gray-100">
-                  {hoveredCard.keyword}
-                </h4>
-                <RarityBadge
-                  rarity={hoveredCard.rarity as Rarity}
-                  size="sm"
-                  className="mt-1"
-                />
-                <p className="mt-2 text-xs text-gray-600 dark:text-gray-400">
-                  {hoveredCard.flavorText}
-                </p>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* 送信ボタン */}
-      <div className="flex justify-center pt-4">
+      <div className="flex flex-shrink-0 justify-center pt-2">
         <Button
           onClick={handleSubmit}
           disabled={!isComplete || isSubmitting}

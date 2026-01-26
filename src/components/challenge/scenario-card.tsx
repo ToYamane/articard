@@ -5,9 +5,10 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui';
 import type { ScenarioListItem } from '@/types/challenge';
 import { DIFFICULTY_DISPLAY_NAMES } from '@/types/challenge';
+import { getScoreRank } from '@/lib/challenge';
 
 interface ScenarioCardProps {
-  scenario: ScenarioListItem;
+  scenario: ScenarioListItem & { highScore?: number | null };
   onSelect: () => void;
   isLoading?: boolean;
   className?: string;
@@ -59,6 +60,26 @@ export function ScenarioCard({
         <span>フェーズ: {scenario.totalPhases}</span>
         <span>デッキ: {scenario.deckSize}枚</span>
       </div>
+
+      {/* ハイスコア */}
+      {scenario.highScore !== undefined && scenario.highScore !== null && (
+        <div className="mb-4 rounded-lg bg-gradient-to-r from-amber-50 to-yellow-50 p-3 dark:from-amber-900/20 dark:to-yellow-900/20">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-amber-700 dark:text-amber-400">
+              ハイスコア
+            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-lg font-bold text-amber-600 dark:text-amber-300">
+                {scenario.highScore.toLocaleString()}
+              </span>
+              <span className={cn('text-lg', getScoreRank(scenario.highScore).color)}>
+                {getScoreRank(scenario.highScore).emoji}
+                {getScoreRank(scenario.highScore).rank}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* アクションボタン */}
       <Button

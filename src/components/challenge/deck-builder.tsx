@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -8,6 +8,14 @@ import { Button, LoadingSpinner } from '@/components/ui';
 import { RarityBadge } from '@/components/card';
 import type { Card } from '@prisma/client';
 import type { Rarity } from '@/types/database';
+
+const RARITY_OPTIONS: { value: Rarity | 'all'; label: string }[] = [
+  { value: 'all', label: '全て' },
+  { value: 'common', label: 'コモン' },
+  { value: 'rare', label: 'レア' },
+  { value: 'super_rare', label: 'Sレア' },
+  { value: 'legend', label: 'レジェンド' },
+];
 
 interface DeckBuilderProps {
   availableCards: Card[];
@@ -25,6 +33,23 @@ export function DeckBuilder({
   className,
 }: DeckBuilderProps) {
   const [selectedCardIds, setSelectedCardIds] = useState<Set<string>>(new Set());
+  const [searchQuery, setSearchQuery] = useState('');
+  const [rarityFilter, setRarityFilter] = useState<Rarity | 'all'>('all');
+
+  // フィルタリングされたカード一覧
+  const filteredCards = useMemo(() => {
+    return availableCards.filter((card) => {
+      // カード名検索
+      if (searchQuery && !card.keyword.toLowerCase().includes(searchQuery.toLowerCase())) {
+        return false;
+      }
+      // レアリティフィルター
+      if (rarityFilter !== 'all' && card.rarity !== rarityFilter) {
+        return false;
+      }
+      return true;
+    });
+  }, [availableCards, searchQuery, rarityFilter]);
 
   const toggleCard = useCallback(
     (cardId: string) => {
@@ -134,6 +159,59 @@ export function DeckBuilder({
         </div>
       </div>
 
+      {/* 検索・フィルター */}
+      <div className="space-y-3">
+        {/* カード名検索 */}
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="カード名で検索..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full rounded-lg border border-gray-300 bg-white px-4 py-2 pl-10 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+          />
+          <svg
+            className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            />
+          </svg>
+        </div>
+
+        {/* レアリティフィルター */}
+        <div className="flex flex-wrap gap-2">
+          {RARITY_OPTIONS.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => setRarityFilter(option.value)}
+              className={cn(
+                'rounded-full px-3 py-1 text-xs font-medium transition-colors',
+                rarityFilter === option.value
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+              )}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+
+        {/* フィルター結果数 */}
+        {(searchQuery || rarityFilter !== 'all') && (
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            {filteredCards.length}件のカードが見つかりました
+          </p>
+        )}
+      </div>
+
       {/* カード一覧 */}
       {availableCards.length === 0 ? (
         <div className="py-12 text-center">
@@ -146,7 +224,7 @@ export function DeckBuilder({
         </div>
       ) : (
         <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
-          {availableCards.map((card) => {
+          {filteredCards.map((card) => {
             const isSelected = selectedCardIds.has(card.id);
             const canSelect = isSelected || selectedCardIds.size < deckSize;
 

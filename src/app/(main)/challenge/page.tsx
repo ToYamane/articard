@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { ScenarioCard } from '@/components/challenge';
@@ -8,6 +8,17 @@ import { LoadingSpinner, Button } from '@/components/ui';
 import { useToast } from '@/hooks/use-toast';
 import { getIdToken } from '@/lib/firebase/client';
 import type { ScenarioListItem, ChallengeSessionStatus } from '@/types/challenge';
+import { DIFFICULTY_DISPLAY_NAMES } from '@/types/challenge';
+import { cn } from '@/lib/utils';
+
+type DifficultyFilter = 'all' | 'easy' | 'normal' | 'hard';
+
+const DIFFICULTY_FILTER_OPTIONS: { value: DifficultyFilter; label: string }[] = [
+  { value: 'all', label: '全て' },
+  { value: 'easy', label: '簡単' },
+  { value: 'normal', label: '普通' },
+  { value: 'hard', label: '難しい' },
+];
 
 export default function ChallengePage() {
   const router = useRouter();
@@ -16,11 +27,20 @@ export default function ChallengePage() {
   const [scenarios, setScenarios] = useState<ScenarioListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState<string | null>(null);
+  const [difficultyFilter, setDifficultyFilter] = useState<DifficultyFilter>('all');
   const [existingSession, setExistingSession] = useState<{
     id: string;
     scenarioId: string;
     status: ChallengeSessionStatus;
   } | null>(null);
+
+  // フィルタリングされたシナリオ一覧
+  const filteredScenarios = useMemo(() => {
+    if (difficultyFilter === 'all') {
+      return scenarios;
+    }
+    return scenarios.filter((scenario) => scenario.difficulty === difficultyFilter);
+  }, [scenarios, difficultyFilter]);
 
   // シナリオ一覧と進行中セッションを取得
   useEffect(() => {
@@ -179,6 +199,25 @@ export default function ChallengePage() {
         </p>
       </div>
 
+      {/* 難易度フィルター */}
+      <div className="mb-6 flex flex-wrap justify-center gap-2">
+        {DIFFICULTY_FILTER_OPTIONS.map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            onClick={() => setDifficultyFilter(option.value)}
+            className={cn(
+              'rounded-full px-4 py-2 text-sm font-medium transition-colors',
+              difficultyFilter === option.value
+                ? 'bg-blue-500 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+            )}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+
       {/* 進行中セッション通知 */}
       {existingSession && (
         <motion.div
@@ -211,7 +250,7 @@ export default function ChallengePage() {
 
       {/* シナリオ一覧 */}
       <div className="grid gap-6 md:grid-cols-2">
-        {scenarios.map((scenario, index) => (
+        {filteredScenarios.map((scenario, index) => (
           <motion.div
             key={scenario.id}
             initial={{ opacity: 0, y: 20 }}
@@ -234,6 +273,23 @@ export default function ChallengePage() {
           <p className="text-gray-500 dark:text-gray-400">
             利用可能なシナリオがありません
           </p>
+        </div>
+      )}
+
+      {/* フィルター結果が0件の場合 */}
+      {scenarios.length > 0 && filteredScenarios.length === 0 && (
+        <div className="py-12 text-center">
+          <div className="mb-4 text-4xl">🔍</div>
+          <p className="text-gray-500 dark:text-gray-400">
+            該当するシナリオがありません
+          </p>
+          <button
+            type="button"
+            onClick={() => setDifficultyFilter('all')}
+            className="mt-4 text-sm text-blue-500 hover:underline"
+          >
+            フィルターをリセット
+          </button>
         </div>
       )}
     </motion.div>

@@ -3,7 +3,7 @@
 import { getOpenAIClient } from './client';
 import type { PhaseDefinition, PhaseChallenge, CardEvaluation } from '@/types/challenge';
 import type { Rarity } from '@/types/database';
-import { RARITY_BONUS, PERFECT_FIT_THRESHOLD, PERFECT_FIT_BONUS, MAX_SYNERGY_BONUS } from '@/types/challenge';
+import { RARITY_BONUS, PERFECT_FIT_THRESHOLD, PERFECT_FIT_BONUS, MAX_SYNERGY_BONUS, MAX_TRIPLE_SYNERGY_BONUS } from '@/types/challenge';
 
 // Card info for AI evaluation
 interface CardInfo {
@@ -49,7 +49,7 @@ Challenge Task: {challenge}
 Selected Card(s):
 {cardDetails}
 
-Phase Type: {phaseType} (single card / combo of 2 cards)
+Phase Type: {phaseType} (single card / combo of 2 cards / triple combo of 3 cards)
 
 Evaluate how well the card(s) solve the challenge. Be creative in finding connections!
 
@@ -66,7 +66,7 @@ Rules:
    - Medium score: Acknowledge the creativity with gentle teasing
    - Low score: Good-natured ribbing about the unusual choice
 
-For combo evaluations (2 cards), also consider synergy between the cards.
+For combo evaluations (2 cards) and triple evaluations (3 cards), also consider synergy between the cards.
 
 Respond in JSON format:
 {
@@ -126,7 +126,7 @@ export async function evaluateCardSelection(
   situation: string,
   challenge: string,
   selectedCards: CardInfo[],
-  phaseType: 'single' | 'combo'
+  phaseType: 'single' | 'combo' | 'triple'
 ): Promise<CardEvaluation> {
   const client = getOpenAIClient();
 
@@ -146,7 +146,7 @@ export async function evaluateCardSelection(
     .replace('{situation}', situation)
     .replace('{challenge}', challenge)
     .replace('{cardDetails}', cardDetails)
-    .replace('{phaseType}', phaseType === 'combo' ? 'combo of 2 cards' : 'single card');
+    .replace('{phaseType}', phaseType === 'triple' ? 'triple combo of 3 cards' : phaseType === 'combo' ? 'combo of 2 cards' : 'single card');
 
   const response = await client.chat.completions.create({
     model: 'gpt-4o-mini',
@@ -184,6 +184,14 @@ export async function evaluateCardSelection(
     // Give synergy bonus based on fit score for combos
     // Higher fit score = AI found good synergy
     const synergyBonus = Math.round((fitScore / 100) * MAX_SYNERGY_BONUS);
+    bonusScore += synergyBonus;
+  }
+
+  // Synergy bonus for triple (AI-determined, simplified)
+  if (phaseType === 'triple' && selectedCards.length === 3) {
+    // Give synergy bonus based on fit score for triple combos
+    // Higher fit score = AI found good synergy
+    const synergyBonus = Math.round((fitScore / 100) * MAX_TRIPLE_SYNERGY_BONUS);
     bonusScore += synergyBonus;
   }
 
