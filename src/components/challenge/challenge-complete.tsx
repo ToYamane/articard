@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui';
+import { getScoreRank } from '@/lib/challenge';
 
 interface PhaseResult {
   phaseNumber: number;
@@ -17,19 +18,8 @@ interface ChallengeCompleteProps {
   summary?: string;
   onPlayAgain: () => void;
   onBackToScenarios: () => void;
+  isStarting?: boolean;
   className?: string;
-}
-
-function getScoreRank(score: number): {
-  rank: string;
-  emoji: string;
-  color: string;
-} {
-  if (score >= 800) return { rank: 'S', emoji: '🏆', color: 'text-yellow-500' };
-  if (score >= 600) return { rank: 'A', emoji: '🌟', color: 'text-purple-500' };
-  if (score >= 400) return { rank: 'B', emoji: '👍', color: 'text-blue-500' };
-  if (score >= 200) return { rank: 'C', emoji: '💪', color: 'text-green-500' };
-  return { rank: 'D', emoji: '🌱', color: 'text-gray-500' };
 }
 
 export function ChallengeComplete({
@@ -39,6 +29,7 @@ export function ChallengeComplete({
   summary,
   onPlayAgain,
   onBackToScenarios,
+  isStarting = false,
   className,
 }: ChallengeCompleteProps) {
   const { rank, emoji, color } = getScoreRank(totalScore);
@@ -161,10 +152,10 @@ export function ChallengeComplete({
         transition={{ delay: 1 }}
         className="flex flex-col items-center gap-3 pt-4"
       >
-        <Button type="button" onClick={onPlayAgain} size="lg">
+        <Button type="button" onClick={onPlayAgain} size="lg" disabled={isStarting} isLoading={isStarting}>
           もう一度挑戦
         </Button>
-        <Button type="button" onClick={onBackToScenarios} variant="ghost">
+        <Button type="button" onClick={onBackToScenarios} variant="ghost" disabled={isStarting}>
           シナリオ選択に戻る
         </Button>
       </motion.div>

@@ -19,18 +19,22 @@ export default function CardGenerationPage() {
 
   const [state, setState] = useState<PageState>('loading');
   const [card, setCard] = useState<Card | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [generationStage, setGenerationStage] = useState<
     'keyword' | 'context' | 'illustration' | 'composing'
   >('keyword');
 
   // カード生成を開始
   const generateCard = useCallback(async () => {
+    if (isGenerating) return; // 実行中なら早期リターン
+
     if (!user) {
       addToast('ログインが必要です', 'error');
       router.push('/login');
       return;
     }
 
+    setIsGenerating(true);
     setState('loading');
     setGenerationStage('keyword');
 
@@ -76,8 +80,10 @@ export default function CardGenerationPage() {
         'error'
       );
       setState('error');
+    } finally {
+      setIsGenerating(false);
     }
-  }, [user, articleId, addToast, router]);
+  }, [user, articleId, addToast, router, isGenerating]);
 
   // 初回レンダリング時にカード生成を開始
   useState(() => {

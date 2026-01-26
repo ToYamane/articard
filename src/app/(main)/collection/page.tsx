@@ -18,6 +18,7 @@ export default function CollectionPage() {
   const router = useRouter();
 
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
 
   const {
     cards,
@@ -53,8 +54,13 @@ export default function CollectionPage() {
 
   // 検索実行（Enterキーまたはボタンクリック時）
   const handleSearch = useCallback(() => {
+    if (isSearching) return; // 実行中なら早期リターン
+    setIsSearching(true);
     executeSearch();
-  }, [executeSearch]);
+    // isLoading が false になったら isSearching を解除
+    // executeSearch は非同期ではないため、次のレンダリングで isLoading を監視
+    setTimeout(() => setIsSearching(false), 500);
+  }, [executeSearch, isSearching]);
 
   // エラー表示
   if (error) {
@@ -94,6 +100,8 @@ export default function CollectionPage() {
           onClick={handleSearch}
           variant="secondary"
           className="shrink-0"
+          disabled={isSearching}
+          isLoading={isSearching}
         >
           検索
         </Button>

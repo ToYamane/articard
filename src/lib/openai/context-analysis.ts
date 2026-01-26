@@ -1,7 +1,7 @@
 import { getOpenAIClient } from './client';
 import type { ContextCategory, EmotionalTone } from '@/types/database';
 
-const CONTEXT_ANALYSIS_PROMPT = `Analyze the context of the keyword "{keyword}" in the following Japanese article. Generate detailed image description in English for AI image generation.
+const CONTEXT_ANALYSIS_PROMPT = `Analyze the context of the keyword "{keyword}" in the following Japanese article. Generate detailed image description in English for AI image generation, and a separate educational explanation in Japanese.
 
 Article:
 {content}
@@ -14,13 +14,15 @@ Output format (JSON):
   "image_details": "Visual details - colors, textures, lighting hints (15-25 words, English)",
   "uniqueness_score": 1-10,
   "emotional_tone": "epic" | "mysterious" | "scientific" | "warm" | "dramatic" | "neutral",
-  "context_description_ja": "日本語での文脈説明（カード表示用、記事内容を反映した説明、2-3文、120文字以内）"
+  "context_description_ja": "キーワードの意味・解説（日本語、記事の内容に基づいて、このキーワードが何を意味するのかを教育的に説明する。視覚的描写ではなく概念の解説。2-3文、120文字以内）"
 }
 
 Important:
 - image_subject/scene/details must be in English and visually descriptive
 - Focus on what can be visually represented, not abstract concepts
-- Make descriptions vivid and specific for image generation`;
+- Make descriptions vivid and specific for image generation
+- context_description_ja is an EDUCATIONAL EXPLANATION of the keyword's meaning, NOT a visual description
+- Write context_description_ja so readers can understand what the keyword means based on the article content`;
 
 export interface ContextAnalysisResult {
   contextCategory: ContextCategory;

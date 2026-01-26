@@ -13,8 +13,10 @@ export interface CardRevealModalProps {
   isOpen: boolean;
   card: Card | null;
   onClose: () => void;
-  onViewCollection: () => void;
-  onCreateAnother: () => void;
+  onGoHome: () => void;
+  onCreateAnotherFromArticle: () => void;
+  onReadArticle: () => void;
+  isGenerating?: boolean;
 }
 
 type RevealPhase = 'hidden' | 'flipping' | 'revealed';
@@ -30,8 +32,10 @@ export function CardRevealModal({
   isOpen,
   card,
   onClose,
-  onViewCollection,
-  onCreateAnother,
+  onGoHome,
+  onCreateAnotherFromArticle,
+  onReadArticle,
+  isGenerating = false,
 }: CardRevealModalProps) {
   const [phase, setPhase] = useState<RevealPhase>('hidden');
 
@@ -84,6 +88,30 @@ export function CardRevealModal({
             transition={{ type: 'spring', stiffness: 300, damping: 25 }}
             className="relative z-10 flex flex-col items-center gap-6 px-4"
           >
+            {/* ×ボタン（右上） */}
+            <AnimatePresence>
+              {phase === 'revealed' && (
+                <motion.button
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ delay: 0.3 }}
+                  onClick={onReadArticle}
+                  className="absolute -top-2 right-0 z-20 rounded-full bg-white/20 p-2 hover:bg-white/30 transition-colors"
+                >
+                  <svg
+                    className="h-5 w-5 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    strokeWidth={2}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </motion.button>
+              )}
+            </AnimatePresence>
+
             {/* タイトル */}
             <AnimatePresence>
               {phase === 'revealed' && (
@@ -184,11 +212,11 @@ export function CardRevealModal({
                   transition={{ delay: 0.5 }}
                   className="flex gap-3"
                 >
-                  <Button onClick={onViewCollection} variant="secondary">
-                    コレクションを見る
+                  <Button onClick={onGoHome} variant="secondary" disabled={isGenerating}>
+                    トップに戻る
                   </Button>
-                  <Button onClick={onCreateAnother}>
-                    もう一枚生成
+                  <Button onClick={onCreateAnotherFromArticle} disabled={isGenerating} isLoading={isGenerating}>
+                    この記事でもう一枚生成
                   </Button>
                 </motion.div>
               )}
@@ -249,7 +277,7 @@ function LegendEffect() {
         initial={{ scale: 0, opacity: 1 }}
         animate={{ scale: 3, opacity: 0 }}
         transition={{ duration: 0.8 }}
-        className="absolute inset-0 rounded-full bg-yellow-400"
+        className="pointer-events-none absolute inset-0 rounded-full bg-yellow-400"
         style={{ filter: 'blur(30px)' }}
       />
 
@@ -280,7 +308,7 @@ function LegendEffect() {
           ],
         }}
         transition={{ duration: 1.5, repeat: Infinity }}
-        className="absolute inset-0 rounded-xl"
+        className="pointer-events-none absolute inset-0 rounded-xl"
       />
     </>
   );
@@ -320,7 +348,7 @@ function SuperRareEffect() {
           ],
         }}
         transition={{ duration: 1.5, repeat: Infinity }}
-        className="absolute inset-0 rounded-xl"
+        className="pointer-events-none absolute inset-0 rounded-xl"
       />
     </>
   );
@@ -363,7 +391,7 @@ function RareEffect() {
           ],
         }}
         transition={{ duration: 2, repeat: Infinity }}
-        className="absolute inset-0 rounded-xl"
+        className="pointer-events-none absolute inset-0 rounded-xl"
       />
     </>
   );
@@ -376,7 +404,7 @@ function CommonEffect() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.3 }}
-      className="absolute inset-0 rounded-xl shadow-lg"
+      className="pointer-events-none absolute inset-0 rounded-xl shadow-lg"
     />
   );
 }

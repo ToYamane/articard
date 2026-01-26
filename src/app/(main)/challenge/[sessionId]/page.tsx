@@ -72,6 +72,7 @@ export default function ChallengeGamePage() {
   }>>([]);
   const [lastResult, setLastResult] = useState<SubmitResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isStartingNewGame, setIsStartingNewGame] = useState(false);
 
   // セッション情報を取得
   const fetchSession = useCallback(async () => {
@@ -242,11 +243,8 @@ export default function ChallengeGamePage() {
         setLastResult(data.data);
         await fetchSession(); // セッション情報を更新
 
-        if (data.data.isComplete) {
-          setGameState('completed');
-        } else {
-          setGameState('result');
-        }
+        // 常に結果画面を表示（5フェーズ目も個別結果を見せてから最終結果へ）
+        setGameState('result');
       } catch (err) {
         console.error('Submit cards error:', err);
         addToast(
@@ -259,14 +257,23 @@ export default function ChallengeGamePage() {
     [sessionId, fetchSession, addToast]
   );
 
-  // 次のフェーズへ
+  // 次のフェーズへ / 最終結果へ
   const handleContinue = useCallback(() => {
-    setLastResult(null);
-    fetchChallenge();
-  }, [fetchChallenge]);
+    if (lastResult?.isComplete) {
+      // 最終フェーズなら完了画面へ
+      setGameState('completed');
+    } else {
+      // 次のフェーズへ
+      setLastResult(null);
+      fetchChallenge();
+    }
+  }, [fetchChallenge, lastResult]);
 
   // もう一度挑戦
   const handlePlayAgain = useCallback(async () => {
+    if (isStartingNewGame) return; // 実行中なら早期リターン
+
+    setIsStartingNewGame(true);
     try {
       const token = await getIdToken();
       if (!token) throw new Error('認証トークンの取得に失敗しました');
@@ -293,8 +300,9 @@ export default function ChallengeGamePage() {
         err instanceof Error ? err.message : 'エラーが発生しました',
         'error'
       );
+      setIsStartingNewGame(false);
     }
-  }, [session, router, addToast]);
+  }, [session, router, addToast, isStartingNewGame]);
 
   // シナリオ選択に戻る
   const handleBackToScenarios = useCallback(() => {
@@ -362,32 +370,41 @@ export default function ChallengeGamePage() {
         scenario &&
         challenge &&
         phaseDefinition && (
-          <div className="space-y-6">
+          <div className="flex h-[calc(100vh-120px)] flex-col gap-3">
             {/* フェーズ進行状況 */}
-            <PhaseTimeline
-              totalPhases={scenario.totalPhases}
-              currentPhase={session.currentPhase}
-              completedPhases={session.phases.map((p) => p.phaseNumber)}
-            />
+            <div className="flex-shrink-0">
+              <PhaseTimeline
+                totalPhases={scenario.totalPhases}
+                currentPhase={session.currentPhase}
+                completedPhases={session.phases.map((p) => p.phaseNumber)}
+              />
+            </div>
 
             {/* フェーズ情報 */}
-            <PhaseDisplay
-              phase={phaseDefinition}
-              currentPhase={session.currentPhase}
-              totalPhases={scenario.totalPhases}
-              totalScore={session.totalScore}
-            />
+            <div className="flex-shrink-0">
+              <PhaseDisplay
+                phase={phaseDefinition}
+                currentPhase={session.currentPhase}
+                totalPhases={scenario.totalPhases}
+                totalScore={session.totalScore}
+              />
+            </div>
 
             {/* チャレンジ */}
-            <ChallengeCard challenge={challenge} />
+            <div className="flex-shrink-0">
+              <ChallengeCard challenge={challenge} />
+            </div>
 
-            {/* カード選択 */}
-            <CardSelector
-              availableCards={availableCards}
-              requiredCount={phaseDefinition.cardCount}
-              onSubmit={handleSubmitCards}
-              isSubmitting={gameState === 'submitting'}
-            />
+            {/* カード選択 - 残りのスペースを使用 */}
+            <div className="min-h-0 flex-1">
+              <CardSelector
+                availableCards={availableCards}
+                requiredCount={phaseDefinition.cardCount}
+                onSubmit={handleSubmitCards}
+                isSubmitting={gameState === 'submitting'}
+                className="h-full"
+              />
+            </div>
           </div>
         )}
 
@@ -424,6 +441,7 @@ export default function ChallengeGamePage() {
           summary={lastResult?.summary}
           onPlayAgain={handlePlayAgain}
           onBackToScenarios={handleBackToScenarios}
+          isStarting={isStartingNewGame}
         />
       )}
     </motion.div>

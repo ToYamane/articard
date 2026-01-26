@@ -11,6 +11,7 @@ export interface CardPackSectionProps {
   error?: string | null;
   onRetry?: () => void;
   onNavigateToCardPage?: () => void;
+  isRetrying?: boolean;
   className?: string;
 }
 
@@ -20,6 +21,7 @@ export function CardPackSection({
   error,
   onRetry,
   onNavigateToCardPage,
+  isRetrying = false,
   className,
 }: CardPackSectionProps) {
   return (
@@ -38,6 +40,7 @@ export function CardPackSection({
             error={error}
             onRetry={onRetry}
             onNavigateToCardPage={onNavigateToCardPage}
+            isRetrying={isRetrying}
           />
         ) : (
           <CardPack
@@ -54,9 +57,10 @@ interface ErrorStateProps {
   error?: string | null;
   onRetry?: () => void;
   onNavigateToCardPage?: () => void;
+  isRetrying?: boolean;
 }
 
-function ErrorState({ error, onRetry, onNavigateToCardPage }: ErrorStateProps) {
+function ErrorState({ error, onRetry, onNavigateToCardPage, isRetrying = false }: ErrorStateProps) {
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -95,12 +99,12 @@ function ErrorState({ error, onRetry, onNavigateToCardPage }: ErrorStateProps) {
       {/* アクションボタン */}
       <div className="flex gap-3">
         {onRetry && (
-          <Button onClick={onRetry} variant="primary" size="sm">
+          <Button onClick={onRetry} variant="primary" size="sm" disabled={isRetrying} isLoading={isRetrying}>
             再試行する
           </Button>
         )}
         {onNavigateToCardPage && (
-          <Button onClick={onNavigateToCardPage} variant="secondary" size="sm">
+          <Button onClick={onNavigateToCardPage} variant="secondary" size="sm" disabled={isRetrying}>
             後で生成する
           </Button>
         )}

@@ -259,17 +259,28 @@ export default function HomePage() {
     }
   }, [article, generateCard, selectedRarity]);
 
-  // コレクションを見る
-  const handleViewCollection = useCallback(() => {
-    setIsRevealModalOpen(false);
-    router.push('/collection');
-  }, [router]);
-
-  // もう一枚生成
-  const handleCreateAnother = useCallback(() => {
+  // トップに戻る
+  const handleGoHome = useCallback(() => {
     setIsRevealModalOpen(false);
     handleRegenerate();
   }, [handleRegenerate]);
+
+  // この記事でもう一枚生成
+  const handleCreateAnotherFromArticle = useCallback(() => {
+    setIsRevealModalOpen(false);
+    if (article) {
+      // 状態をリセットしてカード生成開始
+      setCardGenState('idle');
+      setGeneratedCard(null);
+      setCardGenError(null);
+      generateCard(article.id, selectedRarity);
+    }
+  }, [article, generateCard, selectedRarity]);
+
+  // 記事を読む（モーダルを閉じるだけ）
+  const handleReadArticle = useCallback(() => {
+    setIsRevealModalOpen(false);
+  }, []);
 
   // モーダルを閉じる
   const handleCloseModal = useCallback(() => {
@@ -440,8 +451,10 @@ export default function HomePage() {
         isOpen={isRevealModalOpen}
         card={generatedCard}
         onClose={handleCloseModal}
-        onViewCollection={handleViewCollection}
-        onCreateAnother={handleCreateAnother}
+        onGoHome={handleGoHome}
+        onCreateAnotherFromArticle={handleCreateAnotherFromArticle}
+        onReadArticle={handleReadArticle}
+        isGenerating={cardGenState === 'generating'}
       />
     </>
   );
