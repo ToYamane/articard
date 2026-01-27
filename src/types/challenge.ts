@@ -3,8 +3,8 @@
 import type { Rarity } from './database';
 
 // Session status
+// Note: 'deck_building' phase is now represented by status='in_progress' with currentPhase=0
 export type ChallengeSessionStatus =
-  | 'deck_building'
   | 'in_progress'
   | 'completed'
   | 'abandoned';
@@ -78,6 +78,31 @@ export const SCORE_THRESHOLDS = {
   LOW: 30,
 } as const;
 
+// Deck card in game state
+export interface DeckCard {
+  cardId: string;
+  keyword: string;
+  rarity: string;
+  flavorText: string;
+  contextDescription: string;
+  thumbnailUrl: string;
+  cardImageUrl: string;
+  isUsed: boolean;
+  usedInPhase: number | null;
+}
+
+// Phase result in game state
+export interface PhaseResult {
+  phaseNumber: number;
+  challenge: string;
+  selectedCardIds: string[];
+  fitScore: number;
+  bonusScore: number;
+  totalScore: number;
+  aiCommentary: string;
+  completedAt: string;
+}
+
 // Session with deck and phase results (for API responses)
 export interface ChallengeSessionWithDetails {
   id: string;
@@ -88,32 +113,17 @@ export interface ChallengeSessionWithDetails {
   totalScore: number;
   startedAt: Date;
   completedAt: Date | null;
-  deckCards: {
-    id: string;
-    cardId: string;
-    isUsed: boolean;
-    usedInPhase: number | null;
-    card: {
-      id: string;
-      keyword: string;
-      rarity: string;
-      thumbnailUrl: string;
-      cardImageUrl: string;
-      flavorText: string;
-      contextDescription: string;
-    };
-  }[];
-  phases: {
-    id: string;
-    phaseNumber: number;
-    challenge: string;
-    selectedCardIds: string[];
-    fitScore: number;
-    bonusScore: number;
-    totalScore: number;
-    aiCommentary: string;
-    completedAt: Date;
-  }[];
+  deck: DeckCard[];
+  phases: PhaseResult[];
+}
+
+// High score record
+export interface ChallengeHighScore {
+  scenarioId: string;
+  highScore: number;
+  bestRank: string;
+  playCount: number;
+  updatedAt: Date;
 }
 
 // Scenario list item (for selection page)
@@ -142,7 +152,6 @@ export const SESSION_STATUS_DISPLAY_NAMES: Record<
   ChallengeSessionStatus,
   string
 > = {
-  deck_building: 'デッキ編成中',
   in_progress: 'プレイ中',
   completed: '完了',
   abandoned: '中断',

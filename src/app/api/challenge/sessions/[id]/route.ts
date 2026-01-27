@@ -4,10 +4,10 @@ import { sessionIdSchema } from '@/lib/validations/challenge';
 import {
   getSessionById,
   abandonSession,
+  type SessionDetails,
 } from '@/lib/services/challenge-service';
 import { handleApiError } from '@/lib/errors';
 import type { ApiResponse } from '@/types/api';
-import type { ChallengeSessionWithDetails } from '@/types/challenge';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -17,7 +17,7 @@ interface RouteParams {
 export async function GET(
   req: NextRequest,
   { params }: RouteParams
-): Promise<NextResponse<ApiResponse<ChallengeSessionWithDetails>>> {
+): Promise<NextResponse<ApiResponse<SessionDetails>>> {
   try {
     const authUser = await verifyAuth(req);
     if (!authUser) {

@@ -30,7 +30,7 @@ export const submitCardsSchema = z.object({
 // セッション一覧取得クエリスキーマ
 export const getSessionsQuerySchema = z.object({
   status: z
-    .enum(['deck_building', 'in_progress', 'completed', 'abandoned'])
+    .enum(['in_progress', 'completed', 'abandoned'])
     .optional(),
   limit: z.coerce.number().int().min(1).max(50).default(10),
 });

@@ -14,11 +14,16 @@ erDiagram
     users ||--o{ cards : "owns"
     articles ||--o{ cards : "generates"
     users ||--o{ knowledge_transactions : "has"
+    users ||--o{ challenge_achievements : "earns"
 
     users {
         uuid id PK "Firebase UID"
         varchar(20) nickname "ニックネーム"
-        int knowledge_balance "ナレッジ残高"
+        int knowledge_balance "永続コイン残高"
+        int daily_free_coins "当日無料コイン"
+        timestamp daily_coins_reset_at "コインリセット日時"
+        int daily_challenge_count "当日チャレンジ回数"
+        timestamp daily_challenge_reset_at "チャレンジリセット日時"
         boolean is_premium "プレミアム会員"
         timestamp premium_expires_at "プレミアム期限"
         timestamp created_at
@@ -61,6 +66,15 @@ erDiagram
         int balance_after "取引後残高"
         timestamp created_at
     }
+
+    challenge_achievements {
+        uuid id PK
+        uuid user_id FK
+        varchar(50) scenario_id "シナリオID"
+        varchar(1) rank "達成ランク B/A/S"
+        int coins_awarded "付与コイン"
+        timestamp created_at
+    }
 ```
 
 ## 6.3 テーブル定義
@@ -71,10 +85,15 @@ erDiagram
 
 ```sql
 CREATE TABLE users (
-    id UUID PRIMARY KEY,  -- Firebase UID
-    nickname VARCHAR(20) NOT NULL,
-    knowledge_balance INT NOT NULL DEFAULT 100,
+    id VARCHAR(128) PRIMARY KEY,  -- Firebase UID
+    nickname VARCHAR(20) NOT NULL UNIQUE,
+    knowledge_balance INT NOT NULL DEFAULT 0,           -- 永続コイン
+    daily_free_coins INT NOT NULL DEFAULT 90,           -- 当日無料コイン
+    daily_coins_reset_at TIMESTAMP WITH TIME ZONE,      -- コインリセット日時
+    daily_challenge_count INT NOT NULL DEFAULT 0,       -- 当日チャレンジ回数
+    daily_challenge_reset_at TIMESTAMP WITH TIME ZONE,  -- チャレンジリセット日時
     is_premium BOOLEAN NOT NULL DEFAULT FALSE,
+    is_developer BOOLEAN NOT NULL DEFAULT FALSE,
     premium_expires_at TIMESTAMP WITH TIME ZONE,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -143,14 +162,14 @@ CREATE INDEX idx_cards_keyword_gin ON cards USING gin(to_tsvector('simple', keyw
 
 ### knowledge_transactions テーブル
 
-ナレッジの増減履歴を管理（Phase 2）。
+コインの増減履歴を管理。
 
 ```sql
 CREATE TABLE knowledge_transactions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     amount INT NOT NULL,  -- 正:増加, 負:減少
-    transaction_type VARCHAR(20) NOT NULL,  -- purchase, bonus, consume, refund
+    transaction_type VARCHAR(20) NOT NULL,  -- purchase, bonus, consume, refund, daily
     description VARCHAR(100),
     balance_after INT NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -160,6 +179,25 @@ CREATE TABLE knowledge_transactions (
 CREATE INDEX idx_kt_user_id ON knowledge_transactions(user_id);
 CREATE INDEX idx_kt_created_at ON knowledge_transactions(created_at);
 CREATE INDEX idx_kt_type ON knowledge_transactions(transaction_type);
+```
+
+### challenge_achievements テーブル
+
+チャレンジモードの達成報酬を管理。各シナリオ×各ランクで初回のみ報酬付与。
+
+```sql
+CREATE TABLE challenge_achievements (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id VARCHAR(128) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    scenario_id VARCHAR(50) NOT NULL,
+    rank VARCHAR(1) NOT NULL,  -- 'B', 'A', 'S'
+    coins_awarded INT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, scenario_id, rank)
+);
+
+-- インデックス
+CREATE INDEX idx_ca_user_id ON challenge_achievements(user_id);
 ```
 
 ## 6.4 Prisma スキーマ
@@ -177,19 +215,27 @@ datasource db {
 }
 
 model User {
-  id                    String    @id @db.Uuid
-  nickname              String    @db.VarChar(20)
-  knowledgeBalance      Int       @default(100) @map("knowledge_balance")
-  isPremium             Boolean   @default(false) @map("is_premium")
-  premiumExpiresAt      DateTime? @map("premium_expires_at") @db.Timestamptz
-  createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt             DateTime  @updatedAt @map("updated_at") @db.Timestamptz
-  lastActiveAt          DateTime  @default(now()) @map("last_active_at") @db.Timestamptz
+  id                      String    @id @db.VarChar(128)
+  nickname                String    @unique @db.VarChar(20)
+  knowledgeBalance        Int       @default(0) @map("knowledge_balance")       // 永続コイン
+  dailyFreeCoins          Int       @default(90) @map("daily_free_coins")       // 当日無料コイン
+  dailyCoinsResetAt       DateTime? @map("daily_coins_reset_at") @db.Timestamptz
+  dailyChallengeCount     Int       @default(0) @map("daily_challenge_count")
+  dailyChallengeResetAt   DateTime? @map("daily_challenge_reset_at") @db.Timestamptz
+  isPremium               Boolean   @default(false) @map("is_premium")
+  isDeveloper             Boolean   @default(false) @map("is_developer")
+  premiumExpiresAt        DateTime? @map("premium_expires_at") @db.Timestamptz
+  createdAt               DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt               DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  lastActiveAt            DateTime  @default(now()) @map("last_active_at") @db.Timestamptz
 
   articles              Article[]
   cards                 Card[]
   knowledgeTransactions KnowledgeTransaction[]
+  challengeAchievements ChallengeAchievement[]
 
+  @@index([createdAt])
+  @@index([isPremium])
   @@map("users")
 }
 
@@ -241,7 +287,7 @@ model Card {
 
 model KnowledgeTransaction {
   id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId          String   @map("user_id") @db.Uuid
+  userId          String   @map("user_id") @db.VarChar(128)
   amount          Int
   transactionType String   @map("transaction_type") @db.VarChar(20)
   description     String?  @db.VarChar(100)
@@ -254,6 +300,21 @@ model KnowledgeTransaction {
   @@index([createdAt])
   @@index([transactionType])
   @@map("knowledge_transactions")
+}
+
+model ChallengeAchievement {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId       String   @map("user_id") @db.VarChar(128)
+  scenarioId   String   @map("scenario_id") @db.VarChar(50)
+  rank         String   @db.VarChar(1)  // 'B' | 'A' | 'S'
+  coinsAwarded Int      @map("coins_awarded")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, scenarioId, rank])
+  @@index([userId])
+  @@map("challenge_achievements")
 }
 ```
 

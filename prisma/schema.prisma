@@ -11,20 +11,26 @@ datasource db {
 }
 
 model User {
-  id                    String    @id @db.VarChar(128)
-  nickname              String    @unique @db.VarChar(20)
-  knowledgeBalance      Int       @default(100) @map("knowledge_balance")
-  isPremium             Boolean   @default(false) @map("is_premium")
-  isDeveloper           Boolean   @default(false) @map("is_developer")
-  premiumExpiresAt      DateTime? @map("premium_expires_at") @db.Timestamptz
-  createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt             DateTime  @updatedAt @map("updated_at") @db.Timestamptz
-  lastActiveAt          DateTime  @default(now()) @map("last_active_at") @db.Timestamptz
+  id                      String    @id @db.VarChar(128)
+  nickname                String    @unique @db.VarChar(20)
+  knowledgeBalance        Int       @default(0) @map("knowledge_balance") // 永続コイン
+  dailyFreeCoins          Int       @default(90) @map("daily_free_coins") // 当日無料コイン
+  dailyCoinsResetAt       DateTime? @map("daily_coins_reset_at") @db.Timestamptz
+  dailyChallengeCount     Int       @default(0) @map("daily_challenge_count")
+  dailyChallengeResetAt   DateTime? @map("daily_challenge_reset_at") @db.Timestamptz
+  isPremium               Boolean   @default(false) @map("is_premium")
+  isDeveloper             Boolean   @default(false) @map("is_developer")
+  premiumExpiresAt        DateTime? @map("premium_expires_at") @db.Timestamptz
+  createdAt               DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt               DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  lastActiveAt            DateTime  @default(now()) @map("last_active_at") @db.Timestamptz
 
   articles              Article[]
   cards                 Card[]
   knowledgeTransactions KnowledgeTransaction[]
   challengeSessions     ChallengeSession[]
+  challengeHighScores   ChallengeHighScore[]
+  challengeAchievements ChallengeAchievement[]
 
   @@index([createdAt])
   @@index([isPremium])
@@ -66,9 +72,8 @@ model Card {
   fluxPrompt         String   @map("flux_prompt") @db.Text
   createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz
 
-  user                   User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  article                Article                @relation(fields: [articleId], references: [id], onDelete: Cascade)
-  challengeSessionCards  ChallengeSessionCard[]
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
 
   @@unique([keyword, cardNumber], name: "keyword_cardNumber_unique")
   @@index([userId])
@@ -111,56 +116,55 @@ model SuggestedTheme {
   @@map("suggested_themes")
 }
 
-// Challenge Mode - セッション（ゲームプレイ）
+// Challenge Mode - セッション（ゲームプレイ中の一時データ）
 model ChallengeSession {
   id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId       String    @map("user_id") @db.VarChar(128)
   scenarioId   String    @map("scenario_id") @db.VarChar(50)
-  status       String    @db.VarChar(20) // "deck_building" | "in_progress" | "completed" | "abandoned"
+  status       String    @db.VarChar(20) // "in_progress" | "completed" | "abandoned"
   currentPhase Int       @default(0) @map("current_phase")
-  totalScore   Int       @default(0) @map("total_score")
+  gameState    Json?     @map("game_state") // { deck: [...], phases: [...] }
   startedAt    DateTime  @default(now()) @map("started_at") @db.Timestamptz
   completedAt  DateTime? @map("completed_at") @db.Timestamptz
 
-  user      User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  deckCards ChallengeSessionCard[]
-  phases    ChallengeSessionPhase[]
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([status])
+  @@index([userId, status])
   @@map("challenge_sessions")
 }
 
-// Challenge Mode - デッキ内カード
-model ChallengeSessionCard {
-  id          String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  sessionId   String  @map("session_id") @db.Uuid
-  cardId      String  @map("card_id") @db.Uuid
-  isUsed      Boolean @default(false) @map("is_used")
-  usedInPhase Int?    @map("used_in_phase")
+// Challenge Mode - ハイスコア記録
+model ChallengeHighScore {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String   @map("user_id") @db.VarChar(128)
+  scenarioId String   @map("scenario_id") @db.VarChar(50)
+  highScore  Int      @map("high_score")
+  bestRank   String   @map("best_rank") @db.VarChar(1) // 'C' | 'B' | 'A' | 'S'
+  playCount  Int      @default(1) @map("play_count")
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz
 
-  session ChallengeSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  card    Card             @relation(fields: [cardId], references: [id])
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([sessionId, cardId])
-  @@map("challenge_session_cards")
+  @@unique([userId, scenarioId])
+  @@index([userId])
+  @@map("challenge_high_scores")
 }
 
-// Challenge Mode - フェーズ結果
-model ChallengeSessionPhase {
-  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  sessionId       String   @map("session_id") @db.Uuid
-  phaseNumber     Int      @map("phase_number")
-  challenge       String   @db.Text
-  selectedCardIds Json     @map("selected_card_ids")
-  fitScore        Int      @map("fit_score")
-  bonusScore      Int      @default(0) @map("bonus_score")
-  totalScore      Int      @map("total_score")
-  aiCommentary    String   @map("ai_commentary") @db.Text
-  completedAt     DateTime @default(now()) @map("completed_at") @db.Timestamptz
+// Challenge Mode - 達成報酬（初回のみ）
+model ChallengeAchievement {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId       String   @map("user_id") @db.VarChar(128)
+  scenarioId   String   @map("scenario_id") @db.VarChar(50)
+  rank         String   @db.VarChar(1) // 'B' | 'A' | 'S'
+  coinsAwarded Int      @map("coins_awarded")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
 
-  session ChallengeSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([sessionId, phaseNumber])
-  @@map("challenge_session_phases")
+  @@unique([userId, scenarioId, rank])
+  @@index([userId])
+  @@index([userId, scenarioId])
+  @@map("challenge_achievements")
 }

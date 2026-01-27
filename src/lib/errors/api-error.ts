@@ -50,6 +50,10 @@ export class ApiError extends Error {
     return new ApiError(ERROR_CODES.NO_AVAILABLE_KEYWORD, message, 400);
   }
 
+  static insufficientCoins(message: string = 'コインが不足しています'): ApiError {
+    return new ApiError(ERROR_CODES.INSUFFICIENT_COINS, message, 400);
+  }
+
   static internal(message: string = 'サーバーエラーが発生しました'): ApiError {
     return new ApiError(ERROR_CODES.INTERNAL_ERROR, message, 500);
   }

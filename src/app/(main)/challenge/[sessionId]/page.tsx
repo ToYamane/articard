@@ -48,6 +48,8 @@ interface SubmitResult {
   sessionTotalScore: number;
   isComplete: boolean;
   summary?: string;
+  achievementRewards?: Array<{ rank: string; coins: number; isNew: boolean }>;
+  totalCoinsAwarded?: number;
 }
 
 export default function ChallengeGamePage() {
@@ -155,7 +157,8 @@ export default function ChallengeGamePage() {
 
         if (sessionData.status === 'completed') {
           setGameState('completed');
-        } else if (sessionData.status === 'deck_building') {
+        } else if (sessionData.status === 'in_progress' && sessionData.currentPhase === 0) {
+          // currentPhase 0 = deck building phase
           await fetchUserCards();
           setGameState('deck_building');
         } else if (sessionData.status === 'in_progress') {
@@ -439,6 +442,8 @@ export default function ChallengeGamePage() {
             totalScore: p.totalScore,
           }))}
           summary={lastResult?.summary}
+          achievementRewards={lastResult?.achievementRewards}
+          totalCoinsAwarded={lastResult?.totalCoinsAwarded}
           onPlayAgain={handlePlayAgain}
           onBackToScenarios={handleBackToScenarios}
           isStarting={isStartingNewGame}

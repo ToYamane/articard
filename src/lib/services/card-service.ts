@@ -15,6 +15,9 @@ import {
   uploadThumbnail,
   deleteCardImages,
 } from '@/lib/gcs/storage';
+import { hasEnoughCoins, consumeCoins } from '@/lib/services/coin-service';
+import { COIN_COSTS } from '@/lib/constants/coins';
+import { ApiError } from '@/lib/errors';
 import type { Card } from '@prisma/client';
 import type { Rarity } from '@/types/database';
 
@@ -45,6 +48,18 @@ export async function createCard({
   articleId,
   specifiedRarity,
 }: CreateCardParams): Promise<Card> {
+  // コイン残高チェック
+  const cardCost = COIN_COSTS.CARD_GENERATION;
+  const hasCoins = await hasEnoughCoins(userId, cardCost);
+
+  if (!hasCoins) {
+    throw new ApiError(
+      'INSUFFICIENT_COINS',
+      `カード生成には${cardCost}コインが必要です`,
+      400
+    );
+  }
+
   // 記事を取得
   const article = await prisma.article.findUnique({
     where: { id: articleId },
@@ -165,6 +180,9 @@ export async function createCard({
       },
     });
   });
+
+  // カード生成成功後にコイン消費
+  await consumeCoins(userId, cardCost, `カード生成: ${keyword}`);
 
   return card;
 }

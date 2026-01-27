@@ -16,8 +16,6 @@ import type { Rarity } from '@/types/database';
 type PageState = 'input' | 'loading' | 'result';
 type CardGenState = 'idle' | 'generating' | 'ready' | 'opening' | 'error';
 
-const STORAGE_KEY = 'articard-auto-card-enabled';
-
 export default function HomePage() {
   const router = useRouter();
   const { user, profile } = useAuthStore();
@@ -33,8 +31,8 @@ export default function HomePage() {
   const [isGeneratingCard, setIsGeneratingCard] = useState(false);
   const [abortController, setAbortController] = useState<AbortController | null>(null);
 
-  // 自動カード生成の状態
-  const [autoCardEnabled, setAutoCardEnabled] = useState<boolean>(false);
+  // カード生成の状態
+  const [withCardGeneration, setWithCardGeneration] = useState(false);
   const [cardGenState, setCardGenState] = useState<CardGenState>('idle');
   const [generatedCard, setGeneratedCard] = useState<Card | null>(null);
   const [cardGenError, setCardGenError] = useState<string | null>(null);
@@ -45,14 +43,6 @@ export default function HomePage() {
 
   // カード生成用のAbortController
   const cardAbortControllerRef = useRef<AbortController | null>(null);
-
-  // localStorageからトグル設定を読み込み
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      setAutoCardEnabled(saved === 'true');
-    }
-  }, []);
 
   // 最近のカードを取得
   useEffect(() => {
@@ -83,14 +73,6 @@ export default function HomePage() {
 
     fetchRecentCards();
   }, [user]);
-
-  // トグル設定をlocalStorageに保存
-  const handleAutoCardToggle = useCallback((enabled: boolean) => {
-    setAutoCardEnabled(enabled);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(STORAGE_KEY, String(enabled));
-    }
-  }, []);
 
   // カード生成（バックグラウンド）
   const generateCard = useCallback(async (articleId: string, rarity?: Rarity) => {
@@ -148,7 +130,7 @@ export default function HomePage() {
   }, [user, addToast]);
 
   // 記事生成
-  const handleSubmit = useCallback(async (theme: string) => {
+  const handleSubmit = useCallback(async (theme: string, withCard: boolean) => {
     if (!user) {
       addToast('ログインが必要です', 'error');
       return;
@@ -156,6 +138,7 @@ export default function HomePage() {
 
     setState('loading');
     // カード生成状態をリセット
+    setWithCardGeneration(withCard);
     setCardGenState('idle');
     setGeneratedCard(null);
     setCardGenError(null);
@@ -189,8 +172,8 @@ export default function HomePage() {
       setArticle(createdArticle);
       setState('result');
 
-      // 自動カード生成が有効な場合、バックグラウンドでカード生成開始
-      if (autoCardEnabled) {
+      // カード同時生成が選択された場合、バックグラウンドでカード生成開始
+      if (withCard) {
         generateCard(createdArticle.id, selectedRarity);
       }
     } catch (error) {
@@ -208,7 +191,7 @@ export default function HomePage() {
     } finally {
       setAbortController(null);
     }
-  }, [user, addToast, autoCardEnabled, generateCard, selectedRarity]);
+  }, [user, addToast, generateCard, selectedRarity]);
 
   // キャンセル
   const handleCancel = useCallback(() => {
@@ -352,11 +335,7 @@ export default function HomePage() {
                   transition={{ duration: 0.3 }}
                   className="space-y-4"
                 >
-                  <ThemeInput
-                    onSubmit={handleSubmit}
-                    autoCardEnabled={autoCardEnabled}
-                    onAutoCardToggle={handleAutoCardToggle}
-                  />
+                  <ThemeInput onSubmit={handleSubmit} />
                   {/* 開発者モード: レアリティ指定 */}
                   {profile?.isDeveloper && (
                     <RaritySelector
@@ -392,9 +371,9 @@ export default function HomePage() {
                     onGenerateCard={handleGenerateCard}
                     onRegenerate={handleRegenerate}
                     isLoading={isGeneratingCard}
-                    // 自動カード生成用のプロパティ
-                    autoCardEnabled={autoCardEnabled}
-                    cardPackState={autoCardEnabled ? getCardPackState() : undefined}
+                    // カード同時生成用のプロパティ
+                    autoCardEnabled={withCardGeneration}
+                    cardPackState={withCardGeneration ? getCardPackState() : undefined}
                     onPackClick={handlePackClick}
                     cardGenError={cardGenError}
                     onRetryCardGen={handleRetryCardGen}

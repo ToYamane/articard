@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 import {
   getScenarioById,
   getPhaseDefinition,
@@ -9,18 +10,62 @@ import {
   evaluateCardSelection,
   generateChallengeSummary,
 } from '@/lib/openai';
-import type { ChallengeSessionStatus, ChallengeSessionWithDetails } from '@/types/challenge';
+import {
+  checkChallengeLimit,
+  incrementChallengeCount,
+  consumeCoins,
+  hasEnoughCoins,
+} from '@/lib/services/coin-service';
+import { processAchievementRewards } from '@/lib/challenge/rewards';
+import { ApiError } from '@/lib/errors';
+import type { ChallengeSessionStatus } from '@/types/challenge';
 import type { Rarity } from '@/types/database';
 
-// Card info type for internal use
-interface CardInfo {
-  id: string;
+// Card info for deck
+interface DeckCard {
+  cardId: string;
   keyword: string;
   rarity: Rarity;
   flavorText: string;
   contextDescription: string;
   thumbnailUrl: string;
   cardImageUrl: string;
+  isUsed: boolean;
+  usedInPhase: number | null;
+}
+
+// Phase result stored in gameState
+interface PhaseResult {
+  phaseNumber: number;
+  challenge: string;
+  selectedCardIds: string[];
+  fitScore: number;
+  bonusScore: number;
+  totalScore: number;
+  aiCommentary: string;
+  completedAt: string;
+}
+
+// Game state stored as JSON
+interface GameState {
+  deck: DeckCard[];
+  phases: PhaseResult[];
+  totalScore: number;
+  [key: string]: unknown; // Index signature for Prisma JSON compatibility
+}
+
+// Response type for session details
+export interface SessionDetails {
+  id: string;
+  userId: string;
+  scenarioId: string;
+  status: ChallengeSessionStatus;
+  currentPhase: number;
+  totalScore: number;
+  startedAt: Date;
+  completedAt: Date | null;
+  deck: DeckCard[];
+  phases: PhaseResult[];
 }
 
 /**
@@ -29,7 +74,12 @@ interface CardInfo {
 export async function createSession(
   userId: string,
   scenarioId: string
-): Promise<{ id: string; scenarioId: string; status: ChallengeSessionStatus }> {
+): Promise<{
+  id: string;
+  scenarioId: string;
+  status: ChallengeSessionStatus;
+  challengeInfo: { count: number; isFree: boolean; cost: number };
+}> {
   const scenario = getScenarioById(scenarioId);
   if (!scenario) {
     throw new Error('シナリオが見つかりません');
@@ -39,7 +89,7 @@ export async function createSession(
   const existingSession = await prisma.challengeSession.findFirst({
     where: {
       userId,
-      status: { in: ['deck_building', 'in_progress'] },
+      status: 'in_progress',
     },
   });
 
@@ -47,13 +97,43 @@ export async function createSession(
     throw new Error('進行中のセッションがあります。完了または中断してから新しいセッションを開始してください');
   }
 
+  // Check challenge limit and charge if needed
+  const challengeLimit = await checkChallengeLimit(userId);
+
+  if (!challengeLimit.isFree) {
+    const hasSufficientCoins = await hasEnoughCoins(userId, challengeLimit.cost);
+    if (!hasSufficientCoins) {
+      throw new ApiError(
+        'INSUFFICIENT_COINS',
+        `チャレンジには${challengeLimit.cost}コインが必要です`,
+        400
+      );
+    }
+
+    await consumeCoins(
+      userId,
+      challengeLimit.cost,
+      `チャレンジモード参加: ${scenario.title}`
+    );
+  }
+
+  // Increment challenge count
+  await incrementChallengeCount(userId);
+
+  // Initialize empty game state
+  const initialGameState: GameState = {
+    deck: [],
+    phases: [],
+    totalScore: 0,
+  };
+
   const session = await prisma.challengeSession.create({
     data: {
       userId,
       scenarioId,
-      status: 'deck_building',
-      currentPhase: 0,
-      totalScore: 0,
+      status: 'in_progress',
+      currentPhase: 0, // 0 = deck building phase
+      gameState: initialGameState as unknown as Prisma.InputJsonValue,
     },
   });
 
@@ -61,6 +141,11 @@ export async function createSession(
     id: session.id,
     scenarioId: session.scenarioId,
     status: session.status as ChallengeSessionStatus,
+    challengeInfo: {
+      count: challengeLimit.count + 1,
+      isFree: challengeLimit.isFree,
+      cost: challengeLimit.cost,
+    },
   };
 }
 
@@ -70,34 +155,20 @@ export async function createSession(
 export async function getSessionById(
   sessionId: string,
   userId: string
-): Promise<ChallengeSessionWithDetails | null> {
+): Promise<SessionDetails | null> {
   const session = await prisma.challengeSession.findUnique({
     where: { id: sessionId },
-    include: {
-      deckCards: {
-        include: {
-          card: {
-            select: {
-              id: true,
-              keyword: true,
-              rarity: true,
-              thumbnailUrl: true,
-              cardImageUrl: true,
-              flavorText: true,
-              contextDescription: true,
-            },
-          },
-        },
-      },
-      phases: {
-        orderBy: { phaseNumber: 'asc' },
-      },
-    },
   });
 
   if (!session || session.userId !== userId) {
     return null;
   }
+
+  const gameState = (session.gameState as unknown as GameState) || {
+    deck: [],
+    phases: [],
+    totalScore: 0,
+  };
 
   return {
     id: session.id,
@@ -105,32 +176,16 @@ export async function getSessionById(
     scenarioId: session.scenarioId,
     status: session.status as ChallengeSessionStatus,
     currentPhase: session.currentPhase,
-    totalScore: session.totalScore,
+    totalScore: gameState.totalScore,
     startedAt: session.startedAt,
     completedAt: session.completedAt,
-    deckCards: session.deckCards.map((dc) => ({
-      id: dc.id,
-      cardId: dc.cardId,
-      isUsed: dc.isUsed,
-      usedInPhase: dc.usedInPhase,
-      card: dc.card,
-    })),
-    phases: session.phases.map((p) => ({
-      id: p.id,
-      phaseNumber: p.phaseNumber,
-      challenge: p.challenge,
-      selectedCardIds: p.selectedCardIds as string[],
-      fitScore: p.fitScore,
-      bonusScore: p.bonusScore,
-      totalScore: p.totalScore,
-      aiCommentary: p.aiCommentary,
-      completedAt: p.completedAt,
-    })),
+    deck: gameState.deck,
+    phases: gameState.phases,
   };
 }
 
 /**
- * Get user's sessions
+ * Get user's sessions (simplified - only return in-progress sessions)
  */
 export async function getUserSessions(
   userId: string,
@@ -149,15 +204,41 @@ export async function getUserSessions(
       scenarioId: true,
       status: true,
       currentPhase: true,
-      totalScore: true,
+      gameState: true,
       startedAt: true,
       completedAt: true,
     },
   });
 
-  return sessions.map((s) => ({
-    ...s,
-    status: s.status as ChallengeSessionStatus,
+  return sessions.map((s) => {
+    const gameState = (s.gameState as unknown as GameState) || { totalScore: 0 };
+    return {
+      id: s.id,
+      scenarioId: s.scenarioId,
+      status: s.status as ChallengeSessionStatus,
+      currentPhase: s.currentPhase,
+      totalScore: gameState.totalScore,
+      startedAt: s.startedAt,
+      completedAt: s.completedAt,
+    };
+  });
+}
+
+/**
+ * Get user's high scores
+ */
+export async function getUserHighScores(userId: string) {
+  const highScores = await prisma.challengeHighScore.findMany({
+    where: { userId },
+    orderBy: { highScore: 'desc' },
+  });
+
+  return highScores.map((hs) => ({
+    scenarioId: hs.scenarioId,
+    highScore: hs.highScore,
+    bestRank: hs.bestRank,
+    playCount: hs.playCount,
+    updatedAt: hs.updatedAt,
   }));
 }
 
@@ -177,7 +258,7 @@ export async function setSessionDeck(
     throw new Error('セッションが見つかりません');
   }
 
-  if (session.status !== 'deck_building') {
+  if (session.status !== 'in_progress' || session.currentPhase !== 0) {
     throw new Error('デッキ編成は開始前のみ可能です');
   }
 
@@ -196,6 +277,15 @@ export async function setSessionDeck(
       id: { in: cardIds },
       userId,
     },
+    select: {
+      id: true,
+      keyword: true,
+      rarity: true,
+      flavorText: true,
+      contextDescription: true,
+      thumbnailUrl: true,
+      cardImageUrl: true,
+    },
   });
 
   if (cards.length !== cardIds.length) {
@@ -208,30 +298,35 @@ export async function setSessionDeck(
     throw new Error('重複するカードは選択できません');
   }
 
-  // Transaction: Clear existing deck and add new cards, then update status
-  await prisma.$transaction(async (tx) => {
-    // Remove existing deck cards
-    await tx.challengeSessionCard.deleteMany({
-      where: { sessionId },
-    });
+  // Create deck cards array
+  const deckCards: DeckCard[] = cardIds.map((cardId) => {
+    const card = cards.find((c) => c.id === cardId)!;
+    return {
+      cardId: card.id,
+      keyword: card.keyword,
+      rarity: card.rarity as Rarity,
+      flavorText: card.flavorText,
+      contextDescription: card.contextDescription,
+      thumbnailUrl: card.thumbnailUrl,
+      cardImageUrl: card.cardImageUrl,
+      isUsed: false,
+      usedInPhase: null,
+    };
+  });
 
-    // Add new deck cards
-    await tx.challengeSessionCard.createMany({
-      data: cardIds.map((cardId) => ({
-        sessionId,
-        cardId,
-        isUsed: false,
-      })),
-    });
+  // Update game state and move to phase 1
+  const gameState: GameState = {
+    deck: deckCards,
+    phases: [],
+    totalScore: 0,
+  };
 
-    // Update session status to in_progress
-    await tx.challengeSession.update({
-      where: { id: sessionId },
-      data: {
-        status: 'in_progress',
-        currentPhase: 1,
-      },
-    });
+  await prisma.challengeSession.update({
+    where: { id: sessionId },
+    data: {
+      currentPhase: 1,
+      gameState: gameState as unknown as Prisma.InputJsonValue,
+    },
   });
 }
 
@@ -244,24 +339,6 @@ export async function getCurrentPhaseChallenge(
 ) {
   const session = await prisma.challengeSession.findUnique({
     where: { id: sessionId },
-    include: {
-      deckCards: {
-        include: {
-          card: {
-            select: {
-              id: true,
-              keyword: true,
-              rarity: true,
-              flavorText: true,
-              contextDescription: true,
-              thumbnailUrl: true,
-              cardImageUrl: true,
-            },
-          },
-        },
-      },
-      phases: true,
-    },
   });
 
   if (!session || session.userId !== userId) {
@@ -270,6 +347,10 @@ export async function getCurrentPhaseChallenge(
 
   if (session.status !== 'in_progress') {
     throw new Error('ゲームが進行中ではありません');
+  }
+
+  if (session.currentPhase === 0) {
+    throw new Error('デッキを設定してください');
   }
 
   const scenario = getScenarioById(session.scenarioId);
@@ -283,10 +364,20 @@ export async function getCurrentPhaseChallenge(
     throw new Error('フェーズが見つかりません');
   }
 
+  const gameState = (session.gameState as GameState) || { deck: [], phases: [], totalScore: 0 };
+
   // Get available cards (not used in consuming phases)
-  const availableCards = session.deckCards
+  const availableCards = gameState.deck
     .filter((dc) => !dc.isUsed)
-    .map((dc) => dc.card as CardInfo);
+    .map((dc) => ({
+      id: dc.cardId,
+      keyword: dc.keyword,
+      rarity: dc.rarity,
+      flavorText: dc.flavorText,
+      contextDescription: dc.contextDescription,
+      thumbnailUrl: dc.thumbnailUrl,
+      cardImageUrl: dc.cardImageUrl,
+    }));
 
   // Get a random predefined challenge for this phase
   const challenge = getRandomChallenge(session.scenarioId, currentPhase);
@@ -309,24 +400,6 @@ export async function submitPhaseCards(
 ) {
   const session = await prisma.challengeSession.findUnique({
     where: { id: sessionId },
-    include: {
-      deckCards: {
-        include: {
-          card: {
-            select: {
-              id: true,
-              keyword: true,
-              rarity: true,
-              flavorText: true,
-              contextDescription: true,
-              thumbnailUrl: true,
-              cardImageUrl: true,
-            },
-          },
-        },
-      },
-      phases: true,
-    },
   });
 
   if (!session || session.userId !== userId) {
@@ -335,6 +408,10 @@ export async function submitPhaseCards(
 
   if (session.status !== 'in_progress') {
     throw new Error('ゲームが進行中ではありません');
+  }
+
+  if (session.currentPhase === 0) {
+    throw new Error('デッキを設定してください');
   }
 
   const scenario = getScenarioById(session.scenarioId);
@@ -353,8 +430,10 @@ export async function submitPhaseCards(
     throw new Error(`このフェーズでは${phaseDefinition.cardCount}枚のカードが必要です`);
   }
 
+  const gameState = (session.gameState as GameState) || { deck: [], phases: [], totalScore: 0 };
+
   // Verify cards are in the deck and available
-  const availableDeckCards = session.deckCards.filter((dc) => !dc.isUsed);
+  const availableDeckCards = gameState.deck.filter((dc) => !dc.isUsed);
   const selectedDeckCards = availableDeckCards.filter((dc) =>
     cardIds.includes(dc.cardId)
   );
@@ -363,10 +442,17 @@ export async function submitPhaseCards(
     throw new Error('選択されたカードは利用できません');
   }
 
-  const selectedCards = selectedDeckCards.map((dc) => dc.card as CardInfo);
+  const selectedCards = selectedDeckCards.map((dc) => ({
+    id: dc.cardId,
+    keyword: dc.keyword,
+    rarity: dc.rarity,
+    flavorText: dc.flavorText,
+    contextDescription: dc.contextDescription,
+    thumbnailUrl: dc.thumbnailUrl,
+    cardImageUrl: dc.cardImageUrl,
+  }));
 
   // Get a random predefined challenge for evaluation context
-  // Note: This may be different from what was shown to the user, but evaluation still works
   const challenge = getRandomChallenge(session.scenarioId, currentPhase);
 
   // Evaluate the cards
@@ -385,72 +471,112 @@ export async function submitPhaseCards(
   // Combine AI commentary
   const aiCommentary = `${evaluation.narrativeDescription}\n\n${evaluation.humorComment}`;
 
-  // Transaction: Save phase result and update session
-  const result = await prisma.$transaction(async (tx) => {
-    // Create phase result
-    const phaseResult = await tx.challengeSessionPhase.create({
-      data: {
-        sessionId,
-        phaseNumber: currentPhase,
-        challenge: `${challenge.situation}\n\n${challenge.challenge}`,
-        selectedCardIds: cardIds,
-        fitScore: evaluation.fitScore,
-        bonusScore: evaluation.bonusScore,
-        totalScore: phaseScore,
-        aiCommentary,
+  // Update game state
+  const updatedDeck = gameState.deck.map((dc) => {
+    if (phaseDefinition.consumesCard && cardIds.includes(dc.cardId)) {
+      return { ...dc, isUsed: true, usedInPhase: currentPhase };
+    }
+    return dc;
+  });
+
+  const newPhaseResult: PhaseResult = {
+    phaseNumber: currentPhase,
+    challenge: `${challenge.situation}\n\n${challenge.challenge}`,
+    selectedCardIds: cardIds,
+    fitScore: evaluation.fitScore,
+    bonusScore: evaluation.bonusScore,
+    totalScore: phaseScore,
+    aiCommentary,
+    completedAt: new Date().toISOString(),
+  };
+
+  const newTotalScore = gameState.totalScore + phaseScore;
+  const nextPhase = currentPhase + 1;
+  const isComplete = isScenarioComplete(session.scenarioId, nextPhase - 1);
+
+  const updatedGameState: GameState = {
+    deck: updatedDeck,
+    phases: [...gameState.phases, newPhaseResult],
+    totalScore: newTotalScore,
+  };
+
+  // Update session
+  await prisma.challengeSession.update({
+    where: { id: sessionId },
+    data: {
+      currentPhase: isComplete ? currentPhase : nextPhase,
+      status: isComplete ? 'completed' : 'in_progress',
+      completedAt: isComplete ? new Date() : null,
+      gameState: updatedGameState as unknown as Prisma.InputJsonValue,
+    },
+  });
+
+  // Generate summary and process rewards if complete
+  let summary: string | undefined;
+  let achievementRewards: { rank: string; coins: number; isNew: boolean }[] | undefined;
+  let totalCoinsAwarded = 0;
+  let isHighScore = false;
+
+  if (isComplete) {
+    // Update or create high score
+    const existingHighScore = await prisma.challengeHighScore.findUnique({
+      where: {
+        userId_scenarioId: {
+          userId,
+          scenarioId: session.scenarioId,
+        },
       },
     });
 
-    // Mark cards as used if phase consumes cards
-    if (phaseDefinition.consumesCard) {
-      await tx.challengeSessionCard.updateMany({
-        where: {
-          sessionId,
-          cardId: { in: cardIds },
-        },
+    const bestRank = getRankFromScore(newTotalScore);
+
+    if (existingHighScore) {
+      if (newTotalScore > existingHighScore.highScore) {
+        isHighScore = true;
+        await prisma.challengeHighScore.update({
+          where: { id: existingHighScore.id },
+          data: {
+            highScore: newTotalScore,
+            bestRank,
+            playCount: existingHighScore.playCount + 1,
+          },
+        });
+      } else {
+        await prisma.challengeHighScore.update({
+          where: { id: existingHighScore.id },
+          data: {
+            playCount: existingHighScore.playCount + 1,
+          },
+        });
+      }
+    } else {
+      isHighScore = true;
+      await prisma.challengeHighScore.create({
         data: {
-          isUsed: true,
-          usedInPhase: currentPhase,
+          userId,
+          scenarioId: session.scenarioId,
+          highScore: newTotalScore,
+          bestRank,
+          playCount: 1,
         },
       });
     }
 
-    // Update session
-    const nextPhase = currentPhase + 1;
-    const isComplete = isScenarioComplete(session.scenarioId, nextPhase - 1);
-    const newTotalScore = session.totalScore + phaseScore;
+    // Process achievement rewards
+    const rewardResult = await processAchievementRewards(
+      userId,
+      session.scenarioId,
+      newTotalScore
+    );
+    achievementRewards = rewardResult.achievements;
+    totalCoinsAwarded = rewardResult.totalCoinsAwarded;
 
-    const updatedSession = await tx.challengeSession.update({
-      where: { id: sessionId },
-      data: {
-        currentPhase: isComplete ? currentPhase : nextPhase,
-        totalScore: newTotalScore,
-        status: isComplete ? 'completed' : 'in_progress',
-        completedAt: isComplete ? new Date() : null,
-      },
-    });
-
-    return {
-      phaseResult,
-      isComplete,
-      newTotalScore,
-      updatedSession,
-    };
-  });
-
-  // Generate summary if complete
-  let summary: string | undefined;
-  if (result.isComplete) {
-    const allPhases = await prisma.challengeSessionPhase.findMany({
-      where: { sessionId },
-      orderBy: { phaseNumber: 'asc' },
-    });
-
-    const phaseResults = allPhases.map((p) => {
+    // Generate summary
+    const phaseResults = updatedGameState.phases.map((p) => {
       const phaseDef = getPhaseDefinition(session.scenarioId, p.phaseNumber);
-      const cardKeywords = session.deckCards
-        .filter((dc) => (p.selectedCardIds as string[]).includes(dc.cardId))
-        .map((dc) => (dc.card as CardInfo).keyword);
+      const cardKeywords = updatedGameState.deck
+        .filter((dc) => p.selectedCardIds.includes(dc.cardId))
+        .map((dc) => dc.keyword);
 
       return {
         phaseTitle: phaseDef?.title || `Phase ${p.phaseNumber}`,
@@ -461,9 +587,14 @@ export async function submitPhaseCards(
 
     summary = await generateChallengeSummary(
       scenario.title,
-      result.newTotalScore,
+      newTotalScore,
       phaseResults
     );
+
+    // Delete the session after completion (cleanup)
+    await prisma.challengeSession.delete({
+      where: { id: sessionId },
+    });
   }
 
   return {
@@ -482,10 +613,23 @@ export async function submitPhaseCards(
       narrativeDescription: evaluation.narrativeDescription,
       humorComment: evaluation.humorComment,
     },
-    sessionTotalScore: result.newTotalScore,
-    isComplete: result.isComplete,
+    sessionTotalScore: newTotalScore,
+    isComplete,
+    isHighScore,
     summary,
+    achievementRewards,
+    totalCoinsAwarded,
   };
+}
+
+/**
+ * Get rank from score
+ */
+function getRankFromScore(score: number): string {
+  if (score >= 270) return 'S';
+  if (score >= 210) return 'A';
+  if (score >= 150) return 'B';
+  return 'C';
 }
 
 /**
@@ -507,11 +651,8 @@ export async function abandonSession(
     throw new Error('このセッションは既に終了しています');
   }
 
-  await prisma.challengeSession.update({
+  // Delete the session instead of marking as abandoned
+  await prisma.challengeSession.delete({
     where: { id: sessionId },
-    data: {
-      status: 'abandoned',
-      completedAt: new Date(),
-    },
   });
 }

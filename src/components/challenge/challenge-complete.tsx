@@ -11,11 +11,19 @@ interface PhaseResult {
   totalScore: number;
 }
 
+interface AchievementReward {
+  rank: string;
+  coins: number;
+  isNew: boolean;
+}
+
 interface ChallengeCompleteProps {
   scenarioTitle: string;
   totalScore: number;
   phaseResults: PhaseResult[];
   summary?: string;
+  achievementRewards?: AchievementReward[];
+  totalCoinsAwarded?: number;
   onPlayAgain: () => void;
   onBackToScenarios: () => void;
   isStarting?: boolean;
@@ -27,12 +35,15 @@ export function ChallengeComplete({
   totalScore,
   phaseResults,
   summary,
+  achievementRewards,
+  totalCoinsAwarded,
   onPlayAgain,
   onBackToScenarios,
   isStarting = false,
   className,
 }: ChallengeCompleteProps) {
   const { rank, emoji, color } = getScoreRank(totalScore);
+  const newAchievements = achievementRewards?.filter((a) => a.isNew) || [];
 
   return (
     <motion.div
@@ -81,11 +92,50 @@ export function ChallengeComplete({
         </div>
       </motion.div>
 
+      {/* 達成報酬 */}
+      {newAchievements.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.4, type: 'spring' }}
+          className="mx-auto max-w-md rounded-xl border-2 border-yellow-400 bg-gradient-to-br from-yellow-50 to-amber-50 p-6 dark:border-yellow-600 dark:from-yellow-900/30 dark:to-amber-900/30"
+        >
+          <div className="mb-3 text-3xl">🎉</div>
+          <h3 className="mb-4 font-bold text-yellow-800 dark:text-yellow-300">
+            達成報酬獲得!
+          </h3>
+          <div className="space-y-2">
+            {newAchievements.map((achievement) => (
+              <motion.div
+                key={achievement.rank}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="flex items-center justify-between rounded-lg bg-white/50 px-4 py-2 dark:bg-black/20"
+              >
+                <span className="font-medium text-gray-800 dark:text-gray-200">
+                  {achievement.rank}ランク初達成
+                </span>
+                <span className="font-bold text-yellow-600 dark:text-yellow-400">
+                  +{achievement.coins} コイン
+                </span>
+              </motion.div>
+            ))}
+          </div>
+          {totalCoinsAwarded && totalCoinsAwarded > 0 && (
+            <div className="mt-4 border-t border-yellow-300 pt-3 dark:border-yellow-700">
+              <span className="text-lg font-bold text-yellow-700 dark:text-yellow-300">
+                合計 +{totalCoinsAwarded} コイン獲得!
+              </span>
+            </div>
+          )}
+        </motion.div>
+      )}
+
       {/* フェーズ別結果 */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5 }}
+        transition={{ delay: newAchievements.length > 0 ? 0.7 : 0.5 }}
         className="mx-auto max-w-md rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800"
       >
         <h3 className="mb-4 font-semibold text-gray-900 dark:text-gray-100">

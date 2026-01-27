@@ -53,6 +53,7 @@ interface ErrorResponse {
 | RATE_LIMIT_EXCEEDED | 429 | レート制限超過 |
 | INTERNAL_ERROR | 500 | サーバーエラー |
 | MODERATION_BLOCKED | 400 | コンテンツポリシー違反 |
+| INSUFFICIENT_COINS | 400 | コイン不足 |
 
 ## 7.3 エンドポイント一覧
 
@@ -89,6 +90,13 @@ interface ErrorResponse {
 | Method | Endpoint | 説明 |
 |--------|----------|------|
 | GET | /api/stats | コレクション統計 |
+
+### コイン
+
+| Method | Endpoint | 説明 |
+|--------|----------|------|
+| GET | /api/coins | コイン残高・チャレンジ回数取得 |
+| GET | /api/coins/transactions | トランザクション履歴 |
 
 ### チャレンジモード
 
@@ -934,6 +942,73 @@ export async function POST(req: NextRequest) {
     sessionTotalScore: number;
     isComplete: boolean;
     summary?: string;  // 完了時のみ
+    achievementRewards?: [  // 達成報酬（完了時のみ）
+      {
+        rank: string;
+        coins: number;
+        isNew: boolean;
+      }
+    ];
+    totalCoinsAwarded?: number;
+  }
+}
+```
+
+---
+
+## 7.9 コイン API
+
+### GET /api/coins
+
+コイン残高とチャレンジ回数情報を取得。日次リセットも自動実行。
+
+**Response:**
+```typescript
+{
+  success: true,
+  data: {
+    freeCoins: number;        // 当日無料コイン（毎日90にリセット）
+    permanentCoins: number;   // 永続コイン（達成報酬・購入）
+    totalAvailable: number;   // 合計利用可能コイン
+    challenge: {
+      count: number;          // 本日のチャレンジ回数
+      remainingFree: number;  // 残り無料回数
+      isFree: boolean;        // 次回が無料か
+      nextCost: number;       // 次回のコスト（0 or 10）
+    }
+  }
+}
+```
+
+---
+
+### GET /api/coins/transactions
+
+トランザクション履歴を取得。
+
+**Query Parameters:**
+| パラメータ | 型 | デフォルト | 説明 |
+|-----------|-----|-----------|------|
+| cursor | string | - | ページネーションカーソル |
+| limit | number | 20 | 取得件数（最大50） |
+
+**Response:**
+```typescript
+{
+  success: true,
+  data: {
+    transactions: [
+      {
+        id: string;
+        amount: number;           // 正:増加, 負:減少
+        transactionType: string;  // purchase, bonus, consume, refund, daily
+        description: string | null;
+        balanceAfter: number;
+        createdAt: string;
+      }
+    ],
+    nextCursor: string | null,
+    hasMore: boolean
   }
 }
 ```

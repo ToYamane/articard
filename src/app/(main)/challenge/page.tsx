@@ -20,6 +20,13 @@ const DIFFICULTY_FILTER_OPTIONS: { value: DifficultyFilter; label: string }[] = 
   { value: 'hard', label: '難しい' },
 ];
 
+interface ChallengeInfo {
+  count: number;
+  remainingFree: number;
+  isFree: boolean;
+  nextCost: number;
+}
+
 export default function ChallengePage() {
   const router = useRouter();
   const { addToast } = useToast();
@@ -33,6 +40,7 @@ export default function ChallengePage() {
     scenarioId: string;
     status: ChallengeSessionStatus;
   } | null>(null);
+  const [challengeInfo, setChallengeInfo] = useState<ChallengeInfo | null>(null);
 
   // フィルタリングされたシナリオ一覧
   const filteredScenarios = useMemo(() => {
@@ -51,18 +59,22 @@ export default function ChallengePage() {
           throw new Error('認証トークンの取得に失敗しました');
         }
 
-        // シナリオ一覧とセッション一覧を並列取得
-        const [scenariosRes, sessionsRes] = await Promise.all([
+        // シナリオ一覧、セッション一覧、コイン情報を並列取得
+        const [scenariosRes, sessionsRes, coinsRes] = await Promise.all([
           fetch('/api/challenge/scenarios', {
             headers: { Authorization: `Bearer ${token}` },
           }),
           fetch('/api/challenge/sessions?status=in_progress&limit=1', {
             headers: { Authorization: `Bearer ${token}` },
           }),
+          fetch('/api/coins', {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
         ]);
 
         const scenariosData = await scenariosRes.json();
         const sessionsData = await sessionsRes.json();
+        const coinsData = await coinsRes.json();
 
         if (scenariosData.success) {
           setScenarios(scenariosData.data);
@@ -72,18 +84,8 @@ export default function ChallengePage() {
           setExistingSession(sessionsData.data.sessions[0]);
         }
 
-        // deck_buildingステータスのセッションもチェック
-        const deckBuildingRes = await fetch(
-          '/api/challenge/sessions?status=deck_building&limit=1',
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        const deckBuildingData = await deckBuildingRes.json();
-
-        if (
-          deckBuildingData.success &&
-          deckBuildingData.data.sessions.length > 0
-        ) {
-          setExistingSession(deckBuildingData.data.sessions[0]);
+        if (coinsData.success && coinsData.data.challenge) {
+          setChallengeInfo(coinsData.data.challenge);
         }
       } catch (error) {
         console.error('Fetch data error:', error);
@@ -197,6 +199,28 @@ export default function ChallengePage() {
         <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
           カードを使って冒険に挑戦しよう！
         </p>
+
+        {/* チャレンジ回数情報 */}
+        {challengeInfo && (
+          <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-gray-100 px-4 py-2 dark:bg-gray-800">
+            <span className="text-sm text-gray-600 dark:text-gray-400">
+              本日の無料回数:
+            </span>
+            <span className={cn(
+              'font-medium',
+              challengeInfo.remainingFree > 0
+                ? 'text-green-600 dark:text-green-400'
+                : 'text-orange-600 dark:text-orange-400'
+            )}>
+              {challengeInfo.remainingFree}/10
+            </span>
+            {!challengeInfo.isFree && (
+              <span className="text-xs text-gray-500 dark:text-gray-500">
+                (次回 {challengeInfo.nextCost}コイン)
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* 難易度フィルター */}
@@ -231,9 +255,7 @@ export default function ChallengePage() {
                 進行中のチャレンジがあります
               </p>
               <p className="text-sm text-blue-700 dark:text-blue-300">
-                {existingSession.status === 'deck_building'
-                  ? 'デッキ編成中'
-                  : 'プレイ中'}
+                プレイ中
               </p>
             </div>
             <div className="flex gap-2">

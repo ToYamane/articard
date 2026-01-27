@@ -121,9 +121,9 @@ export default function SettingsPage() {
 
         <div className="space-y-3 text-sm">
           <div className="flex justify-between">
-            <span className="text-gray-600 dark:text-gray-400">知識残高</span>
+            <span className="text-gray-600 dark:text-gray-400">コイン残高</span>
             <span className="font-medium text-gray-900 dark:text-gray-100">
-              {profile?.knowledgeBalance ?? 0}
+              {(profile?.knowledgeBalance ?? 0).toLocaleString()}
             </span>
           </div>
           <div className="flex justify-between">
