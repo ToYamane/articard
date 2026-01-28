@@ -21,6 +21,8 @@ model User {
   isPremium               Boolean   @default(false) @map("is_premium")
   isDeveloper             Boolean   @default(false) @map("is_developer")
   premiumExpiresAt        DateTime? @map("premium_expires_at") @db.Timestamptz
+  subscriptionTier          String?   @map("subscription_tier") @db.VarChar(20) // 'plus' | 'premium' | null
+  subscriptionBonusReceived Boolean   @default(false) @map("subscription_bonus_received")
   createdAt               DateTime  @default(now()) @map("created_at") @db.Timestamptz
   updatedAt               DateTime  @updatedAt @map("updated_at") @db.Timestamptz
   lastActiveAt            DateTime  @default(now()) @map("last_active_at") @db.Timestamptz

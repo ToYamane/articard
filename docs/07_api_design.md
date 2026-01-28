@@ -95,8 +95,17 @@ interface ErrorResponse {
 
 | Method | Endpoint | 説明 |
 |--------|----------|------|
-| GET | /api/coins | コイン残高・チャレンジ回数取得 |
+| GET | /api/coins | コイン残高・チャレンジ回数・サブスク情報取得 |
 | GET | /api/coins/transactions | トランザクション履歴 |
+| POST | /api/coins/purchase | コイン購入（開発者のみ） |
+
+### サブスクリプション
+
+| Method | Endpoint | 説明 |
+|--------|----------|------|
+| POST | /api/subscription | サブスク有効化（開発者のみ） |
+| DELETE | /api/subscription | サブスク解約 |
+| GET | /api/subscription/status | サブスク状態取得 |
 
 ### チャレンジモード
 
@@ -960,24 +969,73 @@ export async function POST(req: NextRequest) {
 
 ### GET /api/coins
 
-コイン残高とチャレンジ回数情報を取得。日次リセットも自動実行。
+コイン残高、チャレンジ回数、サブスク情報を取得。日次リセットも自動実行。
 
 **Response:**
 ```typescript
 {
   success: true,
   data: {
-    freeCoins: number;        // 当日無料コイン（毎日90にリセット）
+    freeCoins: number;        // 当日無料コイン（プランにより異なる）
     permanentCoins: number;   // 永続コイン（達成報酬・購入）
     totalAvailable: number;   // 合計利用可能コイン
     challenge: {
       count: number;          // 本日のチャレンジ回数
-      remainingFree: number;  // 残り無料回数
+      remainingFree: number;  // 残り無料回数（-1 = 無制限）
       isFree: boolean;        // 次回が無料か
       nextCost: number;       // 次回のコスト（0 or 10）
-    }
+    },
+    subscription: {
+      tier: string | null;    // 'plus' | 'premium' | null
+      expiresAt: string | null;
+      plan: {
+        name: string;
+        dailyFreeCoins: number;
+        freeChallenges: number;  // -1 = 無制限
+      } | null;
+    },
+    packages: [               // 購入可能パッケージ一覧
+      {
+        id: string;           // 'standard' | 'value' | 'premium'
+        name: string;
+        coins: number;
+        price: number;
+      }
+    ]
   }
 }
+```
+
+---
+
+### POST /api/coins/purchase
+
+コインパッケージを購入。**開発者のみ利用可能**。
+
+**Request:**
+```typescript
+{
+  packageId: "standard" | "value" | "premium";
+}
+```
+
+**Response:**
+```typescript
+{
+  success: true,
+  data: {
+    coins: number;       // 購入したコイン数
+    newBalance: number;  // 新しい永続コイン残高
+  }
+}
+```
+
+**エラー:**
+```typescript
+// 開発者以外
+{ code: "FORBIDDEN", message: "開発者のみ利用可能です" }
+// 無効なパッケージ
+{ code: "INVALID_PACKAGE", message: "無効なパッケージです" }
 ```
 
 ---
@@ -1009,6 +1067,81 @@ export async function POST(req: NextRequest) {
     ],
     nextCursor: string | null,
     hasMore: boolean
+  }
+}
+```
+
+---
+
+## 7.10 サブスクリプション API
+
+### POST /api/subscription
+
+サブスクリプションを有効化。**開発者のみ利用可能**。
+初回有効化時にボーナスコインを付与。
+
+**Request:**
+```typescript
+{
+  tier: "plus" | "premium";
+}
+```
+
+**Response:**
+```typescript
+{
+  success: true,
+  data: {
+    tier: string;        // 有効化されたプラン
+    bonusCoins: number;  // 付与されたボーナス（初回のみ、0なら既受取）
+    expiresAt: string;   // 有効期限（ISO8601）
+  }
+}
+```
+
+**エラー:**
+```typescript
+// 開発者以外
+{ code: "FORBIDDEN", message: "開発者のみ利用可能です" }
+// 無効なプラン
+{ code: "INVALID_TIER", message: "無効なプランです" }
+```
+
+---
+
+### DELETE /api/subscription
+
+サブスクリプションを解約。
+
+**Response:**
+```typescript
+{
+  success: true,
+  data: {
+    message: "サブスクリプションを解約しました"
+  }
+}
+```
+
+---
+
+### GET /api/subscription/status
+
+現在のサブスクリプション状態を取得。
+
+**Response:**
+```typescript
+{
+  success: true,
+  data: {
+    tier: string | null;        // 'plus' | 'premium' | null
+    expiresAt: string | null;   // 有効期限（ISO8601）
+    bonusReceived: boolean;     // 初回ボーナス受取済み
+    plan: {
+      name: string;
+      dailyFreeCoins: number;
+      freeChallenges: number;   // -1 = 無制限
+    } | null;
   }
 }
 ```

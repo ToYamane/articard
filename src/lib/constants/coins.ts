@@ -4,7 +4,7 @@
 export const COIN_COSTS = {
   /** カード生成コスト */
   CARD_GENERATION: 30,
-  /** チャレンジモード11回目以降のコスト */
+  /** チャレンジモード追加回数のコスト */
   CHALLENGE_EXTRA: 10,
 } as const;
 
@@ -12,7 +12,7 @@ export const COIN_COSTS = {
  * コイン報酬量
  */
 export const COIN_REWARDS = {
-  /** 毎日の無料コイン */
+  /** 毎日の無料コイン（無料ユーザー） */
   DAILY_FREE: 90,
   /** チャレンジBランク達成報酬 */
   CHALLENGE_RANK_B: 30,
@@ -23,11 +23,11 @@ export const COIN_REWARDS = {
 } as const;
 
 /**
- * 日次制限
+ * 日次制限（無料ユーザー）
  */
 export const DAILY_LIMITS = {
   /** 無料チャレンジ回数 */
-  FREE_CHALLENGES: 10,
+  FREE_CHALLENGES: 3,
 } as const;
 
 /**
@@ -51,3 +51,57 @@ export const RANK_INFO = {
 } as const;
 
 export type AchievementRank = 'B' | 'A' | 'S';
+
+// ========================================
+// サブスクリプション関連
+// ========================================
+
+/**
+ * サブスクリプションプラン定義
+ */
+export const SUBSCRIPTION_PLANS = {
+  plus: {
+    id: 'plus',
+    name: 'プラス',
+    monthlyPrice: 980,
+    dailyFreeCoins: 150,
+    freeChallenges: 10,
+    signupBonus: 300,
+  },
+  premium: {
+    id: 'premium',
+    name: 'プレミアム',
+    monthlyPrice: 2980,
+    dailyFreeCoins: 300,
+    freeChallenges: Infinity,
+    signupBonus: 900,
+  },
+} as const;
+
+export type SubscriptionTier = keyof typeof SUBSCRIPTION_PLANS;
+
+/**
+ * コイン購入パッケージ定義
+ */
+export const COIN_PACKAGES = {
+  standard: {
+    id: 'standard',
+    name: 'スタンダード',
+    coins: 600,
+    price: 980,
+  },
+  value: {
+    id: 'value',
+    name: 'バリュー',
+    coins: 2100,
+    price: 2980,
+  },
+  premium: {
+    id: 'premium',
+    name: 'プレミアム',
+    coins: 6000,
+    price: 6980,
+  },
+} as const;
+
+export type CoinPackageId = keyof typeof COIN_PACKAGES;

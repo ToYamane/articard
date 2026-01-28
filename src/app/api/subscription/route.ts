@@ -1,0 +1,87 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { verifyAuth } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import { handleApiError } from '@/lib/errors';
+import {
+  activateSubscription,
+  cancelSubscription,
+} from '@/lib/services/subscription-service';
+import { SUBSCRIPTION_PLANS, type SubscriptionTier } from '@/lib/constants/coins';
+import type { ApiResponse } from '@/types/api';
+
+// POST /api/subscription - サブスク有効化（開発者のみ）
+export async function POST(
+  req: NextRequest
+): Promise<NextResponse<ApiResponse<{ tier: string; bonusCoins: number; expiresAt: string }>>> {
+  try {
+    const authUser = await verifyAuth(req);
+    if (!authUser) {
+      return NextResponse.json(
+        { success: false, error: { code: 'UNAUTHORIZED', message: '認証が必要です' } },
+        { status: 401 }
+      );
+    }
+
+    // 開発者チェック
+    const user = await prisma.user.findUnique({
+      where: { id: authUser.uid },
+      select: { isDeveloper: true },
+    });
+
+    if (!user?.isDeveloper) {
+      return NextResponse.json(
+        { success: false, error: { code: 'FORBIDDEN', message: '開発者のみ利用可能です' } },
+        { status: 403 }
+      );
+    }
+
+    const body = await req.json();
+    const { tier } = body as { tier: SubscriptionTier };
+
+    if (!tier || !(tier in SUBSCRIPTION_PLANS)) {
+      return NextResponse.json(
+        { success: false, error: { code: 'INVALID_TIER', message: '無効なプランです' } },
+        { status: 400 }
+      );
+    }
+
+    const result = await activateSubscription(authUser.uid, tier);
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        tier: result.tier,
+        bonusCoins: result.bonusCoins,
+        expiresAt: result.expiresAt.toISOString(),
+      },
+    });
+  } catch (error) {
+    console.error('Activate subscription error:', error);
+    return handleApiError(error);
+  }
+}
+
+// DELETE /api/subscription - サブスク解約
+export async function DELETE(
+  req: NextRequest
+): Promise<NextResponse<ApiResponse<{ message: string }>>> {
+  try {
+    const authUser = await verifyAuth(req);
+    if (!authUser) {
+      return NextResponse.json(
+        { success: false, error: { code: 'UNAUTHORIZED', message: '認証が必要です' } },
+        { status: 401 }
+      );
+    }
+
+    await cancelSubscription(authUser.uid);
+
+    return NextResponse.json({
+      success: true,
+      data: { message: 'サブスクリプションを解約しました' },
+    });
+  } catch (error) {
+    console.error('Cancel subscription error:', error);
+    return handleApiError(error);
+  }
+}

@@ -16,8 +16,8 @@ npm run lint                # ESLint
 npm run test                # Run all tests
 npm run test -- path/to/test.ts  # Run single test file
 
-# Database (requires Docker)
-docker-compose up -d        # Start PostgreSQL
+# Database (Cloud SQL via Proxy)
+./cloud-sql-proxy.exe articard-ff673:asia-northeast1:articard-db --port 5433
 npm run db:push             # Push schema changes
 npm run db:studio           # Open Prisma Studio GUI
 ```
@@ -110,12 +110,11 @@ Required in `.env`:
 ## Database Setup
 
 ```bash
-# Local development with Docker
-docker-compose up -d
-npm run db:push
+# Start Cloud SQL Proxy (required for development)
+./cloud-sql-proxy.exe articard-ff673:asia-northeast1:articard-db --port 5433
 
-# Production uses Cloud SQL (articard-ff673 project)
-# Connection configured via DATABASE_URL in .env
+# Push schema changes
+npm run db:push
 ```
 
 ## Infrastructure

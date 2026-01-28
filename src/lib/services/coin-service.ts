@@ -1,5 +1,37 @@
 import { prisma } from '@/lib/prisma';
-import { COIN_REWARDS, DAILY_LIMITS, COIN_COSTS } from '@/lib/constants/coins';
+import {
+  COIN_REWARDS,
+  DAILY_LIMITS,
+  COIN_COSTS,
+  SUBSCRIPTION_PLANS,
+  type SubscriptionTier,
+} from '@/lib/constants/coins';
+
+/**
+ * ユーザーのサブスクリプションプラン設定を取得
+ */
+function getSubscriptionConfig(tier: string | null) {
+  if (!tier || !(tier in SUBSCRIPTION_PLANS)) {
+    return null;
+  }
+  return SUBSCRIPTION_PLANS[tier as SubscriptionTier];
+}
+
+/**
+ * 日次無料コイン数を取得
+ */
+function getDailyFreeCoins(tier: string | null): number {
+  const plan = getSubscriptionConfig(tier);
+  return plan?.dailyFreeCoins ?? COIN_REWARDS.DAILY_FREE;
+}
+
+/**
+ * 無料チャレンジ回数を取得
+ */
+function getFreeChallenges(tier: string | null): number {
+  const plan = getSubscriptionConfig(tier);
+  return plan?.freeChallenges ?? DAILY_LIMITS.FREE_CHALLENGES;
+}
 
 /**
  * トランザクションタイプ
@@ -88,6 +120,7 @@ export async function checkAndResetDaily(userId: string): Promise<{
     select: {
       dailyCoinsResetAt: true,
       dailyChallengeResetAt: true,
+      subscriptionTier: true,
     },
   });
 
@@ -101,11 +134,14 @@ export async function checkAndResetDaily(userId: string): Promise<{
 
   // 必要な場合のみ1回のUPDATEで実行
   if (needsCoinsReset || needsChallengeReset) {
+    // プランに応じた日次コイン数を取得
+    const dailyCoins = getDailyFreeCoins(user.subscriptionTier);
+
     await prisma.user.update({
       where: { id: userId },
       data: {
         ...(needsCoinsReset && {
-          dailyFreeCoins: COIN_REWARDS.DAILY_FREE,
+          dailyFreeCoins: dailyCoins,
           dailyCoinsResetAt: todayStart,
         }),
         ...(needsChallengeReset && {
@@ -313,7 +349,10 @@ export async function checkChallengeLimit(
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { dailyChallengeCount: true },
+    select: {
+      dailyChallengeCount: true,
+      subscriptionTier: true,
+    },
   });
 
   if (!user) {
@@ -321,9 +360,14 @@ export async function checkChallengeLimit(
   }
 
   const count = user.dailyChallengeCount;
-  const isFree = count < DAILY_LIMITS.FREE_CHALLENGES;
+  const freeChallenges = getFreeChallenges(user.subscriptionTier);
+
+  // プレミアムは無制限
+  const isFree = freeChallenges === Infinity || count < freeChallenges;
   const cost = isFree ? 0 : COIN_COSTS.CHALLENGE_EXTRA;
-  const remainingFree = Math.max(0, DAILY_LIMITS.FREE_CHALLENGES - count);
+  const remainingFree = freeChallenges === Infinity
+    ? Infinity
+    : Math.max(0, freeChallenges - count);
 
   return { count, isFree, cost, remainingFree };
 }

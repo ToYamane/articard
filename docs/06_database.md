@@ -26,6 +26,8 @@ erDiagram
         timestamp daily_challenge_reset_at "チャレンジリセット日時"
         boolean is_premium "プレミアム会員"
         timestamp premium_expires_at "プレミアム期限"
+        varchar(20) subscription_tier "サブスクプラン plus/premium"
+        boolean subscription_bonus_received "初回ボーナス受取済み"
         timestamp created_at
         timestamp updated_at
         timestamp last_active_at
@@ -95,6 +97,8 @@ CREATE TABLE users (
     is_premium BOOLEAN NOT NULL DEFAULT FALSE,
     is_developer BOOLEAN NOT NULL DEFAULT FALSE,
     premium_expires_at TIMESTAMP WITH TIME ZONE,
+    subscription_tier VARCHAR(20),                      -- 'plus' | 'premium' | NULL
+    subscription_bonus_received BOOLEAN NOT NULL DEFAULT FALSE,  -- 初回ボーナス受取済み
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     last_active_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -215,19 +219,21 @@ datasource db {
 }
 
 model User {
-  id                      String    @id @db.VarChar(128)
-  nickname                String    @unique @db.VarChar(20)
-  knowledgeBalance        Int       @default(0) @map("knowledge_balance")       // 永続コイン
-  dailyFreeCoins          Int       @default(90) @map("daily_free_coins")       // 当日無料コイン
-  dailyCoinsResetAt       DateTime? @map("daily_coins_reset_at") @db.Timestamptz
-  dailyChallengeCount     Int       @default(0) @map("daily_challenge_count")
-  dailyChallengeResetAt   DateTime? @map("daily_challenge_reset_at") @db.Timestamptz
-  isPremium               Boolean   @default(false) @map("is_premium")
-  isDeveloper             Boolean   @default(false) @map("is_developer")
-  premiumExpiresAt        DateTime? @map("premium_expires_at") @db.Timestamptz
-  createdAt               DateTime  @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt               DateTime  @updatedAt @map("updated_at") @db.Timestamptz
-  lastActiveAt            DateTime  @default(now()) @map("last_active_at") @db.Timestamptz
+  id                        String    @id @db.VarChar(128)
+  nickname                  String    @unique @db.VarChar(20)
+  knowledgeBalance          Int       @default(0) @map("knowledge_balance")       // 永続コイン
+  dailyFreeCoins            Int       @default(90) @map("daily_free_coins")       // 当日無料コイン
+  dailyCoinsResetAt         DateTime? @map("daily_coins_reset_at") @db.Timestamptz
+  dailyChallengeCount       Int       @default(0) @map("daily_challenge_count")
+  dailyChallengeResetAt     DateTime? @map("daily_challenge_reset_at") @db.Timestamptz
+  isPremium                 Boolean   @default(false) @map("is_premium")
+  isDeveloper               Boolean   @default(false) @map("is_developer")
+  premiumExpiresAt          DateTime? @map("premium_expires_at") @db.Timestamptz
+  subscriptionTier          String?   @map("subscription_tier") @db.VarChar(20)   // 'plus' | 'premium' | null
+  subscriptionBonusReceived Boolean   @default(false) @map("subscription_bonus_received")
+  createdAt                 DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt                 DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  lastActiveAt              DateTime  @default(now()) @map("last_active_at") @db.Timestamptz
 
   articles              Article[]
   cards                 Card[]

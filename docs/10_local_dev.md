@@ -8,67 +8,31 @@
 |--------|-----------|------|
 | Node.js | 20.x | ランタイム |
 | npm / pnpm | 最新 | パッケージ管理 |
-| Docker | 最新 | PostgreSQL実行 |
-| Docker Compose | 最新 | コンテナオーケストレーション |
-| gcloud CLI | 最新 | GCP操作（任意） |
+| Cloud SQL Proxy | 最新 | Cloud SQL接続 |
+| gcloud CLI | 最新 | GCP認証 |
 | Firebase CLI | 最新 | Firebase操作 |
 
-## 10.2 Docker Compose設定
-
-### docker-compose.yml
-
-```yaml
-version: '3.8'
-
-services:
-  db:
-    image: postgres:15
-    container_name: articard-db
-    environment:
-      POSTGRES_USER: articard
-      POSTGRES_PASSWORD: articard_dev_password
-      POSTGRES_DB: articard
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U articard"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
-volumes:
-  postgres_data:
-```
-
-### データベース起動コマンド
+### Cloud SQL Proxyの準備
 
 ```bash
-# 起動
-docker compose up -d
+# ダウンロード（Windows）
+# https://cloud.google.com/sql/docs/mysql/connect-auth-proxy#install
 
-# 停止
-docker compose down
-
-# データを含めて削除
-docker compose down -v
-
-# ログ確認
-docker compose logs -f db
+# GCP認証
+gcloud auth application-default login
 ```
 
-## 10.3 環境変数テンプレート
+## 10.2 環境変数
 
-### .env.local
+### .env
 
 ```bash
 # ===================================
-# Articard ローカル開発環境変数
+# Articard 環境変数
 # ===================================
 
-# ----- Database -----
-DATABASE_URL="postgresql://articard:articard_dev_password@localhost:5432/articard"
+# ----- Database (Cloud SQL via Proxy) -----
+DATABASE_URL="postgresql://articard_user:articard_cloud_pass_2024@localhost:5433/articard"
 
 # ----- Firebase Auth -----
 NEXT_PUBLIC_FIREBASE_API_KEY="your-firebase-api-key"
@@ -93,8 +57,6 @@ FLUX_API_URL="https://api.bfl.ml/v1"
 # ----- Google Cloud Storage -----
 GCS_BUCKET_NAME="articard-dev-images"
 GOOGLE_CLOUD_PROJECT="your-gcp-project-id"
-
-# 開発時はエミュレーターまたはサービスアカウント
 GOOGLE_APPLICATION_CREDENTIALS="./service-account.json"
 
 # ----- App Settings -----
@@ -102,41 +64,7 @@ NEXT_PUBLIC_APP_URL="http://localhost:3000"
 NODE_ENV="development"
 ```
 
-### .env.example
-
-プロジェクトルートに配置し、Git管理対象とする。
-
-```bash
-# .env.example - 開発者向けテンプレート
-# このファイルをコピーして .env.local を作成してください
-# cp .env.example .env.local
-
-DATABASE_URL="postgresql://articard:articard_dev_password@localhost:5432/articard"
-
-NEXT_PUBLIC_FIREBASE_API_KEY=""
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=""
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=""
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=""
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=""
-NEXT_PUBLIC_FIREBASE_APP_ID=""
-
-FIREBASE_ADMIN_PROJECT_ID=""
-FIREBASE_ADMIN_CLIENT_EMAIL=""
-FIREBASE_ADMIN_PRIVATE_KEY=""
-
-OPENAI_API_KEY=""
-FLUX_API_KEY=""
-FLUX_API_URL="https://api.bfl.ml/v1"
-
-GCS_BUCKET_NAME=""
-GOOGLE_CLOUD_PROJECT=""
-GOOGLE_APPLICATION_CREDENTIALS=""
-
-NEXT_PUBLIC_APP_URL="http://localhost:3000"
-NODE_ENV="development"
-```
-
-## 10.4 外部APIのモック戦略
+## 10.3 外部APIのモック戦略
 
 ### 開発時のモード
 
@@ -215,7 +143,7 @@ export async function generateCardImage(prompt: string): Promise<string> {
 }
 ```
 
-## 10.5 ローカル起動手順
+## 10.4 ローカル起動手順
 
 ### 初回セットアップ
 
@@ -228,14 +156,14 @@ cd articard
 npm install
 
 # 3. 環境変数設定
-cp .env.example .env.local
-# .env.local を編集して必要な値を設定
+cp .env.example .env
+# .env を編集して必要な値を設定
 
-# 4. データベース起動
-docker compose up -d
+# 4. GCP認証
+gcloud auth application-default login
 
-# 5. データベースマイグレーション
-npx prisma migrate dev
+# 5. Cloud SQL Proxy起動（別ターミナル）
+./cloud-sql-proxy.exe articard-ff673:asia-northeast1:articard-db --port 5433
 
 # 6. Prisma Client生成
 npx prisma generate
@@ -247,10 +175,10 @@ npm run dev
 ### 日常の開発フロー
 
 ```bash
-# データベース起動（まだ起動していない場合）
-docker compose up -d
+# ターミナル1: Cloud SQL Proxy起動
+./cloud-sql-proxy.exe articard-ff673:asia-northeast1:articard-db --port 5433
 
-# 開発サーバー起動
+# ターミナル2: 開発サーバー起動
 npm run dev
 
 # ブラウザでアクセス
@@ -263,8 +191,8 @@ npm run dev
 # Prisma Studio（DBのGUI）
 npx prisma studio
 
-# データベースリセット
-npx prisma migrate reset
+# スキーマをDBに反映
+npm run db:push
 
 # 型チェック
 npm run type-check
@@ -279,31 +207,16 @@ npm run test
 npm run build
 ```
 
-## 10.6 トラブルシューティング
+## 10.5 トラブルシューティング
 
 ### データベース接続エラー
 
 ```bash
-# Dockerコンテナの状態確認
-docker compose ps
+# Cloud SQL Proxyが起動しているか確認
+# 別ターミナルで起動中であることを確認
 
-# PostgreSQLのログ確認
-docker compose logs db
-
-# 手動で接続テスト
-docker exec -it articard-db psql -U articard -d articard
-```
-
-### ポート競合
-
-```bash
-# 5432ポートが使用中の場合
-# docker-compose.yml のポートを変更
-ports:
-  - "5433:5432"  # ホスト側を5433に変更
-
-# .env.local も更新
-DATABASE_URL="postgresql://articard:articard_dev_password@localhost:5433/articard"
+# GCP認証が有効か確認
+gcloud auth application-default print-access-token
 ```
 
 ### Prismaエラー
@@ -311,9 +224,6 @@ DATABASE_URL="postgresql://articard:articard_dev_password@localhost:5433/articar
 ```bash
 # スキーマとDBの同期
 npx prisma db push
-
-# マイグレーションの強制リセット（開発時のみ）
-npx prisma migrate reset --force
 
 # Prisma Clientの再生成
 npx prisma generate
@@ -325,17 +235,26 @@ npx prisma generate
 # Firebaseエミュレーター使用（任意）
 firebase emulators:start --only auth
 
-# .env.local に追加
+# .env に追加
 NEXT_PUBLIC_USE_FIREBASE_EMULATOR="true"
 ```
 
-## 10.7 ディレクトリ構造
+### よくあるエラー一覧
+
+| エラー | 原因 | 対処 |
+|--------|------|------|
+| `Can't reach database server at localhost:5433` | Cloud SQL Proxy未起動 | Proxyを起動 |
+| `The column X does not exist` | スキーマ未同期 | `npm run db:push` |
+| `Port 3000 is in use` | 古いNodeプロセスが残っている | PowerShell: `Get-Process node \| Stop-Process -Force` |
+| `EPERM: operation not permitted` (Prisma) | Nodeプロセスがファイルをロック中 | 全Nodeプロセス停止後に再試行 |
+
+## 10.6 ディレクトリ構造
 
 ```
 articard/
+├── .env                  # 環境変数（Git管理外）
 ├── .env.example          # 環境変数テンプレート
-├── .env.local            # ローカル環境変数（Git管理外）
-├── docker-compose.yml    # Docker Compose設定
+├── cloud-sql-proxy.exe   # Cloud SQL Proxy
 ├── prisma/
 │   ├── schema.prisma     # Prismaスキーマ
 │   └── migrations/       # マイグレーションファイル
