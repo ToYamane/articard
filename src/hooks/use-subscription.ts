@@ -68,7 +68,49 @@ export function useSubscription() {
     }
   }, [profile, fetchData]);
 
-  // Activate subscription
+  // Start subscription checkout (redirects to Stripe)
+  const startSubscriptionCheckout = useCallback(
+    async (tier: 'plus' | 'premium') => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const token = await getIdToken();
+        if (!token) throw new Error('認証が必要です');
+
+        // Create Stripe Checkout session
+        const response = await fetch('/api/stripe/checkout', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ tier }),
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+          throw new Error(data.error?.message || 'チェックアウトの開始に失敗しました');
+        }
+
+        // Redirect to Stripe Checkout URL
+        if (data.data.url) {
+          window.location.href = data.data.url;
+        } else {
+          throw new Error('決済ページのURLが取得できませんでした');
+        }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : '不明なエラーが発生しました';
+        setError(message);
+        throw err;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    []
+  );
+
+  // Legacy: Direct subscription activation (for dev/testing)
   const activateSubscription = useCallback(
     async (tier: 'plus' | 'premium') => {
       setIsLoading(true);
@@ -195,7 +237,8 @@ export function useSubscription() {
 
     // Actions
     fetchData,
-    activateSubscription,
+    startSubscriptionCheckout,
+    activateSubscription, // Legacy for dev/testing
     cancelSubscription,
     purchaseCoins,
   };

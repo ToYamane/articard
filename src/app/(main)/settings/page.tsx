@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/hooks/use-auth';
 import { useSubscription } from '@/hooks/use-subscription';
@@ -9,6 +10,7 @@ import { Button, Input, ConfirmModal } from '@/components/ui';
 import { ERROR_MESSAGES } from '@/lib/errors';
 
 export default function SettingsPage() {
+  const searchParams = useSearchParams();
   const { profile, isLoading, updateProfile, signOut, deleteAccount } = useAuth();
   const {
     subscription,
@@ -16,9 +18,11 @@ export default function SettingsPage() {
     freeCoins,
     permanentCoins,
     isLoading: isSubscriptionLoading,
+    startSubscriptionCheckout,
     activateSubscription,
     cancelSubscription,
     purchaseCoins,
+    fetchData,
   } = useSubscription();
   const { success, error: showError } = useToast();
 
@@ -27,6 +31,21 @@ export default function SettingsPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [processingAction, setProcessingAction] = useState<string | null>(null);
+
+  // Handle Stripe redirect results
+  useEffect(() => {
+    const subscriptionStatus = searchParams.get('subscription');
+    if (subscriptionStatus === 'success') {
+      success('サブスクリプションの登録が完了しました！');
+      // Refresh data to show updated subscription
+      fetchData();
+      // Remove query params from URL
+      window.history.replaceState({}, '', '/settings');
+    } else if (subscriptionStatus === 'canceled') {
+      showError('サブスクリプションの登録がキャンセルされました');
+      window.history.replaceState({}, '', '/settings');
+    }
+  }, [searchParams, success, showError, fetchData]);
 
   const handleUpdateProfile = async () => {
     if (!nickname.trim()) {
@@ -72,11 +91,18 @@ export default function SettingsPage() {
   const handleActivateSubscription = async (tier: 'plus' | 'premium') => {
     setProcessingAction(`subscribe-${tier}`);
     try {
-      const result = await activateSubscription(tier);
-      if (result.bonusCoins > 0) {
-        success(`${tier === 'plus' ? 'プラス' : 'プレミアム'}プランに加入しました！初回ボーナス ${result.bonusCoins} コインを獲得！`);
+      // 開発者は直接有効化（テスト用）、一般ユーザーはStripe Checkout
+      if (profile?.isDeveloper) {
+        const result = await activateSubscription(tier);
+        if (result.bonusCoins > 0) {
+          success(`${tier === 'plus' ? 'プラス' : 'プレミアム'}プランに加入しました！初回ボーナス ${result.bonusCoins} コインを獲得！`);
+        } else {
+          success(`${tier === 'plus' ? 'プラス' : 'プレミアム'}プランに加入しました！`);
+        }
       } else {
-        success(`${tier === 'plus' ? 'プラス' : 'プレミアム'}プランに加入しました！`);
+        // Stripe Checkoutにリダイレクト
+        await startSubscriptionCheckout(tier);
+        // リダイレクトするのでここには到達しない
       }
     } catch (err) {
       showError(err instanceof Error ? err.message : 'サブスクリプションの有効化に失敗しました');
