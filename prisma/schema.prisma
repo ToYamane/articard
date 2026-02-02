@@ -46,6 +46,7 @@ model Article {
   userId      String   @map("user_id") @db.VarChar(128)
   theme       String   @db.VarChar(30)
   content     String   @db.Text
+  contentType String   @default("essay") @map("content_type") @db.VarChar(20)
   openaiModel String   @map("openai_model") @db.VarChar(50)
   tokenUsage  Int      @default(0) @map("token_usage")
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz

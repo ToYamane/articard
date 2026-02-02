@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { getIdToken } from '@/lib/firebase/client';
 import type { Article, Card } from '@prisma/client';
 import type { Rarity } from '@/types/database';
+import type { ContentType } from '@/types/article';
 
 type PageState = 'input' | 'loading' | 'result';
 type CardGenState = 'idle' | 'generating' | 'ready' | 'opening' | 'error';
@@ -130,7 +131,7 @@ export default function HomePage() {
   }, [user, addToast]);
 
   // 記事生成
-  const handleSubmit = useCallback(async (theme: string, withCard: boolean) => {
+  const handleSubmit = useCallback(async (theme: string, withCard: boolean, contentType: ContentType) => {
     if (!user) {
       addToast('ログインが必要です', 'error');
       return;
@@ -158,7 +159,7 @@ export default function HomePage() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ theme }),
+        body: JSON.stringify({ theme, contentType }),
         signal: controller.signal,
       });
 

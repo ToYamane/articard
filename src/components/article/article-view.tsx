@@ -1,5 +1,6 @@
 'use client';
 
+import ReactMarkdown from 'react-markdown';
 import { formatRelativeTime } from '@/lib/utils';
 import type { Article } from '@prisma/client';
 
@@ -22,9 +23,9 @@ export function ArticleView({ article }: ArticleViewProps) {
 
       {/* 記事本文 */}
       <div className="rounded-lg bg-white p-6 shadow-sm dark:bg-gray-800">
-        <p className="whitespace-pre-wrap leading-relaxed text-gray-700 dark:text-gray-300">
-          {article.content}
-        </p>
+        <div className="prose prose-gray dark:prose-invert max-w-none leading-relaxed">
+          <ReactMarkdown>{article.content}</ReactMarkdown>
+        </div>
       </div>
 
       {/* メタ情報 */}

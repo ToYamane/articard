@@ -5,9 +5,10 @@ import { Button, Input } from '@/components/ui';
 import { ThemeSuggestions } from './theme-suggestions';
 import { themeSchema } from '@/lib/validations/article';
 import { COIN_COSTS } from '@/lib/constants/coins';
+import { CONTENT_TYPES, CONTENT_TYPE_INFO, type ContentType } from '@/types/article';
 
 interface ThemeInputProps {
-  onSubmit: (theme: string, withCard: boolean) => void;
+  onSubmit: (theme: string, withCard: boolean, contentType: ContentType) => void;
   isLoading?: boolean;
   disabled?: boolean;
 }
@@ -32,6 +33,7 @@ export function ThemeInput({
 }: ThemeInputProps) {
   const [theme, setTheme] = useState('');
   const [error, setError] = useState('');
+  const [contentType, setContentType] = useState<ContentType>('essay');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -51,7 +53,7 @@ export function ThemeInput({
       return;
     }
 
-    onSubmit(theme, withCard);
+    onSubmit(theme, withCard, contentType);
   };
 
   const isValid = theme.length >= 2 && theme.length <= 30;
@@ -72,13 +74,35 @@ export function ThemeInput({
       />
 
       <p className="text-xs text-gray-500 dark:text-gray-400">
-        例: 「万有引力の発見」「恐竜の絶滅」「光合成のしくみ」
       </p>
 
       <ThemeSuggestions
         onSelectTheme={handleSelectSuggestedTheme}
         disabled={disabled || isLoading}
       />
+
+      {/* 文章スタイル選択 */}
+      <div className="space-y-2">
+        <label
+          htmlFor="contentType"
+          className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+        >
+          文章スタイル
+        </label>
+        <select
+          id="contentType"
+          value={contentType}
+          onChange={(e) => setContentType(e.target.value as ContentType)}
+          disabled={disabled || isLoading}
+          className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:focus:border-primary-400 dark:focus:ring-primary-400"
+        >
+          {CONTENT_TYPES.map((type) => (
+            <option key={type} value={type}>
+              {CONTENT_TYPE_INFO[type].label}
+            </option>
+          ))}
+        </select>
+      </div>
 
       {/* 生成ボタン */}
       <div className="flex gap-3">

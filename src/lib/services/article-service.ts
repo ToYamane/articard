@@ -2,10 +2,12 @@ import { prisma } from '@/lib/prisma';
 import { isThemeSafe, generateArticle } from '@/lib/openai';
 import { batchDeleteCardImages } from '@/lib/gcs/storage';
 import type { Article } from '@prisma/client';
+import type { ContentType } from '@/types/article';
 
 export interface CreateArticleParams {
   userId: string;
   theme: string;
+  contentType?: ContentType;
 }
 
 export interface ArticleListParams {
@@ -26,6 +28,7 @@ export interface ArticleListResult {
 export async function createArticle({
   userId,
   theme,
+  contentType = 'essay',
 }: CreateArticleParams): Promise<Article> {
   // テーマの安全性チェック
   const safetyCheck = await isThemeSafe(theme);
@@ -34,7 +37,7 @@ export async function createArticle({
   }
 
   // 記事生成
-  const generationResult = await generateArticle(theme);
+  const generationResult = await generateArticle(theme, contentType);
 
   // データベースに保存
   const article = await prisma.article.create({
@@ -42,6 +45,7 @@ export async function createArticle({
       userId,
       theme,
       content: generationResult.content,
+      contentType,
       openaiModel: generationResult.model,
       tokenUsage: generationResult.tokenUsage.total,
     },

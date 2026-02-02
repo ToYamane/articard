@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { CONTENT_TYPES } from '@/types/article';
 
 // 特殊文字パターン（絵文字は許可）
 const SPECIAL_CHARS_PATTERN = /[<>{}[\]\\|`~^]/;
@@ -12,9 +13,13 @@ export const themeSchema = z
     message: '使用できない文字が含まれています',
   });
 
+// コンテンツタイプバリデーション
+export const contentTypeSchema = z.enum(CONTENT_TYPES);
+
 // 記事生成リクエストスキーマ
 export const createArticleSchema = z.object({
   theme: themeSchema,
+  contentType: contentTypeSchema.default('essay'),
 });
 
 // 記事一覧取得クエリスキーマ

@@ -47,11 +47,12 @@ export async function POST(
       );
     }
 
-    const { theme } = validationResult.data;
+    const { theme, contentType } = validationResult.data;
 
     const article = await createArticle({
       userId: authUser.uid,
       theme,
+      contentType,
     });
 
     return NextResponse.json({
