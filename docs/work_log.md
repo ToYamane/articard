@@ -1366,6 +1366,160 @@ npm run dev
 
 ---
 
+---
+
+## Stripe Checkout テスト対応 [完了]
+
+**実施日**: 2026-01-28
+
+### 概要
+
+開発者ユーザー（`isDeveloper: true`）がStripe決済フローをテストできるよう、設定ページのサブスクリプション機能を改善。
+
+### 問題
+
+従来は`isDeveloper: true`のユーザーがサブスク加入ボタンを押すと、Stripeをスキップして直接有効化されていた。これでは実際の決済フローをテストできなかった。
+
+### 解決策
+
+通常の加入ボタンと開発者専用の直接有効化ボタンを分離。
+
+### 実装内容
+
+#### 1. 設定ページ変更
+
+**ファイル:** `src/app/(main)/settings/page.tsx`
+
+**変更点:**
+- `handleActivateSubscription` → 常にStripe Checkout経由
+- `handleDirectActivation` → 新規追加、開発者専用でStripeスキップ
+- 通常の加入ボタンは既に加入中のプランを無効化
+- 開発者向けに「開発者専用：Stripeスキップ（テスト用）」セクションを追加
+
+**UI変更:**
+```
+┌─────────────────────────────────────────────────┐
+│ サブスクリプション                               │
+├─────────────────────────────────────────────────┤
+│ [プラスに加入]  [プレミアムに加入]  [解約]      │
+│                                                 │
+│ ┌─────────────────────────────────────────────┐ │
+│ │ 開発者専用：Stripeスキップ（テスト用）       │ │ ← 開発者のみ表示
+│ │ [プラス直接有効化]  [プレミアム直接有効化]   │ │
+│ └─────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────┘
+```
+
+### 修正ファイル
+
+| ファイル | 変更内容 |
+|----------|----------|
+| `src/app/(main)/settings/page.tsx` | 加入ボタンの分離、開発者専用セクション追加 |
+| `docs/14_stripe_integration.md` | 14.10セクションを更新、テスト手順追記 |
+| `docs/13_coin_system.md` | Stripe連携を実装済みに更新 |
+
+### 検証手順
+
+1. 設定ページで「プラスに加入 (¥980/月)」をクリック
+2. Stripe Checkoutにリダイレクトされることを確認
+3. テストカード `4242 4242 4242 4242` で決済
+4. 成功後、設定ページで「プラス加入中」と表示されることを確認
+
+---
+
+## UI改良 Phase 4-5 [完了]
+
+**実施日**: 2026-02-02
+
+### 概要
+
+UIの一貫性向上と視覚的な豊かさを追加するための改良を実施。
+
+### Phase 4: コンポーネント適用
+
+#### Settings ページに SectionContainer 適用
+
+**ファイル:** `src/app/(main)/settings/page.tsx`
+
+6つのセクションに SectionContainer を適用:
+- プロフィール
+- サブスクリプション
+- コイン残高・購入
+- 開発者オプション
+- データ管理
+- アカウント
+
+#### theme-input.tsx に Select コンポーネント適用
+
+**ファイル:** `src/components/article/theme-input.tsx`
+
+文章スタイル選択部分をカスタム Select コンポーネントに置き換え。
+
+### Phase 5: 視覚的な豊かさの追加
+
+#### 1. ボタンの改良
+
+**ファイル:** `src/components/ui/button.tsx`
+
+- Primary: グラデーション背景 + シャドウ
+- Secondary: ホバー時にシャドウ追加
+- Disabled: グラデーション無効化
+
+#### 2. 背景グラデーション
+
+**ファイル:** `src/app/globals.css`
+
+淡いグラデーション背景を追加:
+```css
+body {
+  background: linear-gradient(
+    135deg,
+    hsl(220 20% 98%) 0%,
+    hsl(210 30% 96%) 50%,
+    hsl(200 25% 97%) 100%
+  );
+}
+```
+
+#### 3. セクションコンテナの改良
+
+**ファイル:** `src/components/ui/section-container.tsx`
+
+- シャドウ追加（shadow-sm）
+- ホバー時に浮き上がり効果（hover:shadow-md）
+- トランジションアニメーション
+
+#### 4. 入力欄のフォーカス効果
+
+**ファイル:** `src/components/ui/input.tsx`
+
+フォーカス時のグロー効果:
+```css
+focus:ring-2 focus:ring-blue-500/20 focus:shadow-[0_0_0_4px_rgba(59,130,246,0.1)]
+```
+
+#### 5. カードのホバー効果
+
+**ファイル:** `src/components/card/card-display.tsx`
+
+- ホバー時に浮き上がり（-translate-y-1）
+- レア度に応じたグロー強調
+- シャドウ強化（hover:shadow-xl）
+
+### 修正ファイル一覧
+
+| ファイル | 変更内容 |
+|----------|----------|
+| `src/app/(main)/settings/page.tsx` | SectionContainer 適用 |
+| `src/components/article/theme-input.tsx` | Select コンポーネント適用 |
+| `src/components/ui/button.tsx` | グラデーション + シャドウ |
+| `src/app/globals.css` | 背景グラデーション |
+| `src/components/ui/section-container.tsx` | シャドウ + ホバー効果 |
+| `src/components/ui/input.tsx` | フォーカス時グロー |
+| `src/components/card/card-display.tsx` | ホバー時浮き上がり + グロー |
+
+---
+
 ## 変更履歴
 
 | 日付 | 変更内容 |
@@ -1380,3 +1534,5 @@ npm run dev
 | 2026-01-23 | Phase 1-H 完了 - MVP完成 |
 | 2026-01-24 | レアリティ別画像生成モデル機能追加 |
 | 2026-01-25 | チャレンジモード機能追加 |
+| 2026-01-28 | Stripe Checkout テスト対応 |
+| 2026-02-02 | UI改良 Phase 4-5 完了 |
