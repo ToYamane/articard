@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { Button, Input } from '@/components/ui';
+import { useState, useMemo } from 'react';
+import { Button, Input, Select } from '@/components/ui';
 import { ThemeSuggestions } from './theme-suggestions';
 import { themeSchema } from '@/lib/validations/article';
 import { COIN_COSTS } from '@/lib/constants/coins';
@@ -34,6 +34,15 @@ export function ThemeInput({
   const [theme, setTheme] = useState('');
   const [error, setError] = useState('');
   const [contentType, setContentType] = useState<ContentType>('essay');
+
+  const contentTypeOptions = useMemo(
+    () =>
+      CONTENT_TYPES.map((type) => ({
+        value: type,
+        label: CONTENT_TYPE_INFO[type].label,
+      })),
+    []
+  );
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -82,27 +91,13 @@ export function ThemeInput({
       />
 
       {/* 文章スタイル選択 */}
-      <div className="space-y-2">
-        <label
-          htmlFor="contentType"
-          className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-        >
-          文章スタイル
-        </label>
-        <select
-          id="contentType"
-          value={contentType}
-          onChange={(e) => setContentType(e.target.value as ContentType)}
-          disabled={disabled || isLoading}
-          className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:focus:border-primary-400 dark:focus:ring-primary-400"
-        >
-          {CONTENT_TYPES.map((type) => (
-            <option key={type} value={type}>
-              {CONTENT_TYPE_INFO[type].label}
-            </option>
-          ))}
-        </select>
-      </div>
+      <Select
+        label="文章スタイル"
+        options={contentTypeOptions}
+        value={contentType}
+        onChange={(value) => setContentType(value as ContentType)}
+        disabled={disabled || isLoading}
+      />
 
       {/* 生成ボタン */}
       <div className="flex gap-3">

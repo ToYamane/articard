@@ -23,9 +23,9 @@ const SIZE_CLASSES = {
 
 const RARITY_GLOW: Record<Rarity, string> = {
   common: '',
-  rare: 'shadow-blue-500/30',
-  super_rare: 'shadow-purple-500/40',
-  legend: 'shadow-yellow-500/50',
+  rare: 'shadow-blue-500/30 hover:shadow-blue-500/50',
+  super_rare: 'shadow-purple-500/40 hover:shadow-purple-500/60',
+  legend: 'shadow-yellow-500/50 hover:shadow-yellow-500/70',
 };
 
 export function CardDisplay({ card, size = 'md', onClick, className }: CardDisplayProps) {
@@ -34,13 +34,13 @@ export function CardDisplay({ card, size = 'md', onClick, className }: CardDispl
 
   return (
     <motion.div
-      whileHover={{ scale: 1.02 }}
+      whileHover={{ scale: 1.02, y: -4 }}
       whileTap={{ scale: 0.98 }}
       onClick={onClick}
       className={cn(
-        'relative cursor-pointer overflow-hidden rounded-lg',
+        'relative cursor-pointer overflow-hidden rounded-lg transition-shadow duration-300',
         SIZE_CLASSES[size],
-        hasGlow && `shadow-lg ${RARITY_GLOW[rarity]}`,
+        hasGlow ? `shadow-lg ${RARITY_GLOW[rarity]}` : 'shadow-md hover:shadow-xl',
         className
       )}
     >

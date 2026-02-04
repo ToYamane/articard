@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { useAuth } from '@/hooks/use-auth';
 import { useSubscription } from '@/hooks/use-subscription';
 import { useToast } from '@/hooks/use-toast';
-import { Button, Input, ConfirmModal } from '@/components/ui';
+import { Button, Input, ConfirmModal, SectionContainer } from '@/components/ui';
 import { ERROR_MESSAGES } from '@/lib/errors';
 
 export default function SettingsPage() {
@@ -91,18 +91,25 @@ export default function SettingsPage() {
   const handleActivateSubscription = async (tier: 'plus' | 'premium') => {
     setProcessingAction(`subscribe-${tier}`);
     try {
-      // 開発者は直接有効化（テスト用）、一般ユーザーはStripe Checkout
-      if (profile?.isDeveloper) {
-        const result = await activateSubscription(tier);
-        if (result.bonusCoins > 0) {
-          success(`${tier === 'plus' ? 'プラス' : 'プレミアム'}プランに加入しました！初回ボーナス ${result.bonusCoins} コインを獲得！`);
-        } else {
-          success(`${tier === 'plus' ? 'プラス' : 'プレミアム'}プランに加入しました！`);
-        }
+      // 常にStripe Checkoutにリダイレクト
+      await startSubscriptionCheckout(tier);
+      // リダイレクトするのでここには到達しない
+    } catch (err) {
+      showError(err instanceof Error ? err.message : 'サブスクリプションの有効化に失敗しました');
+    } finally {
+      setProcessingAction(null);
+    }
+  };
+
+  // 開発者専用：Stripeをスキップして直接有効化（テスト用）
+  const handleDirectActivation = async (tier: 'plus' | 'premium') => {
+    setProcessingAction(`direct-${tier}`);
+    try {
+      const result = await activateSubscription(tier);
+      if (result.bonusCoins > 0) {
+        success(`${tier === 'plus' ? 'プラス' : 'プレミアム'}プランに加入しました！初回ボーナス ${result.bonusCoins} コインを獲得！`);
       } else {
-        // Stripe Checkoutにリダイレクト
-        await startSubscriptionCheckout(tier);
-        // リダイレクトするのでここには到達しない
+        success(`${tier === 'plus' ? 'プラス' : 'プレミアム'}プランに加入しました！`);
       }
     } catch (err) {
       showError(err instanceof Error ? err.message : 'サブスクリプションの有効化に失敗しました');
@@ -153,16 +160,7 @@ export default function SettingsPage() {
       </h1>
 
       {/* Profile Section */}
-      <motion.section
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1, duration: 0.3 }}
-        className="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900"
-      >
-        <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
-          プロフィール
-        </h2>
-
+      <SectionContainer variant="default" title="プロフィール" delay={0.1}>
         <div className="space-y-4">
           <div>
             <label
@@ -190,19 +188,10 @@ export default function SettingsPage() {
             </Button>
           </div>
         </div>
-      </motion.section>
+      </SectionContainer>
 
       {/* Account Stats Section */}
-      <motion.section
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2, duration: 0.3 }}
-        className="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900"
-      >
-        <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
-          アカウント情報
-        </h2>
-
+      <SectionContainer variant="default" title="アカウント情報" delay={0.2}>
         <div className="space-y-3 text-sm">
           <div className="flex justify-between">
             <span className="text-gray-600 dark:text-gray-400">無料コイン（本日）</span>
@@ -239,20 +228,11 @@ export default function SettingsPage() {
             </span>
           </div>
         </div>
-      </motion.section>
+      </SectionContainer>
 
       {/* Subscription Section */}
-      <motion.section
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.25, duration: 0.3 }}
-        className="rounded-xl border border-blue-200 bg-blue-50 p-6 dark:border-blue-900 dark:bg-blue-950/30"
-      >
-        <h2 className="mb-4 text-lg font-semibold text-blue-700 dark:text-blue-400">
-          サブスクリプション
-        </h2>
-
-          {/* Plan Comparison */}
+      <SectionContainer variant="info" title="サブスクリプション" delay={0.25}>
+        {/* Plan Comparison */}
           <div className="mb-6 overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -290,7 +270,7 @@ export default function SettingsPage() {
           <div className="flex flex-wrap gap-3">
             <Button
               onClick={() => handleActivateSubscription('plus')}
-              disabled={isSubscriptionLoading || processingAction !== null}
+              disabled={isSubscriptionLoading || processingAction !== null || subscription?.tier === 'plus'}
               isLoading={processingAction === 'subscribe-plus'}
               variant={subscription?.tier === 'plus' ? 'primary' : 'secondary'}
             >
@@ -298,7 +278,7 @@ export default function SettingsPage() {
             </Button>
             <Button
               onClick={() => handleActivateSubscription('premium')}
-              disabled={isSubscriptionLoading || processingAction !== null}
+              disabled={isSubscriptionLoading || processingAction !== null || subscription?.tier === 'premium'}
               isLoading={processingAction === 'subscribe-premium'}
               variant={subscription?.tier === 'premium' ? 'primary' : 'secondary'}
             >
@@ -315,20 +295,40 @@ export default function SettingsPage() {
               </Button>
             )}
           </div>
-        </motion.section>
+
+          {/* Developer Only: Direct Activation (Skip Stripe) */}
+          {profile?.isDeveloper && (
+            <div className="mt-4 rounded-lg border border-orange-300 bg-orange-50 p-4 dark:border-orange-700 dark:bg-orange-950/30">
+              <p className="mb-3 text-sm font-medium text-orange-700 dark:text-orange-400">
+                開発者専用：Stripeスキップ（テスト用）
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  onClick={() => handleDirectActivation('plus')}
+                  disabled={isSubscriptionLoading || processingAction !== null || subscription?.tier === 'plus'}
+                  isLoading={processingAction === 'direct-plus'}
+                  variant="secondary"
+                  className="text-sm"
+                >
+                  プラス直接有効化
+                </Button>
+                <Button
+                  onClick={() => handleDirectActivation('premium')}
+                  disabled={isSubscriptionLoading || processingAction !== null || subscription?.tier === 'premium'}
+                  isLoading={processingAction === 'direct-premium'}
+                  variant="secondary"
+                  className="text-sm"
+                >
+                  プレミアム直接有効化
+                </Button>
+              </div>
+            </div>
+          )}
+      </SectionContainer>
 
       {/* Coin Purchase Section */}
-      <motion.section
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3, duration: 0.3 }}
-        className="rounded-xl border border-yellow-200 bg-yellow-50 p-6 dark:border-yellow-900 dark:bg-yellow-950/30"
-      >
-        <h2 className="mb-4 text-lg font-semibold text-yellow-700 dark:text-yellow-400">
-          コイン購入
-        </h2>
-
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <SectionContainer variant="warning" title="コイン購入" delay={0.3}>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             {packages.map((pkg) => (
               <div
                 key={pkg.id}
@@ -359,37 +359,21 @@ export default function SettingsPage() {
                 </Button>
               </div>
             ))}
-          </div>
-        </motion.section>
+        </div>
+      </SectionContainer>
 
       {/* Logout Section */}
-      <motion.section
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.35, duration: 0.3 }}
-        className="rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900"
-      >
-        <h2 className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
-          ログアウト
-        </h2>
+      <SectionContainer variant="default" title="ログアウト" delay={0.35}>
         <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">
           このデバイスからログアウトします。
         </p>
         <Button variant="secondary" onClick={handleLogout} disabled={isLoading}>
           ログアウト
         </Button>
-      </motion.section>
+      </SectionContainer>
 
       {/* Danger Zone */}
-      <motion.section
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4, duration: 0.3 }}
-        className="rounded-xl border border-red-200 bg-red-50 p-6 dark:border-red-900 dark:bg-red-950/30"
-      >
-        <h2 className="mb-4 text-lg font-semibold text-red-700 dark:text-red-400">
-          危険な操作
-        </h2>
+      <SectionContainer variant="danger" title="危険な操作" delay={0.4}>
         <p className="mb-4 text-sm text-red-600 dark:text-red-400">
           アカウントを削除すると、すべての記事、カード、データが完全に削除されます。
           この操作は取り消せません。
@@ -401,7 +385,7 @@ export default function SettingsPage() {
         >
           アカウントを削除
         </Button>
-      </motion.section>
+      </SectionContainer>
 
       {/* Delete Account Confirmation Modal */}
       <ConfirmModal

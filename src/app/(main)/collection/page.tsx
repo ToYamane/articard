@@ -10,7 +10,7 @@ import {
   CollectionEmpty,
   type FilterState,
 } from '@/components/collection';
-import { Button, LoadingSpinner } from '@/components/ui';
+import { Button, LoadingSpinner, CardGridSkeleton } from '@/components/ui';
 import { useCollection } from '@/hooks/use-collection';
 import type { Card } from '@prisma/client';
 
@@ -143,9 +143,7 @@ export default function CollectionPage() {
 
       {/* ローディング */}
       {isLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <LoadingSpinner size="lg" />
-        </div>
+        <CardGridSkeleton count={10} />
       ) : cards.length === 0 ? (
         <CollectionEmpty
           hasFilter={hasActiveFilter}

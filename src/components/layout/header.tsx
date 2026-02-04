@@ -1,8 +1,11 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '@/stores/auth-store';
+import { cn } from '@/lib/utils';
 
 interface CoinData {
   freeCoins: number;
@@ -10,9 +13,74 @@ interface CoinData {
   totalAvailable: number;
 }
 
+interface NavItem {
+  href: string;
+  label: string;
+  icon: React.ReactNode;
+}
+
+const navItems: NavItem[] = [
+  {
+    href: '/home',
+    label: 'ホーム',
+    icon: (
+      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+      </svg>
+    ),
+  },
+  {
+    href: '/challenge',
+    label: 'チャレンジ',
+    icon: (
+      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+      </svg>
+    ),
+  },
+  {
+    href: '/articles',
+    label: '記事履歴',
+    icon: (
+      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+      </svg>
+    ),
+  },
+  {
+    href: '/collection',
+    label: 'コレクション',
+    icon: (
+      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+      </svg>
+    ),
+  },
+  {
+    href: '/settings',
+    label: '設定',
+    icon: (
+      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+      </svg>
+    ),
+  },
+];
+
 export function Header() {
+  const pathname = usePathname();
   const { profile } = useAuthStore();
   const [coinData, setCoinData] = useState<CoinData | null>(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // パスがアクティブかどうかを判定
+  const isActive = (href: string) => {
+    if (href === '/home') {
+      return pathname === '/home' || pathname === '/';
+    }
+    return pathname.startsWith(href);
+  };
 
   // コイン残高を取得
   useEffect(() => {
@@ -47,20 +115,39 @@ export function Header() {
     return () => clearInterval(interval);
   }, [profile]);
 
+  // モバイルメニューが開いている時はスクロールを無効化
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isMobileMenuOpen]);
+
   return (
-    <header className="sticky top-0 z-50 border-b border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
+    <header className="sticky top-0 z-50 border-b border-gray-200 bg-white/80 backdrop-blur-md dark:border-gray-800 dark:bg-gray-900/80">
       <div className="mx-auto flex h-14 max-w-4xl items-center justify-between px-4">
-        <Link href="/home" className="text-xl font-bold text-blue-600 dark:text-blue-400">
+        {/* ロゴ */}
+        <Link
+          href="/home"
+          className="flex items-center gap-2 text-xl font-bold text-blue-600 transition-colors hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+        >
+          <svg className="h-6 w-6" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14l-5-5 1.41-1.41L12 14.17l4.59-4.58L18 11l-6 6z"/>
+          </svg>
           Articard
         </Link>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           {/* コイン残高表示 */}
           {profile && (
             <div className="flex items-center gap-2">
               {/* 無料コイン */}
               <div
-                className="flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-1 dark:bg-green-900/20"
+                className="flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-1 transition-colors hover:bg-green-100 dark:bg-green-900/20 dark:hover:bg-green-900/30"
                 title="本日の無料コイン（毎日リセット）"
               >
                 <svg
@@ -76,7 +163,7 @@ export function Header() {
               </div>
               {/* 永続コイン */}
               <div
-                className="flex items-center gap-1 rounded-full bg-yellow-50 px-2.5 py-1 dark:bg-yellow-900/20"
+                className="flex items-center gap-1 rounded-full bg-yellow-50 px-2.5 py-1 transition-colors hover:bg-yellow-100 dark:bg-yellow-900/20 dark:hover:bg-yellow-900/30"
                 title="永続コイン（報酬・購入）"
               >
                 <svg
@@ -93,35 +180,92 @@ export function Header() {
             </div>
           )}
 
-          {/* ナビゲーション */}
-          <nav className="flex items-center gap-4">
-            <Link
-              href="/challenge"
-              className="text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
-            >
-              チャレンジ
-            </Link>
-            <Link
-              href="/articles"
-              className="text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
-            >
-              記事履歴
-            </Link>
-            <Link
-              href="/collection"
-              className="text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
-            >
-              コレクション
-            </Link>
-            <Link
-              href="/settings"
-              className="text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
-            >
-              設定
-            </Link>
+          {/* デスクトップナビゲーション */}
+          <nav className="hidden items-center gap-1 md:flex">
+            {navItems.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  'flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-all',
+                  isActive(item.href)
+                    ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
+                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100'
+                )}
+              >
+                {item.icon}
+                <span>{item.label}</span>
+              </Link>
+            ))}
           </nav>
+
+          {/* モバイルメニューボタン */}
+          <button
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="flex h-10 w-10 items-center justify-center rounded-lg text-gray-600 transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 md:hidden"
+            aria-label="メニューを開く"
+          >
+            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              {isMobileMenuOpen ? (
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+              )}
+            </svg>
+          </button>
         </div>
       </div>
+
+      {/* モバイルメニュー */}
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <>
+            {/* オーバーレイ */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 top-14 z-40 bg-black/20 backdrop-blur-sm md:hidden"
+              onClick={() => setIsMobileMenuOpen(false)}
+            />
+
+            {/* メニューパネル */}
+            <motion.nav
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+              className="absolute left-0 right-0 top-14 z-50 border-b border-gray-200 bg-white p-4 shadow-lg dark:border-gray-800 dark:bg-gray-900 md:hidden"
+            >
+              <div className="flex flex-col gap-1">
+                {navItems.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className={cn(
+                      'flex items-center gap-3 rounded-lg px-4 py-3 text-base font-medium transition-all',
+                      isActive(item.href)
+                        ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
+                        : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100'
+                    )}
+                  >
+                    {item.icon}
+                    <span>{item.label}</span>
+                    {isActive(item.href) && (
+                      <motion.div
+                        layoutId="mobile-active-indicator"
+                        className="ml-auto h-2 w-2 rounded-full bg-blue-600 dark:bg-blue-400"
+                      />
+                    )}
+                  </Link>
+                ))}
+              </div>
+            </motion.nav>
+          </>
+        )}
+      </AnimatePresence>
     </header>
   );
 }
