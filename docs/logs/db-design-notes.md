@@ -167,17 +167,15 @@ model Card {
 ### 低優先度
 
 #### 2. ドキュメント整備
-以下のフィールド/テーブルが `docs/06_database.md` に未記載:
+以下のフィールド/テーブルが `docs/specs/database.md` に未記載:
 - `Card.cardNumber` フィールド
 - `Card.cardBackImageUrl` フィールド
 - `SuggestedTheme` テーブル
 - `ChallengeHighScore` テーブル（新規追加分）
 
-#### 3. Rarity値の不整合確認
-- `CLAUDE.md`: `common, rare, super_rare, legend`
-- `docs/07_api_design.md`: `common, uncommon, rare, super_rare, legend`
-
-実際に使用されている値を確認し、統一が必要。
+#### 3. Rarity値の統一 ✅
+- 全ドキュメントで `common, rare, super_rare, legend` の4種類に統一済み
+- `uncommon` は使用されていない
 
 ---
 

@@ -1190,7 +1190,7 @@ npm run lint: ✅ 警告なし
 
 **実施日**: 2026-01-24
 
-**詳細ドキュメント**: [13_rarity_image_models.md](./13_rarity_image_models.md)
+**詳細ドキュメント**: [rarity-image-models.md](../specs/rarity-image-models.md)
 
 ### 概要
 
@@ -1234,7 +1234,7 @@ npm run lint: ✅ 警告なし
 
 **実施日**: 2026-01-25
 
-**詳細ドキュメント**: [12_challenge_mode.md](./12_challenge_mode.md)
+**詳細ドキュメント**: [challenge-mode.md](../specs/challenge-mode.md)
 
 ### 概要
 
@@ -1415,8 +1415,8 @@ npm run dev
 | ファイル | 変更内容 |
 |----------|----------|
 | `src/app/(main)/settings/page.tsx` | 加入ボタンの分離、開発者専用セクション追加 |
-| `docs/14_stripe_integration.md` | 14.10セクションを更新、テスト手順追記 |
-| `docs/13_coin_system.md` | Stripe連携を実装済みに更新 |
+| `docs/guides/stripe-integration.md` | 14.10セクションを更新、テスト手順追記 |
+| `docs/specs/coin-system.md` | Stripe連携を実装済みに更新 |
 
 ### 検証手順
 

@@ -81,30 +81,25 @@ describe('calculateRarity', () => {
     });
   });
 
-  describe('レア度判定', () => {
-    it('90点以上はレジェンド', () => {
-      const rarity = determineRarity(95);
-      expect(rarity).toBe('legend');
+  describe('レア度判定（確率ベース）', () => {
+    it('指定されたレア度を返す', () => {
+      expect(calculateRarity('legend')).toBe('legend');
+      expect(calculateRarity('super_rare')).toBe('super_rare');
+      expect(calculateRarity('rare')).toBe('rare');
+      expect(calculateRarity('common')).toBe('common');
     });
 
-    it('70-89点はスーパーレア', () => {
-      const rarity = determineRarity(75);
-      expect(rarity).toBe('super_rare');
-    });
+    it('指定なしの場合は確率に基づいてレア度を返す', () => {
+      // 確率分布: legend 5%, super_rare 10%, rare 25%, common 60%
+      const results = Array.from({ length: 1000 }, () => calculateRarity());
+      const counts = results.reduce((acc, r) => {
+        acc[r] = (acc[r] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
 
-    it('50-69点はレア', () => {
-      const rarity = determineRarity(55);
-      expect(rarity).toBe('rare');
-    });
-
-    it('30-49点はアンコモン', () => {
-      const rarity = determineRarity(35);
-      expect(rarity).toBe('uncommon');
-    });
-
-    it('29点以下はコモン', () => {
-      const rarity = determineRarity(20);
-      expect(rarity).toBe('common');
+      // 大まかな分布チェック（許容範囲あり）
+      expect(counts.common).toBeGreaterThan(500);  // ~60%
+      expect(counts.rare).toBeGreaterThan(150);    // ~25%
     });
   });
 });

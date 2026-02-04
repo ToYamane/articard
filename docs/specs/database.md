@@ -14,10 +14,12 @@ erDiagram
     users ||--o{ cards : "owns"
     articles ||--o{ cards : "generates"
     users ||--o{ knowledge_transactions : "has"
+    users ||--o{ challenge_sessions : "plays"
+    users ||--o{ challenge_high_scores : "records"
     users ||--o{ challenge_achievements : "earns"
 
     users {
-        uuid id PK "Firebase UID"
+        varchar(128) id PK "Firebase UID"
         varchar(20) nickname "ニックネーム"
         int knowledge_balance "永続コイン残高"
         int daily_free_coins "当日無料コイン"
@@ -25,9 +27,12 @@ erDiagram
         int daily_challenge_count "当日チャレンジ回数"
         timestamp daily_challenge_reset_at "チャレンジリセット日時"
         boolean is_premium "プレミアム会員"
+        boolean is_developer "開発者フラグ"
         timestamp premium_expires_at "プレミアム期限"
         varchar(20) subscription_tier "サブスクプラン plus/premium"
         boolean subscription_bonus_received "初回ボーナス受取済み"
+        varchar(255) stripe_customer_id "Stripe顧客ID"
+        varchar(255) stripe_subscription_id "StripeサブスクID"
         timestamp created_at
         timestamp updated_at
         timestamp last_active_at
@@ -35,9 +40,10 @@ erDiagram
 
     articles {
         uuid id PK
-        uuid user_id FK
+        varchar(128) user_id FK
         varchar(30) theme "入力テーマ"
         text content "記事本文"
+        varchar(20) content_type "コンテンツタイプ"
         varchar(50) openai_model "使用モデル"
         int token_usage "トークン消費"
         timestamp created_at
@@ -45,15 +51,17 @@ erDiagram
 
     cards {
         uuid id PK
-        uuid user_id FK
+        varchar(128) user_id FK
         uuid article_id FK
         varchar(50) keyword "キーワード"
+        int card_number "カード番号"
         varchar(20) rarity "レア度"
         varchar(100) flavor_text "フレーバーテキスト"
         varchar(30) context_category "文脈カテゴリ"
         text context_description "文脈説明"
         varchar(500) illustration_url "イラストURL"
         varchar(500) card_image_url "カード画像URL"
+        varchar(500) card_back_image_url "カード裏面画像URL"
         varchar(500) thumbnail_url "サムネイルURL"
         text flux_prompt "生成プロンプト"
         timestamp created_at
@@ -61,7 +69,7 @@ erDiagram
 
     knowledge_transactions {
         uuid id PK
-        uuid user_id FK
+        varchar(128) user_id FK
         int amount "増減量"
         varchar(20) transaction_type "取引種別"
         varchar(100) description "説明"
@@ -69,9 +77,39 @@ erDiagram
         timestamp created_at
     }
 
+    suggested_themes {
+        uuid id PK
+        varchar(30) theme "テーマ"
+        varchar(30) category "カテゴリ"
+        boolean is_active "有効フラグ"
+        int usage_count "使用回数"
+        timestamp created_at
+    }
+
+    challenge_sessions {
+        uuid id PK
+        varchar(128) user_id FK
+        varchar(50) scenario_id "シナリオID"
+        varchar(20) status "ステータス"
+        int current_phase "現在フェーズ"
+        json game_state "ゲーム状態"
+        timestamp started_at
+        timestamp completed_at
+    }
+
+    challenge_high_scores {
+        uuid id PK
+        varchar(128) user_id FK
+        varchar(50) scenario_id "シナリオID"
+        int high_score "ハイスコア"
+        varchar(1) best_rank "最高ランク C/B/A/S"
+        int play_count "プレイ回数"
+        timestamp updated_at
+    }
+
     challenge_achievements {
         uuid id PK
-        uuid user_id FK
+        varchar(128) user_id FK
         varchar(50) scenario_id "シナリオID"
         varchar(1) rank "達成ランク B/A/S"
         int coins_awarded "付与コイン"
@@ -99,6 +137,8 @@ CREATE TABLE users (
     premium_expires_at TIMESTAMP WITH TIME ZONE,
     subscription_tier VARCHAR(20),                      -- 'plus' | 'premium' | NULL
     subscription_bonus_received BOOLEAN NOT NULL DEFAULT FALSE,  -- 初回ボーナス受取済み
+    stripe_customer_id VARCHAR(255) UNIQUE,             -- Stripe顧客ID
+    stripe_subscription_id VARCHAR(255) UNIQUE,         -- StripeサブスクリプションID
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     last_active_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -116,9 +156,10 @@ CREATE INDEX idx_users_is_premium ON users(is_premium);
 ```sql
 CREATE TABLE articles (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    user_id VARCHAR(128) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     theme VARCHAR(30) NOT NULL,
     content TEXT NOT NULL,
+    content_type VARCHAR(20) NOT NULL DEFAULT 'essay',  -- essay, story, dialogue, poem, simple
     openai_model VARCHAR(50) NOT NULL,
     token_usage INT NOT NULL DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -137,18 +178,21 @@ CREATE INDEX idx_articles_user_created ON articles(user_id, created_at DESC);
 ```sql
 CREATE TABLE cards (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    user_id VARCHAR(128) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     article_id UUID NOT NULL REFERENCES articles(id) ON DELETE CASCADE,
     keyword VARCHAR(50) NOT NULL,
-    rarity VARCHAR(20) NOT NULL,  -- common, uncommon, rare, super_rare, legend
+    card_number INT,                                   -- 同一キーワードの通し番号
+    rarity VARCHAR(20) NOT NULL,                      -- common, rare, super_rare, legend
     flavor_text VARCHAR(100) NOT NULL,
     context_category VARCHAR(30) NOT NULL,
     context_description TEXT NOT NULL,
     illustration_url VARCHAR(500) NOT NULL,
     card_image_url VARCHAR(500) NOT NULL,
+    card_back_image_url VARCHAR(500),                 -- カード裏面画像URL
     thumbnail_url VARCHAR(500) NOT NULL,
     flux_prompt TEXT NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(keyword, card_number)                      -- 同一キーワード+番号はユニーク
 );
 
 -- インデックス
@@ -202,6 +246,68 @@ CREATE TABLE challenge_achievements (
 
 -- インデックス
 CREATE INDEX idx_ca_user_id ON challenge_achievements(user_id);
+CREATE INDEX idx_ca_user_scenario ON challenge_achievements(user_id, scenario_id);
+```
+
+### suggested_themes テーブル
+
+ユーザーに提示するテーマ提案を管理。
+
+```sql
+CREATE TABLE suggested_themes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    theme VARCHAR(30) NOT NULL,
+    category VARCHAR(30),                             -- テーマのカテゴリ（歴史、科学など）
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,          -- 有効フラグ
+    usage_count INT NOT NULL DEFAULT 0,               -- 使用回数
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- インデックス
+CREATE INDEX idx_st_is_active ON suggested_themes(is_active);
+CREATE INDEX idx_st_category ON suggested_themes(category);
+```
+
+### challenge_sessions テーブル
+
+チャレンジモードのゲームセッションを管理。進行中のゲーム状態を保持。
+
+```sql
+CREATE TABLE challenge_sessions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id VARCHAR(128) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    scenario_id VARCHAR(50) NOT NULL,
+    status VARCHAR(20) NOT NULL,                      -- 'in_progress', 'completed', 'abandoned'
+    current_phase INT NOT NULL DEFAULT 0,
+    game_state JSONB,                                 -- { deck: [...], phases: [...], totalScore: number }
+    started_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    completed_at TIMESTAMP WITH TIME ZONE
+);
+
+-- インデックス
+CREATE INDEX idx_cs_user_id ON challenge_sessions(user_id);
+CREATE INDEX idx_cs_status ON challenge_sessions(status);
+CREATE INDEX idx_cs_user_status ON challenge_sessions(user_id, status);
+```
+
+### challenge_high_scores テーブル
+
+チャレンジモードのハイスコアを記録。各シナリオごとに1レコード。
+
+```sql
+CREATE TABLE challenge_high_scores (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id VARCHAR(128) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    scenario_id VARCHAR(50) NOT NULL,
+    high_score INT NOT NULL,
+    best_rank VARCHAR(1) NOT NULL,                    -- 'C', 'B', 'A', 'S'
+    play_count INT NOT NULL DEFAULT 1,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, scenario_id)
+);
+
+-- インデックス
+CREATE INDEX idx_chs_user_id ON challenge_high_scores(user_id);
 ```
 
 ## 6.4 Prisma スキーマ
@@ -221,16 +327,18 @@ datasource db {
 model User {
   id                        String    @id @db.VarChar(128)
   nickname                  String    @unique @db.VarChar(20)
-  knowledgeBalance          Int       @default(0) @map("knowledge_balance")       // 永続コイン
-  dailyFreeCoins            Int       @default(90) @map("daily_free_coins")       // 当日無料コイン
+  knowledgeBalance          Int       @default(0) @map("knowledge_balance")
+  dailyFreeCoins            Int       @default(90) @map("daily_free_coins")
   dailyCoinsResetAt         DateTime? @map("daily_coins_reset_at") @db.Timestamptz
   dailyChallengeCount       Int       @default(0) @map("daily_challenge_count")
   dailyChallengeResetAt     DateTime? @map("daily_challenge_reset_at") @db.Timestamptz
   isPremium                 Boolean   @default(false) @map("is_premium")
   isDeveloper               Boolean   @default(false) @map("is_developer")
   premiumExpiresAt          DateTime? @map("premium_expires_at") @db.Timestamptz
-  subscriptionTier          String?   @map("subscription_tier") @db.VarChar(20)   // 'plus' | 'premium' | null
+  subscriptionTier          String?   @map("subscription_tier") @db.VarChar(20)
   subscriptionBonusReceived Boolean   @default(false) @map("subscription_bonus_received")
+  stripeCustomerId          String?   @unique @map("stripe_customer_id") @db.VarChar(255)
+  stripeSubscriptionId      String?   @unique @map("stripe_subscription_id") @db.VarChar(255)
   createdAt                 DateTime  @default(now()) @map("created_at") @db.Timestamptz
   updatedAt                 DateTime  @updatedAt @map("updated_at") @db.Timestamptz
   lastActiveAt              DateTime  @default(now()) @map("last_active_at") @db.Timestamptz
@@ -238,6 +346,8 @@ model User {
   articles              Article[]
   cards                 Card[]
   knowledgeTransactions KnowledgeTransaction[]
+  challengeSessions     ChallengeSession[]
+  challengeHighScores   ChallengeHighScore[]
   challengeAchievements ChallengeAchievement[]
 
   @@index([createdAt])
@@ -247,9 +357,10 @@ model User {
 
 model Article {
   id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId      String   @map("user_id") @db.Uuid
+  userId      String   @map("user_id") @db.VarChar(128)
   theme       String   @db.VarChar(30)
   content     String   @db.Text
+  contentType String   @default("essay") @map("content_type") @db.VarChar(20)
   openaiModel String   @map("openai_model") @db.VarChar(50)
   tokenUsage  Int      @default(0) @map("token_usage")
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
@@ -265,15 +376,17 @@ model Article {
 
 model Card {
   id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId             String   @map("user_id") @db.Uuid
+  userId             String   @map("user_id") @db.VarChar(128)
   articleId          String   @map("article_id") @db.Uuid
   keyword            String   @db.VarChar(50)
+  cardNumber         Int?     @map("card_number")
   rarity             String   @db.VarChar(20)
   flavorText         String   @map("flavor_text") @db.VarChar(100)
   contextCategory    String   @map("context_category") @db.VarChar(30)
   contextDescription String   @map("context_description") @db.Text
   illustrationUrl    String   @map("illustration_url") @db.VarChar(500)
   cardImageUrl       String   @map("card_image_url") @db.VarChar(500)
+  cardBackImageUrl   String?  @map("card_back_image_url") @db.VarChar(500)
   thumbnailUrl       String   @map("thumbnail_url") @db.VarChar(500)
   fluxPrompt         String   @map("flux_prompt") @db.Text
   createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz
@@ -281,6 +394,7 @@ model Card {
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
 
+  @@unique([keyword, cardNumber], name: "keyword_cardNumber_unique")
   @@index([userId])
   @@index([articleId])
   @@index([rarity])
@@ -308,11 +422,58 @@ model KnowledgeTransaction {
   @@map("knowledge_transactions")
 }
 
+model SuggestedTheme {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  theme      String   @db.VarChar(30)
+  category   String?  @db.VarChar(30)
+  isActive   Boolean  @default(true) @map("is_active")
+  usageCount Int      @default(0) @map("usage_count")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([isActive])
+  @@index([category])
+  @@map("suggested_themes")
+}
+
+model ChallengeSession {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId       String    @map("user_id") @db.VarChar(128)
+  scenarioId   String    @map("scenario_id") @db.VarChar(50)
+  status       String    @db.VarChar(20)
+  currentPhase Int       @default(0) @map("current_phase")
+  gameState    Json?     @map("game_state")
+  startedAt    DateTime  @default(now()) @map("started_at") @db.Timestamptz
+  completedAt  DateTime? @map("completed_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([userId, status])
+  @@map("challenge_sessions")
+}
+
+model ChallengeHighScore {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String   @map("user_id") @db.VarChar(128)
+  scenarioId String   @map("scenario_id") @db.VarChar(50)
+  highScore  Int      @map("high_score")
+  bestRank   String   @map("best_rank") @db.VarChar(1)
+  playCount  Int      @default(1) @map("play_count")
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, scenarioId])
+  @@index([userId])
+  @@map("challenge_high_scores")
+}
+
 model ChallengeAchievement {
   id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId       String   @map("user_id") @db.VarChar(128)
   scenarioId   String   @map("scenario_id") @db.VarChar(50)
-  rank         String   @db.VarChar(1)  // 'B' | 'A' | 'S'
+  rank         String   @db.VarChar(1)
   coinsAwarded Int      @map("coins_awarded")
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
 
@@ -320,6 +481,7 @@ model ChallengeAchievement {
 
   @@unique([userId, scenarioId, rank])
   @@index([userId])
+  @@index([userId, scenarioId])
   @@map("challenge_achievements")
 }
 ```
@@ -329,11 +491,10 @@ model ChallengeAchievement {
 ```typescript
 // types/database.ts
 
-export type Rarity = 
-  | "common" 
-  | "uncommon" 
-  | "rare" 
-  | "super_rare" 
+export type Rarity =
+  | "common"
+  | "rare"
+  | "super_rare"
   | "legend";
 
 export type ContextCategory =

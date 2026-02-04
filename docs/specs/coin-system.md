@@ -113,6 +113,8 @@ model User {
 }
 ```
 
+> **Note**: `knowledge_balance` は「永続コイン」を表します。データベースカラム名は歴史的経緯で維持していますが、UI上では「永続コイン」と表示されます。
+
 ### ChallengeAchievementテーブル（新規）
 
 ```prisma
@@ -330,7 +332,7 @@ export const COIN_PACKAGES = {
 ## 13.11 今後の拡張予定
 
 - [x] コイン購入機能（課金）※ 13.12, 13.13 で実装済み
-- [x] 決済連携（Stripe Checkout）※ 14_stripe_integration.md 参照
+- [x] 決済連携（Stripe Checkout）※ [Stripe連携ガイド](../guides/stripe-integration.md) 参照
 - [ ] トランザクション履歴画面
 - [ ] 連続ログインボーナス
 - [ ] 特別イベント報酬

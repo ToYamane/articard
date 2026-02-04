@@ -54,6 +54,12 @@ interface ErrorResponse {
 | INTERNAL_ERROR | 500 | サーバーエラー |
 | MODERATION_BLOCKED | 400 | コンテンツポリシー違反 |
 | INSUFFICIENT_COINS | 400 | コイン不足 |
+| INVALID_PACKAGE | 400 | 無効なコインパッケージ |
+| INVALID_TIER | 400 | 無効なサブスクリプションプラン |
+| ALREADY_SUBSCRIBED | 400 | 既にサブスクリプション中 |
+| NO_AVAILABLE_KEYWORD | 400 | 利用可能なキーワードなし |
+| USER_NOT_FOUND | 404 | ユーザーが見つからない |
+| PRICE_NOT_FOUND | 500 | Stripe価格情報エラー |
 
 ## 7.3 エンドポイント一覧
 
@@ -84,6 +90,7 @@ interface ErrorResponse {
 | GET | /api/cards/:id | カード詳細 |
 | GET | /api/cards/:id/share | 共有用カード情報 |
 | DELETE | /api/cards/:id | カード削除 |
+| GET | /api/cards/batch/eligibility | バッチ生成資格確認 |
 
 ### 統計
 
@@ -112,6 +119,7 @@ interface ErrorResponse {
 | Method | Endpoint | 説明 |
 |--------|----------|------|
 | GET | /api/challenge/scenarios | シナリオ一覧 |
+| GET | /api/challenge/highscores | ハイスコア一覧 |
 | POST | /api/challenge/sessions | セッション作成 |
 | GET | /api/challenge/sessions | セッション一覧 |
 | GET | /api/challenge/sessions/:id | セッション詳細 |
@@ -119,6 +127,20 @@ interface ErrorResponse {
 | POST | /api/challenge/sessions/:id/deck | デッキ設定 |
 | GET | /api/challenge/sessions/:id/challenge | 現在のチャレンジ取得 |
 | POST | /api/challenge/sessions/:id/submit | カード提出・評価 |
+
+### ユーティリティ
+
+| Method | Endpoint | 説明 |
+|--------|----------|------|
+| GET | /api/suggested-themes | おすすめテーマ取得 |
+| GET | /api/health | ヘルスチェック |
+
+### Stripe連携
+
+| Method | Endpoint | 説明 |
+|--------|----------|------|
+| POST | /api/stripe/checkout | Checkoutセッション作成 |
+| POST | /api/stripe/webhook | Stripe Webhook受信 |
 
 ---
 
@@ -169,7 +191,6 @@ Firebase認証後、アプリケーションDBにユーザーを登録。
       totalArticles: number;
       rarityBreakdown: {
         common: number;
-        uncommon: number;
         rare: number;
         super_rare: number;
         legend: number;
@@ -509,7 +530,6 @@ Firebase認証後、アプリケーションDBにユーザーを登録。
     totalArticles: number;
     rarityBreakdown: {
       common: number;
-      uncommon: number;
       rare: number;
       super_rare: number;
       legend: number;
@@ -583,7 +603,7 @@ export const paginationSchema = z.object({
 
 // カード検索
 export const cardSearchSchema = paginationSchema.extend({
-  rarity: z.array(z.enum(['common', 'uncommon', 'rare', 'super_rare', 'legend'])).optional(),
+  rarity: z.array(z.enum(['common', 'rare', 'super_rare', 'legend'])).optional(),
   contextCategory: z.array(z.string()).optional(),
   dateFrom: z.string().datetime().optional(),
   dateTo: z.string().datetime().optional(),
@@ -717,7 +737,8 @@ export async function POST(req: NextRequest) {
   data: {
     id: string;
     scenarioId: string;
-    status: "deck_building";
+    status: "in_progress";
+    currentPhase: 0;  // デッキ編成フェーズ
   }
 }
 ```
@@ -755,8 +776,8 @@ export async function POST(req: NextRequest) {
       {
         id: string;
         scenarioId: string;
-        status: "deck_building" | "in_progress" | "completed" | "abandoned";
-        currentPhase: number;
+        status: "in_progress" | "completed" | "abandoned";
+        currentPhase: number;  // 0 = デッキ編成フェーズ
         totalScore: number;
         startedAt: string;
         completedAt: string | null;
@@ -1145,3 +1166,162 @@ export async function POST(req: NextRequest) {
   }
 }
 ```
+
+---
+
+## 7.11 バッチカード生成 API
+
+### GET /api/cards/batch/eligibility
+
+バッチカード生成（複数枚同時生成）の資格と情報を取得。サブスクリプション加入者のみ利用可能。
+
+**Query Parameters:**
+| パラメータ | 型 | 必須 | 説明 |
+|-----------|-----|------|------|
+| articleId | string | No | 記事ID（指定時は利用可能キーワード数も返却） |
+
+**Response:**
+```typescript
+{
+  success: true,
+  data: {
+    eligible: boolean;           // バッチ生成可能か（サブスク加入者のみtrue）
+    maxBatchSize: number;        // 最大同時生成枚数（10）
+    availableKeywords: number | null;  // 利用可能なキーワード数（articleId指定時のみ）
+    coinBalance: number;         // 現在のコイン残高
+    costPerCard: number;         // 1枚あたりのコスト（30）
+    maxAffordable: number;       // コインで生成可能な最大枚数
+  }
+}
+```
+
+---
+
+## 7.12 ハイスコア API
+
+### GET /api/challenge/highscores
+
+ユーザーの全シナリオのハイスコア一覧を取得。
+
+**Response:**
+```typescript
+{
+  success: true,
+  data: {
+    highScores: [
+      {
+        scenarioId: string;
+        highScore: number;
+        bestRank: string;        // 'C' | 'B' | 'A' | 'S'
+        playCount: number;
+        updatedAt: string;       // ISO8601
+      }
+    ]
+  }
+}
+```
+
+---
+
+## 7.13 テーマ提案 API
+
+### GET /api/suggested-themes
+
+おすすめテーマをランダムに取得。**認証不要**。
+
+**Query Parameters:**
+| パラメータ | 型 | デフォルト | 説明 |
+|-----------|-----|-----------|------|
+| count | number | 5 | 取得件数（1-20） |
+
+**Response:**
+```typescript
+{
+  success: true,
+  data: {
+    themes: [
+      {
+        id: string;
+        theme: string;           // テーマ名
+      }
+    ]
+  }
+}
+```
+
+---
+
+## 7.14 Stripe連携 API
+
+### POST /api/stripe/checkout
+
+Stripe Checkoutセッションを作成し、決済ページURLを取得。
+
+**Request:**
+```typescript
+{
+  tier: "plus" | "premium";
+}
+```
+
+**Response:**
+```typescript
+{
+  success: true,
+  data: {
+    sessionId: string;           // Checkoutセッション ID
+    url: string;                 // Stripe決済ページURL
+  }
+}
+```
+
+**エラー:**
+```typescript
+// 既にサブスク中
+{ code: "ALREADY_SUBSCRIBED", message: "既にサブスクリプション中です" }
+// 無効なプラン
+{ code: "INVALID_TIER", message: "無効なプランです" }
+```
+
+---
+
+### POST /api/stripe/webhook
+
+Stripeからのイベント通知を受信。**内部使用専用（認証不要、署名検証あり）**。
+
+**処理イベント:**
+| イベント | 処理内容 |
+|----------|---------|
+| checkout.session.completed | サブスクリプション有効化 |
+| customer.subscription.updated | プラン変更処理 |
+| customer.subscription.deleted | サブスクリプション解約 |
+| invoice.payment_failed | 支払い失敗通知 |
+
+**Response:**
+```typescript
+{ received: true }
+```
+
+---
+
+## 7.15 ヘルスチェック API
+
+### GET /api/health
+
+システムの稼働状況を確認。**認証不要**。
+
+**Response:**
+```typescript
+{
+  status: "healthy" | "unhealthy";
+  timestamp: string;             // ISO8601
+  version: string;               // アプリバージョン
+  checks: {
+    database: "connected" | "disconnected";
+  }
+}
+```
+
+**HTTPステータス:**
+- 200: healthy
+- 503: unhealthy

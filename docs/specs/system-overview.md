@@ -87,7 +87,7 @@
 | FLUX API (BFL公式) | イラスト生成（super_rare/common） | ~$0.005-0.04/枚 |
 | Google Gemini (Nano Banana) | イラスト生成（rare） | ~$0.03/枚 |
 
-> **Note**: レアリティに応じて異なる画像生成モデルを使用。詳細は [13_rarity_image_models.md](./13_rarity_image_models.md) を参照。
+> **Note**: レアリティに応じて異なる画像生成モデルを使用。詳細は [rarity-image-models.md](./rarity-image-models.md) を参照。
 
 ### 画像アクセス方式
 

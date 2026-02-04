@@ -165,11 +165,10 @@ ${article_content}
 
 | レア度 | 名称 | 出現確率 | 条件 |
 |--------|------|---------|------|
-| ★☆☆☆☆ | コモン | 50% | 一般的な文脈 + 頻出キーワード |
-| ★★☆☆☆ | アンコモン | 25% | やや特殊な文脈 or やや珍しいキーワード |
-| ★★★☆☆ | レア | 15% | 特殊な文脈 + 珍しいキーワード |
-| ★★★★☆ | スーパーレア | 8% | 非常に特殊な文脈 |
-| ★★★★★ | レジェンド | 2% | 神話・歴史的重要イベント等の極めて特殊な文脈 |
+| ★☆☆☆☆ | コモン | 60% | 一般的な文脈 + 頻出キーワード |
+| ★★★☆☆ | レア | 25% | 特殊な文脈 + 珍しいキーワード |
+| ★★★★☆ | スーパーレア | 10% | 非常に特殊な文脈 |
+| ★★★★★ | レジェンド | 5% | 神話・歴史的重要イベント等の極めて特殊な文脈 |
 
 ### 判定ロジック
 
@@ -180,39 +179,26 @@ interface RarityInput {
   keywordFrequency: number; // 一般的な出現頻度（低いほどレア）
 }
 
-type Rarity = "common" | "uncommon" | "rare" | "super_rare" | "legend";
+type Rarity = "common" | "rare" | "super_rare" | "legend";
 
-const calculateRarity = (input: RarityInput): Rarity => {
-  // 基本スコア計算
-  let score = 0;
-  
-  // 文脈カテゴリによる加点
-  const categoryBonus: Record<ContextCategory, number> = {
-    mythology: 40,
-    historical_event: 35,
-    biographical: 25,
-    cultural: 20,
-    metaphorical: 15,
-    scientific: 10,
-    general: 0,
-  };
-  score += categoryBonus[input.contextCategory];
-  
-  // ユニークネススコアによる加点 (0-30)
-  score += input.uniquenessScore * 3;
-  
-  // キーワード頻度による加点 (0-30)
-  // 頻度が低いほど高スコア
-  score += Math.max(0, 30 - input.keywordFrequency * 3);
-  
-  // ランダム要素 (±10)
-  score += Math.floor(Math.random() * 21) - 10;
-  
-  // レア度判定
-  if (score >= 80) return "legend";
-  if (score >= 60) return "super_rare";
-  if (score >= 40) return "rare";
-  if (score >= 20) return "uncommon";
+/**
+ * 確率に基づいてレア度を決定
+ * - legend: 5%
+ * - super_rare: 10%
+ * - rare: 25%
+ * - common: 60%
+ */
+const calculateRarity = (specifiedRarity?: Rarity): Rarity => {
+  // 開発者モードで指定されたレア度がある場合はそれを使用
+  if (specifiedRarity) {
+    return specifiedRarity;
+  }
+
+  const roll = Math.random() * 100;
+
+  if (roll < 5) return "legend";
+  if (roll < 15) return "super_rare";
+  if (roll < 40) return "rare";
   return "common";
 };
 ```
@@ -224,9 +210,6 @@ const calculateRarity = (input: RarityInput): Rarity => {
 
 コモン: 果物の栄養素についての記事
   → 「ビタミンCが豊富な果物」
-
-アンコモン: アップル社の歴史についての記事
-  → 「革新の象徴となった果実」
 
 レア: ウィリアム・テルの伝説についての記事
   → 「息子の頭上で運命を待つ果実」
@@ -306,11 +289,10 @@ const generateImagePrompt = (
 ): string => {
   // スタイル修飾子（レア度による）
   const styleModifiers: Record<Rarity, string> = {
-    common: "simple illustration, clean lines, bright colors",
-    uncommon: "detailed illustration, vibrant colors, dynamic composition",
-    rare: "highly detailed art, dramatic lighting, rich colors",
-    super_rare: "epic fantasy art, cinematic lighting, intricate details, masterpiece",
-    legend: "legendary masterpiece, divine lighting, mythological atmosphere, ultra detailed, golden accents",
+    common: "clean illustration, bright colors",
+    rare: "detailed art, dramatic lighting",
+    super_rare: "epic fantasy art, cinematic lighting, masterpiece",
+    legend: "legendary masterpiece, divine lighting, ultra detailed, golden accents",
   };
   
   // トーン修飾子
@@ -382,7 +364,6 @@ const generateImagePrompt = (
 | レア度 | 枠色 | 背景効果 |
 |--------|------|---------|
 | コモン | グレー | なし |
-| アンコモン | 緑 | 薄い輝き |
 | レア | 青 | グロー効果 |
 | スーパーレア | 紫 | 強いグロー |
 | レジェンド | 金 | 虹色グラデーション + パーティクル |
@@ -504,18 +485,22 @@ interface Card {
 }
 ```
 
-## 3.11 課金連携
+## 3.11 コイン連携
 
 ### 基本ルール
 
-- 1記事につき1枚は無料で生成可能
-- 追加カード生成にはサービス内通貨「ナレッジ」が必要
-- 消費量は Phase 2 で決定
+- カード生成には30コインが必要
+- 無料コイン（毎日90コイン付与）から優先消費
+- 無料コインが不足した場合は永続コインを消費
 
 ```typescript
-// Phase 2 で実装
-interface CardGenerationCost {
-  baseGeneration: 0;        // 1枚目は無料
-  additionalGeneration: number; // 追加生成のナレッジ消費量（未定）
-}
+// コイン消費設定
+const CARD_GENERATION_COST = 30;
+
+// 消費フロー
+// 1. 無料コインから優先消費
+// 2. 無料コイン不足時は永続コインを消費
+// 3. 両方不足時はINSUFFICIENT_COINSエラー
+
+// 詳細は docs/specs/coin-system.md を参照
 ```
