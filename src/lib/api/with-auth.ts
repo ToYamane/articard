@@ -13,9 +13,11 @@ export interface RouteContext<T extends Record<string, string> = Record<string, 
 /**
  * 認証必須のAPIルートをラップするヘルパー
  * 認証チェックとエラーハンドリングを共通化
+ *
+ * ハンドラがNextResponseを返した場合はそのまま返す（バリデーションエラー等）
  */
 export function withAuth<T>(
-  handler: (authUser: AuthUser, req: NextRequest) => Promise<T>
+  handler: (authUser: AuthUser, req: NextRequest) => Promise<T | NextResponse>
 ) {
   return async (req: NextRequest): Promise<NextResponse<ApiResponse<T>>> => {
     try {
@@ -34,6 +36,12 @@ export function withAuth<T>(
       }
 
       const result = await handler(authUser, req);
+
+      // NextResponseの場合はそのまま返す（バリデーションエラー等）
+      if (result instanceof NextResponse) {
+        return result as NextResponse<ApiResponse<T>>;
+      }
+
       return successResponse(result);
     } catch (error) {
       return handleApiError(error) as NextResponse<ApiResponse<T>>;
@@ -43,9 +51,11 @@ export function withAuth<T>(
 
 /**
  * 認証必須の動的ルート（パスパラメーター付き）用ヘルパー
+ *
+ * ハンドラがNextResponseを返した場合はそのまま返す（バリデーションエラー等）
  */
 export function withAuthParams<T, P extends Record<string, string> = { id: string }>(
-  handler: (authUser: AuthUser, req: NextRequest, params: P) => Promise<T>
+  handler: (authUser: AuthUser, req: NextRequest, params: P) => Promise<T | NextResponse>
 ) {
   return async (
     req: NextRequest,
@@ -68,6 +78,12 @@ export function withAuthParams<T, P extends Record<string, string> = { id: strin
 
       const params = await context.params;
       const result = await handler(authUser, req, params);
+
+      // NextResponseの場合はそのまま返す（バリデーションエラー等）
+      if (result instanceof NextResponse) {
+        return result as NextResponse<ApiResponse<T>>;
+      }
+
       return successResponse(result);
     } catch (error) {
       return handleApiError(error) as NextResponse<ApiResponse<T>>;
@@ -78,14 +94,22 @@ export function withAuthParams<T, P extends Record<string, string> = { id: strin
 /**
  * オプショナル認証のAPIルートをラップするヘルパー
  * 認証なしでもアクセス可能だが、認証情報があれば利用可能
+ *
+ * ハンドラがNextResponseを返した場合はそのまま返す（バリデーションエラー等）
  */
 export function withOptionalAuth<T>(
-  handler: (authUser: AuthUser | null, req: NextRequest) => Promise<T>
+  handler: (authUser: AuthUser | null, req: NextRequest) => Promise<T | NextResponse>
 ) {
   return async (req: NextRequest): Promise<NextResponse<ApiResponse<T>>> => {
     try {
       const authUser = await verifyAuth(req);
       const result = await handler(authUser, req);
+
+      // NextResponseの場合はそのまま返す（バリデーションエラー等）
+      if (result instanceof NextResponse) {
+        return result as NextResponse<ApiResponse<T>>;
+      }
+
       return successResponse(result);
     } catch (error) {
       return handleApiError(error) as NextResponse<ApiResponse<T>>;
