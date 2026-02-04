@@ -1,11 +1,20 @@
 import { prisma } from '@/lib/prisma';
-import { Prisma } from '@prisma/client';
 import {
   getScenarioById,
   getPhaseDefinition,
   isScenarioComplete,
   getRandomChallenge,
 } from '@/lib/challenge';
+import {
+  type GameState,
+  type DeckCard,
+  type PhaseResult,
+  createInitialGameState,
+  deserializeGameState,
+  serializeGameState,
+  markCardsAsUsed,
+  addPhaseResult,
+} from '@/lib/challenge/game-state';
 import {
   evaluateCardSelection,
   generateChallengeSummary,
@@ -20,39 +29,6 @@ import { processAchievementRewards } from '@/lib/challenge/rewards';
 import { ApiError } from '@/lib/errors';
 import type { ChallengeSessionStatus } from '@/types/challenge';
 import type { Rarity } from '@/types/database';
-
-// Card info for deck
-interface DeckCard {
-  cardId: string;
-  keyword: string;
-  rarity: Rarity;
-  flavorText: string;
-  contextDescription: string;
-  thumbnailUrl: string;
-  cardImageUrl: string;
-  isUsed: boolean;
-  usedInPhase: number | null;
-}
-
-// Phase result stored in gameState
-interface PhaseResult {
-  phaseNumber: number;
-  challenge: string;
-  selectedCardIds: string[];
-  fitScore: number;
-  bonusScore: number;
-  totalScore: number;
-  aiCommentary: string;
-  completedAt: string;
-}
-
-// Game state stored as JSON
-interface GameState {
-  deck: DeckCard[];
-  phases: PhaseResult[];
-  totalScore: number;
-  [key: string]: unknown; // Index signature for Prisma JSON compatibility
-}
 
 // Response type for session details
 export interface SessionDetails {
@@ -133,7 +109,7 @@ export async function createSession(
       scenarioId,
       status: 'in_progress',
       currentPhase: 0, // 0 = deck building phase
-      gameState: initialGameState as unknown as Prisma.InputJsonValue,
+      gameState: serializeGameState(initialGameState),
     },
   });
 
@@ -164,11 +140,7 @@ export async function getSessionById(
     return null;
   }
 
-  const gameState = (session.gameState as unknown as GameState) || {
-    deck: [],
-    phases: [],
-    totalScore: 0,
-  };
+  const gameState = deserializeGameState(session.gameState);
 
   return {
     id: session.id,
@@ -211,7 +183,7 @@ export async function getUserSessions(
   });
 
   return sessions.map((s) => {
-    const gameState = (s.gameState as unknown as GameState) || { totalScore: 0 };
+    const gameState = deserializeGameState(s.gameState);
     return {
       id: s.id,
       scenarioId: s.scenarioId,
@@ -325,7 +297,7 @@ export async function setSessionDeck(
     where: { id: sessionId },
     data: {
       currentPhase: 1,
-      gameState: gameState as unknown as Prisma.InputJsonValue,
+      gameState: serializeGameState(gameState),
     },
   });
 }
@@ -364,7 +336,7 @@ export async function getCurrentPhaseChallenge(
     throw new Error('フェーズが見つかりません');
   }
 
-  const gameState = (session.gameState as GameState) || { deck: [], phases: [], totalScore: 0 };
+  const gameState = deserializeGameState(session.gameState);
 
   // Get available cards (not used in consuming phases)
   const availableCards = gameState.deck
@@ -430,7 +402,7 @@ export async function submitPhaseCards(
     throw new Error(`このフェーズでは${phaseDefinition.cardCount}枚のカードが必要です`);
   }
 
-  const gameState = (session.gameState as GameState) || { deck: [], phases: [], totalScore: 0 };
+  const gameState = deserializeGameState(session.gameState);
 
   // Verify cards are in the deck and available
   const availableDeckCards = gameState.deck.filter((dc) => !dc.isUsed);
@@ -507,7 +479,7 @@ export async function submitPhaseCards(
       currentPhase: isComplete ? currentPhase : nextPhase,
       status: isComplete ? 'completed' : 'in_progress',
       completedAt: isComplete ? new Date() : null,
-      gameState: updatedGameState as unknown as Prisma.InputJsonValue,
+      gameState: serializeGameState(updatedGameState),
     },
   });
 
