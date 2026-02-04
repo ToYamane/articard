@@ -1,8 +1,17 @@
 import sharp from 'sharp';
+import path from 'path';
 import type { Rarity } from '@/types/database';
 import { getRarityColor } from './rarity';
+import { RARITY_CONFIG } from '@/lib/constants/rarity-config';
 
-// フォント設定
+// fontconfigの設定（ローカルフォントディレクトリを参照）
+// 環境変数が未設定の場合はデフォルトパスを設定
+if (!process.env.FONTCONFIG_PATH) {
+  process.env.FONTCONFIG_PATH = path.join(process.cwd(), 'fonts');
+}
+console.log('[FontConfig] FONTCONFIG_PATH:', process.env.FONTCONFIG_PATH);
+
+// フォント設定（ローカルインストールのGoogle Fontsを使用）
 interface FontConfig {
   name: string;
   family: string;
@@ -10,16 +19,16 @@ interface FontConfig {
 }
 
 const CARD_FONTS: FontConfig[] = [
-  // 高出現率 (weight: 2)
-  { name: 'Noto Sans JP', family: "'Noto Sans JP', sans-serif", weight: 2 },
-  { name: 'Noto Serif JP', family: "'Noto Serif JP', serif", weight: 2 },
+  // 高出現率 (weight: 2) - 標準的なフォント
+  { name: 'Noto Sans JP', family: "'Noto Sans CJK JP', 'Noto Sans JP', sans-serif", weight: 2 },
+  { name: 'Noto Serif JP', family: "'Noto Serif CJK JP', 'Noto Serif JP', serif", weight: 2 },
   { name: 'Dela Gothic One', family: "'Dela Gothic One', sans-serif", weight: 2 },
   { name: 'Kaisei Tokumin', family: "'Kaisei Tokumin', serif", weight: 2 },
-  // 低出現率 (weight: 1)
+  // 低出現率 (weight: 1) - 個性的なフォント
   { name: 'Reggae One', family: "'Reggae One', sans-serif", weight: 1 },
   { name: 'Yuji Syuku', family: "'Yuji Syuku', serif", weight: 1 },
-  { name: 'Kiwi Maru', family: "'Kiwi Maru', serif", weight: 1 },
-  { name: 'Hachi Maru Pop', family: "'Hachi Maru Pop', cursive", weight: 1 },
+  { name: 'Kiwi Maru', family: "'Kiwi Maru', sans-serif", weight: 1 },
+  { name: 'Hachi Maru Pop', family: "'Hachi Maru Pop', sans-serif", weight: 1 },
   { name: 'DotGothic16', family: "'DotGothic16', sans-serif", weight: 1 },
   { name: 'Stick', family: "'Stick', sans-serif", weight: 1 },
 ];
@@ -34,9 +43,11 @@ function selectRandomFont(): FontConfig {
   for (const font of CARD_FONTS) {
     random -= font.weight;
     if (random <= 0) {
+      console.log('[FontConfig] Selected font:', font.name);
       return font;
     }
   }
+  console.log('[FontConfig] Fallback to:', CARD_FONTS[0].name);
   return CARD_FONTS[0]; // フォールバック
 }
 
@@ -72,26 +83,21 @@ export interface CardCompositionResult {
  * レア度に応じた星を生成
  */
 function getRarityStars(rarity: Rarity): string {
-  const stars: Record<Rarity, string> = {
-    common: '★☆☆☆☆',
-    rare: '★★★☆☆',
-    super_rare: '★★★★☆',
-    legend: '★★★★★',
-  };
-  return stars[rarity];
+  return RARITY_CONFIG[rarity].stars;
 }
 
 /**
  * レア度の日本語名を取得
  */
 function getRarityName(rarity: Rarity): string {
-  const names: Record<Rarity, string> = {
-    common: 'コモン',
-    rare: 'レア',
-    super_rare: 'スーパーレア',
-    legend: 'レジェンド',
-  };
-  return names[rarity];
+  return RARITY_CONFIG[rarity].japaneseName;
+}
+
+/**
+ * レア度に応じた枠線幅を取得
+ */
+function getRarityBorderWidth(rarity: Rarity): number {
+  return RARITY_CONFIG[rarity].borderWidth;
 }
 
 /**
@@ -138,7 +144,7 @@ async function createCardFront(
   rarity: Rarity
 ): Promise<Buffer> {
   const color = getRarityColor(rarity);
-  const borderWidth = rarity === 'legend' ? 6 : rarity === 'super_rare' ? 5 : 4;
+  const borderWidth = getRarityBorderWidth(rarity);
 
   // イラスト領域のサイズ計算
   const illustrationWidth = CARD_WIDTH - borderWidth * 2;
@@ -264,7 +270,7 @@ async function createCardBack(
   createdAt: Date
 ): Promise<Buffer> {
   const color = getRarityColor(rarity);
-  const borderWidth = rarity === 'legend' ? 6 : rarity === 'super_rare' ? 5 : 4;
+  const borderWidth = getRarityBorderWidth(rarity);
 
   // 日付フォーマット
   const dateStr = createdAt.toLocaleDateString('ja-JP', {
