@@ -3,7 +3,7 @@
 import { getOpenAIClient } from './client';
 import type { PhaseDefinition, PhaseChallenge, CardEvaluation } from '@/types/challenge';
 import type { Rarity } from '@/types/database';
-import { RARITY_BONUS, PERFECT_FIT_THRESHOLD, PERFECT_FIT_BONUS, MAX_SYNERGY_BONUS, MAX_TRIPLE_SYNERGY_BONUS } from '@/types/challenge';
+import { RARITY_BONUS, MAX_SYNERGY_BONUS, MAX_TRIPLE_SYNERGY_BONUS } from '@/types/challenge';
 
 // Card info for AI evaluation
 interface CardInfo {
@@ -174,11 +174,6 @@ export async function evaluateCardSelection(
     bonusScore += RARITY_BONUS[card.rarity as Rarity] || 0;
   }
 
-  // Perfect fit bonus
-  if (fitScore >= PERFECT_FIT_THRESHOLD) {
-    bonusScore += PERFECT_FIT_BONUS;
-  }
-
   // Synergy bonus for combo (AI-determined, simplified)
   if (phaseType === 'combo' && selectedCards.length === 2) {
     // Give synergy bonus based on fit score for combos
@@ -228,17 +223,20 @@ export async function generateChallengeSummary(
     )
     .join('\n');
 
+  // Determine rank for summary context
+  const rank = totalScore >= 450 ? 'S' : totalScore >= 350 ? 'A' : totalScore >= 250 ? 'B' : 'C';
+
   const prompt = `You are a dramatic challenge game narrator. Write a fun summary of the player's challenge.
 
 Scenario: ${scenarioTitle}
-Total Score: ${totalScore}
+Final Rank: ${rank}
 Phase Results:
 ${phasesSummary}
 
 Write a 3-4 sentence summary that:
 1. Dramatically recaps the challenge
 2. Highlights the most memorable card usage
-3. Comments on the total score (800+ excellent, 600-799 good, 400-599 decent, <400 needs practice)
+3. Comments on the final rank (S=legendary, A=excellent, B=good, C=needs improvement) - do NOT mention specific scores or numbers
 4. Ends with an encouraging or humorous note
 
 Respond in Japanese. Be entertaining!`;

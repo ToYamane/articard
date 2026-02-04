@@ -62,9 +62,6 @@ export const RARITY_BONUS: Record<Rarity, number> = {
   legend: 10,
 };
 
-export const PERFECT_FIT_THRESHOLD = 95;
-export const PERFECT_FIT_BONUS = 10;
-
 // Combo synergy bonus (when 2 cards work well together)
 export const MAX_SYNERGY_BONUS = 10;
 

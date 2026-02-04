@@ -20,11 +20,12 @@ export const setDeckSchema = z.object({
 });
 
 // カード提出スキーマ
+// Note: tripleタイプのフェーズでは3枚必要なため、最大3枚まで許可
 export const submitCardsSchema = z.object({
   cardIds: z
     .array(z.string().uuid('無効なカードIDです'))
     .min(1, '少なくとも1枚のカードが必要です')
-    .max(2, '最大2枚までです'),
+    .max(3, '最大3枚までです'),
 });
 
 // セッション一覧取得クエリスキーマ

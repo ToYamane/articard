@@ -458,9 +458,8 @@ export function getScoreRank(score: number): {
   emoji: string;
   color: string;
 } {
-  if (score >= 800) return { rank: 'S', emoji: '🏆', color: 'text-yellow-500' };
-  if (score >= 600) return { rank: 'A', emoji: '🌟', color: 'text-purple-500' };
-  if (score >= 400) return { rank: 'B', emoji: '👍', color: 'text-blue-500' };
-  if (score >= 200) return { rank: 'C', emoji: '💪', color: 'text-green-500' };
-  return { rank: 'D', emoji: '🌱', color: 'text-gray-500' };
+  if (score >= 450) return { rank: 'S', emoji: '🏆', color: 'text-yellow-500' };
+  if (score >= 350) return { rank: 'A', emoji: '🌟', color: 'text-purple-500' };
+  if (score >= 250) return { rank: 'B', emoji: '👍', color: 'text-blue-500' };
+  return { rank: 'C', emoji: '💪', color: 'text-green-500' };
 }

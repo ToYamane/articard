@@ -591,9 +591,10 @@ export async function submitPhaseCards(
       phaseResults
     );
 
-    // Delete the session after completion (cleanup)
-    await prisma.challengeSession.delete({
+    // Update session status to completed (don't delete to allow result display)
+    await prisma.challengeSession.update({
       where: { id: sessionId },
+      data: { status: 'completed' },
     });
   }
 
@@ -626,9 +627,9 @@ export async function submitPhaseCards(
  * Get rank from score
  */
 function getRankFromScore(score: number): string {
-  if (score >= 270) return 'S';
-  if (score >= 210) return 'A';
-  if (score >= 150) return 'B';
+  if (score >= 450) return 'S';
+  if (score >= 350) return 'A';
+  if (score >= 250) return 'B';
   return 'C';
 }
 
