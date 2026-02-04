@@ -16,12 +16,62 @@
 
 body {
   color: var(--foreground);
-  background: var(--background);
+  background: linear-gradient(135deg, hsl(220, 20%, 98%) 0%, hsl(240, 15%, 96%) 100%);
   font-family: Arial, Helvetica, sans-serif;
+  min-height: 100vh;
+}
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background: linear-gradient(135deg, hsl(220, 20%, 8%) 0%, hsl(240, 15%, 6%) 100%);
+  }
+}
+
+@layer components {
+  /* テキストカラー */
+  .text-heading {
+    @apply text-gray-900 dark:text-gray-100;
+  }
+  .text-body {
+    @apply text-gray-600 dark:text-gray-300;
+  }
+  .text-muted {
+    @apply text-gray-500 dark:text-gray-400;
+  }
+  .text-error {
+    @apply text-red-500 dark:text-red-400;
+  }
+
+  /* セクションボックス */
+  .section-box {
+    @apply rounded-xl border p-6 transition-shadow duration-200;
+  }
+  .section-box-default {
+    @apply section-box border-gray-200 bg-white shadow-sm hover:shadow-md dark:border-gray-800 dark:bg-gray-900;
+  }
+  .section-box-info {
+    @apply section-box border-blue-200 bg-blue-50 shadow-sm shadow-blue-500/5 hover:shadow-md hover:shadow-blue-500/10 dark:border-blue-900 dark:bg-blue-950/30;
+  }
+  .section-box-warning {
+    @apply section-box border-yellow-200 bg-yellow-50 shadow-sm shadow-yellow-500/5 hover:shadow-md hover:shadow-yellow-500/10 dark:border-yellow-900 dark:bg-yellow-950/30;
+  }
+  .section-box-danger {
+    @apply section-box border-red-200 bg-red-50 shadow-sm shadow-red-500/5 hover:shadow-md hover:shadow-red-500/10 dark:border-red-900 dark:bg-red-950/30;
+  }
+  .section-box-success {
+    @apply section-box border-green-200 bg-green-50 shadow-sm shadow-green-500/5 hover:shadow-md hover:shadow-green-500/10 dark:border-green-900 dark:bg-green-950/30;
+  }
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+}
+
+/* シマーアニメーション（スケルトンUI用） */
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
   }
 }
