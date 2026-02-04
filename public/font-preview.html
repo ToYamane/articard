@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>カード名フォント比較</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Kaisei+Tokumin:wght@700&family=M+PLUS+1p:wght@700;800&family=Noto+Sans+JP:wght@700;900&family=Noto+Serif+JP:wght@700&family=Reggae+One&family=Shippori+Mincho:wght@700&family=Zen+Antique&family=Zen+Kaku+Gothic+New:wght@700&family=Yuji+Syuku&family=Hachi+Maru+Pop&family=Kiwi+Maru:wght@500&family=Rampart+One&family=DotGothic16&family=Stick&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Noto Sans JP', sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #1a1a2e 100%);
+      min-height: 100vh;
+      padding: 40px 20px;
+      color: #fff;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 10px;
+      font-size: 28px;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #888;
+      margin-bottom: 40px;
+    }
+
+    .section {
+      max-width: 1200px;
+      margin: 0 auto 50px;
+    }
+
+    .section-title {
+      font-size: 18px;
+      color: #ffd700;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #333;
+    }
+
+    .font-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+    }
+
+    .font-card {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transition: all 0.3s;
+    }
+
+    .font-card:hover {
+      background: rgba(255, 255, 255, 0.1);
+      transform: translateY(-2px);
+    }
+
+    .font-name {
+      font-size: 12px;
+      color: #888;
+      margin-bottom: 15px;
+      font-family: monospace;
+    }
+
+    .sample-text {
+      font-size: 28px;
+      margin-bottom: 8px;
+      line-height: 1.3;
+    }
+
+    .sample-text-small {
+      font-size: 20px;
+      color: #ccc;
+    }
+
+    /* Individual fonts */
+    .noto-sans { font-family: 'Noto Sans JP', sans-serif; font-weight: 700; }
+    .noto-sans-black { font-family: 'Noto Sans JP', sans-serif; font-weight: 900; }
+    .mplus { font-family: 'M PLUS 1p', sans-serif; font-weight: 700; }
+    .mplus-extra { font-family: 'M PLUS 1p', sans-serif; font-weight: 800; }
+    .zen-kaku { font-family: 'Zen Kaku Gothic New', sans-serif; font-weight: 700; }
+    .dela { font-family: 'Dela Gothic One', sans-serif; }
+    .noto-serif { font-family: 'Noto Serif JP', serif; font-weight: 700; }
+    .shippori { font-family: 'Shippori Mincho', serif; font-weight: 700; }
+    .kaisei { font-family: 'Kaisei Tokumin', serif; font-weight: 700; }
+    .reggae { font-family: 'Reggae One', sans-serif; }
+    .zen-antique { font-family: 'Zen Antique', serif; }
+    .yuji { font-family: 'Yuji Syuku', serif; }
+    .hachi { font-family: 'Hachi Maru Pop', cursive; }
+    .kiwi { font-family: 'Kiwi Maru', serif; font-weight: 500; }
+    .rampart { font-family: 'Rampart One', cursive; }
+    .dotgothic { font-family: 'DotGothic16', sans-serif; }
+    .stick { font-family: 'Stick', sans-serif; }
+
+    /* Rarity colors */
+    .color-legend { color: #00BFFF; text-shadow: 0 0 10px rgba(0, 191, 255, 0.5); }
+    .color-super { color: #FFD700; text-shadow: 0 0 10px rgba(255, 215, 0, 0.5); }
+    .color-rare { color: #C0C0FF; text-shadow: 0 0 10px rgba(192, 192, 255, 0.5); }
+    .color-common { color: #CD7F32; }
+
+    .rarity-section {
+      margin-top: 60px;
+      padding-top: 40px;
+      border-top: 2px solid #333;
+    }
+
+    .rarity-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    @media (max-width: 900px) {
+      .rarity-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    .rarity-card {
+      padding: 20px 15px;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .rarity-card.legend {
+      background: linear-gradient(135deg, #1a3a4a 0%, #0a2030 100%);
+      border: 2px solid #00BFFF;
+    }
+
+    .rarity-card.super {
+      background: linear-gradient(135deg, #3a3a1a 0%, #2a2a0a 100%);
+      border: 2px solid #FFD700;
+    }
+
+    .rarity-card.rare {
+      background: linear-gradient(135deg, #2a2a3a 0%, #1a1a2a 100%);
+      border: 2px solid #C0C0FF;
+    }
+
+    .rarity-card.common {
+      background: linear-gradient(135deg, #2a2015 0%, #1a1510 100%);
+      border: 2px solid #CD7F32;
+    }
+
+    .rarity-label {
+      font-size: 11px;
+      color: #888;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .rarity-text {
+      font-size: 22px;
+      line-height: 1.4;
+    }
+
+    .recommendation {
+      background: linear-gradient(135deg, rgba(255, 215, 0, 0.1) 0%, rgba(255, 165, 0, 0.1) 100%);
+      border: 1px solid rgba(255, 215, 0, 0.3);
+      border-radius: 12px;
+      padding: 25px;
+      margin-top: 40px;
+    }
+
+    .recommendation h3 {
+      color: #ffd700;
+      margin-bottom: 15px;
+    }
+
+    .recommendation p {
+      color: #ccc;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <h1>Articard カード名フォント比較</h1>
+  <p class="subtitle">サンプルキーワード: 量子コンピュータ / 古代文明 / 星の誕生</p>
+
+  <!-- ゴシック系 -->
+  <div class="section">
+    <h2 class="section-title">ゴシック系（モダン・読みやすい）</h2>
+    <div class="font-grid">
+      <div class="font-card">
+        <div class="font-name">Noto Sans JP Bold</div>
+        <div class="sample-text noto-sans color-super">量子コンピュータ</div>
+        <div class="sample-text-small noto-sans">古代文明 / 星の誕生</div>
+      </div>
+      <div class="font-card">
+        <div class="font-name">Noto Sans JP Black</div>
+        <div class="sample-text noto-sans-black color-super">量子コンピュータ</div>
+        <div class="sample-text-small noto-sans-black">古代文明 / 星の誕生</div>
+      </div>
+      <div class="font-card">
+        <div class="font-name">M PLUS 1p Bold</div>
+        <div class="sample-text mplus color-super">量子コンピュータ</div>
+        <div class="sample-text-small mplus">古代文明 / 星の誕生</div>
+      </div>
+      <div class="font-card">
+        <div class="font-name">M PLUS 1p ExtraBold</div>
+        <div class="sample-text mplus-extra color-super">量子コンピュータ</div>
+        <div class="sample-text-small mplus-extra">古代文明 / 星の誕生</div>
+      </div>
+      <div class="font-card">
+        <div class="font-name">Zen Kaku Gothic New Bold</div>
+        <div class="sample-text zen-kaku color-super">量子コンピュータ</div>
+        <div class="sample-text-small zen-kaku">古代文明 / 星の誕生</div>
+      </div>
+      <div class="font-card">
+        <div class="font-name">Dela Gothic One ★おすすめ</div>
+        <div class="sample-text dela color-super">量子コンピュータ</div>
+        <div class="sample-text-small dela">古代文明 / 星の誕生</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 明朝系 -->
+  <div class="section">
+    <h2 class="section-title">明朝系（伝統・高級感）</h2>
+    <div class="font-grid">
+      <div class="font-card">
+        <div class="font-name">Noto Serif JP Bold</div>
+        <div class="sample-text noto-serif color-super">量子コンピュータ</div>
+        <div class="sample-text-small noto-serif">古代文明 / 星の誕生</div>
+      </div>
+      <div class="font-card">
+        <div class="font-name">Shippori Mincho Bold</div>
+        <div class="sample-text shippori color-super">量子コンピュータ</div>
+        <div class="sample-text-small shippori">古代文明 / 星の誕生</div>
+      </div>
+      <div class="font-card">
+        <div class="font-name">Kaisei Tokumin Bold ★おすすめ</div>
+        <div class="sample-text kaisei color-super">量子コンピュータ</div>
+        <div class="sample-text-small kaisei">古代文明 / 星の誕生</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- デザイン系 -->
+  <div class="section">
+    <h2 class="section-title">デザイン系（個性的・ゲーム向け）</h2>
+    <div class="font-grid">
+      <div class="font-card">
+        <div class="font-name">Reggae One</div>
+        <div class="sample-text reggae color-super">量子コンピュータ</div>
+        <div class="sample-text-small reggae">古代文明 / 星の誕生</div>
+      </div>
+      <div class="font-card">
+        <div class="font-name">Zen Antique</div>
+        <div class="sample-text zen-antique color-super">量子コンピュータ</div>
+        <div class="sample-text-small zen-antique">古代文明 / 星の誕生</div>
+      </div>
+      <div class="font-card">
+        <div class="font-name">Yuji Syuku（書道風）</div>
+        <div class="sample-text yuji color-super">量子コンピュータ</div>
+        <div class="sample-text-small yuji">古代文明 / 星の誕生</div>
+      </div>
+      <div class="font-card">
+        <div class="font-name">Kiwi Maru（丸み）</div>
+        <div class="sample-text kiwi color-super">量子コンピュータ</div>
+        <div class="sample-text-small kiwi">古代文明 / 星の誕生</div>
+      </div>
+      <div class="font-card">
+        <div class="font-name">Hachi Maru Pop（かわいい）</div>
+        <div class="sample-text hachi color-super">量子コンピュータ</div>
+        <div class="sample-text-small hachi">古代文明 / 星の誕生</div>
+      </div>
+      <div class="font-card">
+        <div class="font-name">Rampart One（立体）</div>
+        <div class="sample-text rampart color-super">量子コンピュータ</div>
+        <div class="sample-text-small rampart">古代文明 / 星の誕生</div>
+      </div>
+      <div class="font-card">
+        <div class="font-name">DotGothic16（ドット）</div>
+        <div class="sample-text dotgothic color-super">量子コンピュータ</div>
+        <div class="sample-text-small dotgothic">古代文明 / 星の誕生</div>
+      </div>
+      <div class="font-card">
+        <div class="font-name">Stick（角張り）</div>
+        <div class="sample-text stick color-super">量子コンピュータ</div>
+        <div class="sample-text-small stick">古代文明 / 星の誕生</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- レアリティ別カラー比較 -->
+  <div class="section rarity-section">
+    <h2 class="section-title">レアリティ別カラー × フォント組み合わせ例</h2>
+
+    <h3 style="color: #aaa; font-size: 14px; margin: 20px 0 10px;">パターン1: Dela Gothic One（統一）</h3>
+    <div class="rarity-grid">
+      <div class="rarity-card legend">
+        <div class="rarity-label">Legend</div>
+        <div class="rarity-text dela color-legend">量子コンピュータ</div>
+      </div>
+      <div class="rarity-card super">
+        <div class="rarity-label">Super Rare</div>
+        <div class="rarity-text dela color-super">古代文明</div>
+      </div>
+      <div class="rarity-card rare">
+        <div class="rarity-label">Rare</div>
+        <div class="rarity-text dela color-rare">星の誕生</div>
+      </div>
+      <div class="rarity-card common">
+        <div class="rarity-label">Common</div>
+        <div class="rarity-text dela color-common">光合成</div>
+      </div>
+    </div>
+
+    <h3 style="color: #aaa; font-size: 14px; margin: 30px 0 10px;">パターン2: レアリティ別フォント</h3>
+    <div class="rarity-grid">
+      <div class="rarity-card legend">
+        <div class="rarity-label">Legend - Yuji Syuku</div>
+        <div class="rarity-text yuji color-legend">量子コンピュータ</div>
+      </div>
+      <div class="rarity-card super">
+        <div class="rarity-label">Super Rare - Kaisei</div>
+        <div class="rarity-text kaisei color-super">古代文明</div>
+      </div>
+      <div class="rarity-card rare">
+        <div class="rarity-label">Rare - Shippori</div>
+        <div class="rarity-text shippori color-rare">星の誕生</div>
+      </div>
+      <div class="rarity-card common">
+        <div class="rarity-label">Common - M PLUS</div>
+        <div class="rarity-text mplus color-common">光合成</div>
+      </div>
+    </div>
+
+    <h3 style="color: #aaa; font-size: 14px; margin: 30px 0 10px;">パターン3: Kaisei Tokumin（統一・高級感）</h3>
+    <div class="rarity-grid">
+      <div class="rarity-card legend">
+        <div class="rarity-label">Legend</div>
+        <div class="rarity-text kaisei color-legend">量子コンピュータ</div>
+      </div>
+      <div class="rarity-card super">
+        <div class="rarity-label">Super Rare</div>
+        <div class="rarity-text kaisei color-super">古代文明</div>
+      </div>
+      <div class="rarity-card rare">
+        <div class="rarity-label">Rare</div>
+        <div class="rarity-text kaisei color-rare">星の誕生</div>
+      </div>
+      <div class="rarity-card common">
+        <div class="rarity-label">Common</div>
+        <div class="rarity-text kaisei color-common">光合成</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 枠線（アウトライン）サンプル -->
+  <div class="section rarity-section">
+    <h2 class="section-title">枠線（アウトライン）付きテキスト</h2>
+    <p style="color: #888; margin-bottom: 20px;">SVGのstroke属性で実装可能。背景に関係なく文字が読みやすくなります。</p>
+
+    <div class="font-grid">
+      <!-- 黒枠線 -->
+      <div class="font-card">
+        <div class="font-name">黒アウトライン（細め）</div>
+        <svg width="260" height="50" style="display: block;">
+          <text x="10" y="38"
+                font-family="'Dela Gothic One', sans-serif"
+                font-size="28"
+                fill="#FFD700"
+                stroke="#000000"
+                stroke-width="2"
+                paint-order="stroke fill">量子コンピュータ</text>
+        </svg>
+      </div>
+
+      <div class="font-card">
+        <div class="font-name">黒アウトライン（太め）</div>
+        <svg width="260" height="50" style="display: block;">
+          <text x="10" y="38"
+                font-family="'Dela Gothic One', sans-serif"
+                font-size="28"
+                fill="#FFD700"
+                stroke="#000000"
+                stroke-width="4"
+                paint-order="stroke fill">量子コンピュータ</text>
+        </svg>
+      </div>
+
+      <!-- 白枠線 -->
+      <div class="font-card">
+        <div class="font-name">白アウトライン</div>
+        <svg width="260" height="50" style="display: block;">
+          <text x="10" y="38"
+                font-family="'Dela Gothic One', sans-serif"
+                font-size="28"
+                fill="#1a1a2e"
+                stroke="#FFFFFF"
+                stroke-width="3"
+                paint-order="stroke fill">量子コンピュータ</text>
+        </svg>
+      </div>
+
+      <!-- 色付き枠線 -->
+      <div class="font-card">
+        <div class="font-name">ゴールド + 濃い金枠</div>
+        <svg width="260" height="50" style="display: block;">
+          <text x="10" y="38"
+                font-family="'Dela Gothic One', sans-serif"
+                font-size="28"
+                fill="#FFD700"
+                stroke="#8B6914"
+                stroke-width="3"
+                paint-order="stroke fill">量子コンピュータ</text>
+        </svg>
+      </div>
+
+      <div class="font-card">
+        <div class="font-name">シアン + 濃い青枠（Legend向け）</div>
+        <svg width="260" height="50" style="display: block;">
+          <text x="10" y="38"
+                font-family="'Dela Gothic One', sans-serif"
+                font-size="28"
+                fill="#00BFFF"
+                stroke="#004466"
+                stroke-width="3"
+                paint-order="stroke fill">量子コンピュータ</text>
+        </svg>
+      </div>
+
+      <div class="font-card">
+        <div class="font-name">シルバー + 紺枠（Rare向け）</div>
+        <svg width="260" height="50" style="display: block;">
+          <text x="10" y="38"
+                font-family="'Dela Gothic One', sans-serif"
+                font-size="28"
+                fill="#C0C0FF"
+                stroke="#2a2a4a"
+                stroke-width="3"
+                paint-order="stroke fill">量子コンピュータ</text>
+        </svg>
+      </div>
+    </div>
+
+    <!-- 明朝系 + 枠線 -->
+    <h3 style="color: #aaa; font-size: 14px; margin: 30px 0 10px;">明朝系フォント + 枠線</h3>
+    <div class="font-grid">
+      <div class="font-card">
+        <div class="font-name">Kaisei Tokumin + 黒枠</div>
+        <svg width="260" height="50" style="display: block;">
+          <text x="10" y="38"
+                font-family="'Kaisei Tokumin', serif"
+                font-size="28"
+                font-weight="700"
+                fill="#FFD700"
+                stroke="#000000"
+                stroke-width="2"
+                paint-order="stroke fill">量子コンピュータ</text>
+        </svg>
+      </div>
+
+      <div class="font-card">
+        <div class="font-name">Shippori Mincho + 黒枠</div>
+        <svg width="260" height="50" style="display: block;">
+          <text x="10" y="38"
+                font-family="'Shippori Mincho', serif"
+                font-size="28"
+                font-weight="700"
+                fill="#C0C0FF"
+                stroke="#000000"
+                stroke-width="2"
+                paint-order="stroke fill">量子コンピュータ</text>
+        </svg>
+      </div>
+
+      <div class="font-card">
+        <div class="font-name">Yuji Syuku + 黒枠</div>
+        <svg width="260" height="50" style="display: block;">
+          <text x="10" y="38"
+                font-family="'Yuji Syuku', serif"
+                font-size="28"
+                fill="#00BFFF"
+                stroke="#000000"
+                stroke-width="2"
+                paint-order="stroke fill">量子コンピュータ</text>
+        </svg>
+      </div>
+    </div>
+
+    <!-- ドロップシャドウ効果 -->
+    <h3 style="color: #aaa; font-size: 14px; margin: 30px 0 10px;">ドロップシャドウ効果</h3>
+    <div class="font-grid">
+      <div class="font-card">
+        <div class="font-name">シャドウ（ぼかし）</div>
+        <svg width="260" height="55" style="display: block;">
+          <defs>
+            <filter id="shadow1" x="-20%" y="-20%" width="140%" height="140%">
+              <feDropShadow dx="2" dy="2" stdDeviation="2" flood-color="#000000" flood-opacity="0.8"/>
+            </filter>
+          </defs>
+          <text x="10" y="40"
+                font-family="'Dela Gothic One', sans-serif"
+                font-size="28"
+                fill="#FFD700"
+                filter="url(#shadow1)">量子コンピュータ</text>
+        </svg>
+      </div>
+
+      <div class="font-card">
+        <div class="font-name">シャドウ + 枠線</div>
+        <svg width="260" height="55" style="display: block;">
+          <defs>
+            <filter id="shadow2" x="-20%" y="-20%" width="140%" height="140%">
+              <feDropShadow dx="2" dy="2" stdDeviation="1" flood-color="#000000" flood-opacity="0.9"/>
+            </filter>
+          </defs>
+          <text x="10" y="40"
+                font-family="'Dela Gothic One', sans-serif"
+                font-size="28"
+                fill="#FFD700"
+                stroke="#8B6914"
+                stroke-width="2"
+                paint-order="stroke fill"
+                filter="url(#shadow2)">量子コンピュータ</text>
+        </svg>
+      </div>
+
+      <div class="font-card">
+        <div class="font-name">グロー効果（発光）</div>
+        <svg width="260" height="55" style="display: block;">
+          <defs>
+            <filter id="glow1" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+              <feMerge>
+                <feMergeNode in="coloredBlur"/>
+                <feMergeNode in="SourceGraphic"/>
+              </feMerge>
+            </filter>
+          </defs>
+          <text x="10" y="40"
+                font-family="'Dela Gothic One', sans-serif"
+                font-size="28"
+                fill="#00BFFF"
+                filter="url(#glow1)">量子コンピュータ</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- レアリティ別 完成イメージ -->
+  <div class="section rarity-section">
+    <h2 class="section-title">レアリティ別 完成イメージ（枠線付き）</h2>
+
+    <div class="rarity-grid">
+      <div class="rarity-card legend">
+        <div class="rarity-label">Legend</div>
+        <svg width="200" height="45" style="display: block; margin: 0 auto;">
+          <defs>
+            <filter id="legendGlow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+              <feMerge>
+                <feMergeNode in="coloredBlur"/>
+                <feMergeNode in="SourceGraphic"/>
+              </feMerge>
+            </filter>
+          </defs>
+          <text x="100" y="32"
+                font-family="'Dela Gothic One', sans-serif"
+                font-size="22"
+                fill="#00BFFF"
+                stroke="#003355"
+                stroke-width="2"
+                paint-order="stroke fill"
+                text-anchor="middle"
+                filter="url(#legendGlow)">量子コンピュータ</text>
+        </svg>
+      </div>
+
+      <div class="rarity-card super">
+        <div class="rarity-label">Super Rare</div>
+        <svg width="200" height="45" style="display: block; margin: 0 auto;">
+          <text x="100" y="32"
+                font-family="'Kaisei Tokumin', serif"
+                font-size="22"
+                font-weight="700"
+                fill="#FFD700"
+                stroke="#5a4a00"
+                stroke-width="2"
+                paint-order="stroke fill"
+                text-anchor="middle">古代文明</text>
+        </svg>
+      </div>
+
+      <div class="rarity-card rare">
+        <div class="rarity-label">Rare</div>
+        <svg width="200" height="45" style="display: block; margin: 0 auto;">
+          <text x="100" y="32"
+                font-family="'Shippori Mincho', serif"
+                font-size="22"
+                font-weight="700"
+                fill="#C0C0FF"
+                stroke="#2a2a5a"
+                stroke-width="2"
+                paint-order="stroke fill"
+                text-anchor="middle">星の誕生</text>
+        </svg>
+      </div>
+
+      <div class="rarity-card common">
+        <div class="rarity-label">Common</div>
+        <svg width="200" height="45" style="display: block; margin: 0 auto;">
+          <text x="100" y="32"
+                font-family="'M PLUS 1p', sans-serif"
+                font-size="22"
+                font-weight="700"
+                fill="#CD7F32"
+                stroke="#3a2a1a"
+                stroke-width="2"
+                paint-order="stroke fill"
+                text-anchor="middle">光合成</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="recommendation">
+      <h3>実装方法</h3>
+      <p>
+        <strong>SVGでの枠線実装:</strong><br>
+        <code style="background: #333; padding: 2px 6px; border-radius: 4px;">stroke="#000000" stroke-width="2" paint-order="stroke fill"</code><br><br>
+        <code>paint-order="stroke fill"</code> を指定すると、枠線が文字の背後に描画され、きれいなアウトラインになります。<br><br>
+        <strong>Sharp/image-composer.ts での実装:</strong> 現在のSVG生成コードに上記属性を追加するだけで実装できます。
+      </p>
+    </div>
+  </div>
+</body>
+</html>
