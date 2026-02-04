@@ -8,7 +8,7 @@ import type { Article } from '@prisma/client';
 
 interface ArticleResultProps {
   article: Article;
-  onGenerateCard: () => void;
+  onGenerateCard?: () => void;
   onRegenerate: () => void;
   isLoading?: boolean;
   // 自動カード生成用のプロパティ
@@ -40,42 +40,30 @@ export function ArticleResult({
 
       {/* 自動カード生成が有効な場合: カードパックセクションを表示 */}
       {autoCardEnabled && cardPackState && onPackClick ? (
-        <CardPackSection
-          state={cardPackState}
-          onPackClick={onPackClick}
-          error={cardGenError}
-          onRetry={onRetryCardGen}
-          onNavigateToCardPage={onGenerateCard}
-        />
+        <>
+          <CardPackSection
+            state={cardPackState}
+            onPackClick={onPackClick}
+            error={cardGenError}
+            onRetry={onRetryCardGen}
+          />
+          <div className="flex justify-center">
+            <Button
+              onClick={onRegenerate}
+              variant="secondary"
+              size="sm"
+              disabled={isLoading}
+            >
+              テーマを変えて再生成
+            </Button>
+          </div>
+        </>
       ) : (
-        /* 従来のアクションボタン */
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <Button
-            onClick={onGenerateCard}
-            className="flex-1"
-            disabled={isLoading}
-            isLoading={isLoading}
-          >
-            カードを生成する
-          </Button>
-          <Button
-            onClick={onRegenerate}
-            variant="secondary"
-            className="flex-1"
-            disabled={isLoading}
-          >
-            テーマを変えて再生成
-          </Button>
-        </div>
-      )}
-
-      {/* 自動カード生成時も再生成ボタンは表示 */}
-      {autoCardEnabled && (
+        /* 記事のみ生成時のアクションボタン */
         <div className="flex justify-center">
           <Button
             onClick={onRegenerate}
             variant="secondary"
-            size="sm"
             disabled={isLoading}
           >
             テーマを変えて再生成

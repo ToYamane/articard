@@ -105,3 +105,18 @@ export const COIN_PACKAGES = {
 } as const;
 
 export type CoinPackageId = keyof typeof COIN_PACKAGES;
+
+// ========================================
+// バッチカード生成設定
+// ========================================
+
+/**
+ * 複数枚同時カード生成の設定
+ * サブスク加入者（plus/premium）限定機能
+ */
+export const BATCH_CARD_CONFIG = {
+  /** 最大同時生成枚数 */
+  MAX_BATCH_SIZE: 10,
+  /** 1枚あたりのコスト（既存と同じ） */
+  COST_PER_CARD: COIN_COSTS.CARD_GENERATION,
+} as const;

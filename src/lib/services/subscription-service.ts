@@ -133,3 +133,21 @@ export async function cancelSubscription(userId: string): Promise<void> {
     },
   });
 }
+
+/**
+ * バッチカード生成機能を利用可能かチェック
+ * plus または premium プランの加入者のみ利用可能
+ */
+export async function canUseBatchGeneration(userId: string): Promise<boolean> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { subscriptionTier: true },
+  });
+
+  if (!user) {
+    return false;
+  }
+
+  const tier = user.subscriptionTier as SubscriptionTier | null;
+  return tier === 'plus' || tier === 'premium';
+}

@@ -1,6 +1,11 @@
 import { prisma } from '@/lib/prisma';
 import { isThemeSafe, generateArticle } from '@/lib/openai';
 import { batchDeleteCardImages } from '@/lib/gcs/storage';
+import {
+  processPaginationResult,
+  buildCursorOptions,
+  DEFAULT_PAGE_SIZE,
+} from '@/lib/utils/pagination';
 import type { Article } from '@prisma/client';
 import type { ContentType } from '@/types/article';
 
@@ -60,7 +65,7 @@ export async function createArticle({
 export async function getArticlesByUser({
   userId,
   cursor,
-  limit = 20,
+  limit = DEFAULT_PAGE_SIZE,
 }: ArticleListParams): Promise<ArticleListResult> {
   const articles = await prisma.article.findMany({
     where: { userId },
@@ -71,18 +76,13 @@ export async function getArticlesByUser({
         select: { cards: true },
       },
     },
-    ...(cursor && {
-      cursor: { id: cursor },
-      skip: 1,
-    }),
+    ...buildCursorOptions(cursor),
   });
 
-  const hasMore = articles.length > limit;
-  const resultArticles = hasMore ? articles.slice(0, -1) : articles;
-  const nextCursor = hasMore ? resultArticles[resultArticles.length - 1].id : null;
+  const { items, nextCursor, hasMore } = processPaginationResult(articles, limit);
 
   return {
-    articles: resultArticles,
+    articles: items,
     nextCursor,
     hasMore,
   };

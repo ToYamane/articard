@@ -6,6 +6,11 @@ import {
   SUBSCRIPTION_PLANS,
   type SubscriptionTier,
 } from '@/lib/constants/coins';
+import {
+  processPaginationResult,
+  buildCursorOptions,
+  DEFAULT_PAGE_SIZE,
+} from '@/lib/utils/pagination';
 
 /**
  * ユーザーのサブスクリプションプラン設定を取得
@@ -398,17 +403,14 @@ export async function getTransactions(
   nextCursor: string | null;
   hasMore: boolean;
 }> {
-  const limit = options?.limit ?? 20;
+  const limit = options?.limit ?? DEFAULT_PAGE_SIZE;
   const cursor = options?.cursor;
 
   const transactions = await prisma.knowledgeTransaction.findMany({
     where: { userId },
     orderBy: { createdAt: 'desc' },
     take: limit + 1,
-    ...(cursor && {
-      cursor: { id: cursor },
-      skip: 1,
-    }),
+    ...buildCursorOptions(cursor),
     select: {
       id: true,
       amount: true,
@@ -419,15 +421,14 @@ export async function getTransactions(
     },
   });
 
-  const hasMore = transactions.length > limit;
-  const items = hasMore ? transactions.slice(0, -1) : transactions;
+  const { items, nextCursor, hasMore } = processPaginationResult(transactions, limit);
 
   return {
     transactions: items.map((t) => ({
       ...t,
       transactionType: t.transactionType as TransactionType,
     })),
-    nextCursor: hasMore ? items[items.length - 1].id : null,
+    nextCursor,
     hasMore,
   };
 }

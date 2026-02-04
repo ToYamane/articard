@@ -20,7 +20,14 @@ export const cardIdSchema = z.object({
   id: z.string().uuid('無効なカードIDです'),
 });
 
+// バッチ生成資格チェッククエリスキーマ
+// articleIdはオプショナル（テーマ入力時点では記事が存在しないため）
+export const batchEligibilityQuerySchema = z.object({
+  articleId: z.string().uuid('無効な記事IDです').optional(),
+});
+
 // 型エクスポート
 export type CreateCardInput = z.infer<typeof createCardSchema>;
 export type GetCardsQuery = z.infer<typeof getCardsQuerySchema>;
 export type CardIdParam = z.infer<typeof cardIdSchema>;
+export type BatchEligibilityQuery = z.infer<typeof batchEligibilityQuerySchema>;

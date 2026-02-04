@@ -7,3 +7,5 @@ export { CardResult } from './card-result';
 export { CardPack, type CardPackState, type CardPackProps } from './card-pack';
 export { CardPackSection, type CardPackSectionProps } from './card-pack-section';
 export { CardRevealModal, type CardRevealModalProps } from './card-reveal-modal';
+export { BatchCardRevealModal, type BatchCardRevealModalProps } from './batch-card-reveal-modal';
+export { BatchGenerationProgress } from './batch-generation-progress';

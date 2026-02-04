@@ -57,6 +57,12 @@ src/
 │   └── errors/          # Error handling
 ├── stores/              # Zustand stores
 └── types/               # TypeScript definitions
+
+docs/
+├── specs/     # Feature specifications and design docs
+├── logs/      # Work logs and change history
+├── ideas/     # Future ideas and proposals
+└── guides/    # Setup and operation guides
 ```
 
 ### API Pattern
@@ -95,6 +101,19 @@ Business logic lives in `src/lib/services/`. Services handle database operations
 ### State Management
 - `useAuthStore` (Zustand): Firebase user and profile state
 - TanStack Query: Server state for cards, articles, etc.
+
+## Documentation
+
+### Structure
+- `docs/specs/` - Feature specifications and design documents
+- `docs/logs/` - Work logs and implementation records
+- `docs/ideas/` - Future ideas and proposals
+- `docs/guides/` - Setup and operation guides
+
+### Recording Implementations
+When completing significant features or refactoring:
+1. Create a log entry in `docs/logs/` with date prefix (e.g., `2025-02-04-batch-generation.md`)
+2. Include: overview, key changes, files modified, and any architectural decisions
 
 ## Environment Variables
 

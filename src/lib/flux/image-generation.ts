@@ -1,13 +1,6 @@
 import type { Rarity, EmotionalTone } from '@/types/database';
 import { generateCardImageByRarity, type ImageGenerationResult } from '@/lib/image-generation';
-
-// レア度によるスタイル修飾子（簡略化）
-const STYLE_MODIFIERS: Record<Rarity, string> = {
-  common: 'clean illustration, bright colors',
-  rare: 'detailed art, dramatic lighting',
-  super_rare: 'epic fantasy art, cinematic lighting, masterpiece',
-  legend: 'legendary masterpiece, divine lighting, ultra detailed, golden accents',
-};
+import { RARITY_CONFIG } from '@/lib/constants/rarity-config';
 
 // トーンによるスタイル修飾子（簡略化）
 const TONE_MODIFIERS: Record<EmotionalTone, string> = {
@@ -40,7 +33,7 @@ export interface CardIllustrationResult {
  * 記事内容（英語）を優先し、固定部分を簡略化
  */
 export function generateImagePrompt(input: ImageGenerationInput): string {
-  const styleModifier = STYLE_MODIFIERS[input.rarity];
+  const styleModifier = RARITY_CONFIG[input.rarity].styleModifier;
   const toneModifier = TONE_MODIFIERS[input.emotionalTone];
 
   // 記事内容を優先（約70%）、スタイル・固定部分を簡略化（約30%）

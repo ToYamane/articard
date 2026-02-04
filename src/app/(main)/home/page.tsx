@@ -1,26 +1,42 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ThemeInput, ArticleLoading, ArticleResult } from '@/components/article';
 import { CardGrid, RaritySelector } from '@/components/card';
-import { CardRevealModal, type CardPackState } from '@/components/card';
+import {
+  CardRevealModal,
+  BatchCardRevealModal,
+  BatchGenerationProgress,
+  type CardPackState,
+} from '@/components/card';
 import { Button, LoadingSpinner } from '@/components/ui';
 import { useAuthStore } from '@/stores/auth-store';
 import { useToast } from '@/hooks/use-toast';
+import { useBatchCardGeneration } from '@/hooks/use-batch-card-generation';
 import { getIdToken } from '@/lib/firebase/client';
 import type { Article, Card } from '@prisma/client';
 import type { Rarity } from '@/types/database';
 import type { ContentType } from '@/types/article';
 
 type PageState = 'input' | 'loading' | 'result';
-type CardGenState = 'idle' | 'generating' | 'ready' | 'opening' | 'error';
 
 export default function HomePage() {
   const router = useRouter();
   const { user, profile } = useAuthStore();
   const { addToast } = useToast();
+
+  // バッチカード生成フック
+  const {
+    state: batchState,
+    eligibility,
+    isLoadingEligibility,
+    checkEligibility,
+    startGeneration,
+    cancelGeneration,
+    reset: resetBatch,
+  } = useBatchCardGeneration();
 
   // 最近のカード
   const [recentCards, setRecentCards] = useState<Card[]>([]);
@@ -29,21 +45,26 @@ export default function HomePage() {
   // 記事生成の状態
   const [state, setState] = useState<PageState>('input');
   const [article, setArticle] = useState<Article | null>(null);
-  const [isGeneratingCard, setIsGeneratingCard] = useState(false);
   const [abortController, setAbortController] = useState<AbortController | null>(null);
 
-  // カード生成の状態
-  const [withCardGeneration, setWithCardGeneration] = useState(false);
-  const [cardGenState, setCardGenState] = useState<CardGenState>('idle');
+  // カード生成の状態（1枚の場合）
+  const [cardCount, setCardCount] = useState(1);
   const [generatedCard, setGeneratedCard] = useState<Card | null>(null);
-  const [cardGenError, setCardGenError] = useState<string | null>(null);
+  const [cardGenState, setCardGenState] = useState<'idle' | 'generating' | 'ready' | 'opening'>('idle');
   const [isRevealModalOpen, setIsRevealModalOpen] = useState(false);
+
+  // バッチリビールモーダル
+  const [isBatchRevealModalOpen, setIsBatchRevealModalOpen] = useState(false);
 
   // 開発者モード: レアリティ指定
   const [selectedRarity, setSelectedRarity] = useState<Rarity | undefined>(undefined);
 
-  // カード生成用のAbortController
-  const cardAbortControllerRef = useRef<AbortController | null>(null);
+  // 初期ロード時にbatch eligibilityをチェック
+  useEffect(() => {
+    if (user) {
+      checkEligibility();
+    }
+  }, [user, checkEligibility]);
 
   // 最近のカードを取得
   useEffect(() => {
@@ -75,191 +96,182 @@ export default function HomePage() {
     fetchRecentCards();
   }, [user]);
 
-  // カード生成（バックグラウンド）
-  const generateCard = useCallback(async (articleId: string, rarity?: Rarity) => {
-    if (!user) return;
-
-    setCardGenState('generating');
-    setCardGenError(null);
-    setGeneratedCard(null);
-
-    const controller = new AbortController();
-    cardAbortControllerRef.current = controller;
-
-    try {
-      const token = await getIdToken();
-      if (!token) {
-        throw new Error('認証トークンの取得に失敗しました');
-      }
-
-      const response = await fetch('/api/cards', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ articleId, ...(rarity && { rarity }) }),
-        signal: controller.signal,
-      });
-
-      const data = await response.json();
-
-      if (!data.success) {
-        throw new Error(data.error?.message || 'カードの生成に失敗しました');
-      }
-
-      setGeneratedCard(data.data);
-      setCardGenState('ready');
-    } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') {
-        setCardGenState('idle');
-        return;
-      }
-
-      console.error('Card generation error:', error);
-      setCardGenError(
-        error instanceof Error ? error.message : 'カードの生成に失敗しました'
-      );
-      setCardGenState('error');
-      addToast(
-        error instanceof Error ? error.message : 'カードの生成に失敗しました',
-        'error'
-      );
-    } finally {
-      cardAbortControllerRef.current = null;
+  // バッチ生成完了時にリビールモーダルを開く
+  useEffect(() => {
+    if (
+      cardCount > 1 &&
+      !batchState.isGenerating &&
+      batchState.cards.length > 0 &&
+      batchState.totalCount > 0
+    ) {
+      setIsBatchRevealModalOpen(true);
     }
-  }, [user, addToast]);
+  }, [cardCount, batchState.isGenerating, batchState.cards.length, batchState.totalCount]);
+
+  // 1枚のカード生成
+  const generateSingleCard = useCallback(
+    async (articleId: string, rarity?: Rarity) => {
+      if (!user) return;
+
+      setCardGenState('generating');
+      setGeneratedCard(null);
+
+      try {
+        const token = await getIdToken();
+        if (!token) {
+          throw new Error('認証トークンの取得に失敗しました');
+        }
+
+        const response = await fetch('/api/cards', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ articleId, ...(rarity && { rarity }) }),
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+          throw new Error(data.error?.message || 'カードの生成に失敗しました');
+        }
+
+        setGeneratedCard(data.data);
+        setCardGenState('ready');
+      } catch (error) {
+        console.error('Card generation error:', error);
+        addToast(
+          error instanceof Error ? error.message : 'カードの生成に失敗しました',
+          'error'
+        );
+        setCardGenState('idle');
+      }
+    },
+    [user, addToast]
+  );
 
   // 記事生成
-  const handleSubmit = useCallback(async (theme: string, withCard: boolean, contentType: ContentType) => {
-    if (!user) {
-      addToast('ログインが必要です', 'error');
-      return;
-    }
-
-    setState('loading');
-    // カード生成状態をリセット
-    setWithCardGeneration(withCard);
-    setCardGenState('idle');
-    setGeneratedCard(null);
-    setCardGenError(null);
-
-    const controller = new AbortController();
-    setAbortController(controller);
-
-    try {
-      const token = await getIdToken();
-      if (!token) {
-        throw new Error('認証トークンの取得に失敗しました');
-      }
-
-      const response = await fetch('/api/articles', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ theme, contentType }),
-        signal: controller.signal,
-      });
-
-      const data = await response.json();
-
-      if (!data.success) {
-        throw new Error(data.error?.message || '記事の生成に失敗しました');
-      }
-
-      const createdArticle = data.data as Article;
-      setArticle(createdArticle);
-      setState('result');
-
-      // カード同時生成が選択された場合、バックグラウンドでカード生成開始
-      if (withCard) {
-        generateCard(createdArticle.id, selectedRarity);
-      }
-    } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') {
-        setState('input');
+  const handleSubmit = useCallback(
+    async (theme: string, withCard: boolean, contentType: ContentType, requestedCardCount: number) => {
+      if (!user) {
+        addToast('ログインが必要です', 'error');
         return;
       }
 
-      console.error('Article generation error:', error);
-      addToast(
-        error instanceof Error ? error.message : '記事の生成に失敗しました',
-        'error'
-      );
-      setState('input');
-    } finally {
-      setAbortController(null);
-    }
-  }, [user, addToast, generateCard, selectedRarity]);
+      setState('loading');
+      setCardCount(requestedCardCount);
+      setCardGenState('idle');
+      setGeneratedCard(null);
+      resetBatch();
+
+      const controller = new AbortController();
+      setAbortController(controller);
+
+      try {
+        const token = await getIdToken();
+        if (!token) {
+          throw new Error('認証トークンの取得に失敗しました');
+        }
+
+        const response = await fetch('/api/articles', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ theme, contentType }),
+          signal: controller.signal,
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+          throw new Error(data.error?.message || '記事の生成に失敗しました');
+        }
+
+        const createdArticle = data.data as Article;
+        setArticle(createdArticle);
+
+        // 常に記事を先に表示
+        setState('result');
+
+        // カード同時生成が選択された場合
+        if (withCard && requestedCardCount > 0) {
+          if (requestedCardCount === 1) {
+            // 1枚の場合は従来のフロー
+            generateSingleCard(createdArticle.id, selectedRarity);
+          } else {
+            // 複数枚の場合はバッチ生成（並行処理）
+            startGeneration(createdArticle.id, requestedCardCount);
+          }
+        }
+      } catch (error) {
+        if (error instanceof Error && error.name === 'AbortError') {
+          setState('input');
+          return;
+        }
+
+        console.error('Article generation error:', error);
+        addToast(
+          error instanceof Error ? error.message : '記事の生成に失敗しました',
+          'error'
+        );
+        setState('input');
+      } finally {
+        setAbortController(null);
+      }
+    },
+    [user, addToast, generateSingleCard, selectedRarity, startGeneration, resetBatch]
+  );
 
   // キャンセル
   const handleCancel = useCallback(() => {
     if (abortController) {
       abortController.abort();
     }
-    if (cardAbortControllerRef.current) {
-      cardAbortControllerRef.current.abort();
-    }
+    cancelGeneration();
     setState('input');
-  }, [abortController]);
+  }, [abortController, cancelGeneration]);
 
-  // 再生成
+  // 再生成（トップに戻る）
   const handleRegenerate = useCallback(() => {
-    if (cardAbortControllerRef.current) {
-      cardAbortControllerRef.current.abort();
-    }
     setArticle(null);
     setCardGenState('idle');
     setGeneratedCard(null);
-    setCardGenError(null);
+    resetBatch();
     setState('input');
-  }, []);
+    // eligibilityを再取得
+    checkEligibility();
+  }, [resetBatch, checkEligibility]);
 
-  // カード生成ページへ遷移（従来動作）
-  const handleGenerateCard = useCallback(async () => {
-    if (!article) return;
-
-    setIsGeneratingCard(true);
-    router.push(`/articles/${article.id}/card`);
-  }, [article, router]);
-
-  // カードパックをクリック
+  // カードパックをクリック（1枚の場合）
   const handlePackClick = useCallback(() => {
     if (cardGenState !== 'ready') return;
 
     setCardGenState('opening');
-    // 開封アニメーション後にモーダルを開く
     setTimeout(() => {
       setIsRevealModalOpen(true);
     }, 600);
   }, [cardGenState]);
 
-  // カード生成リトライ
-  const handleRetryCardGen = useCallback(() => {
-    if (article) {
-      generateCard(article.id, selectedRarity);
-    }
-  }, [article, generateCard, selectedRarity]);
-
-  // トップに戻る
+  // トップに戻る（モーダルから）
   const handleGoHome = useCallback(() => {
     setIsRevealModalOpen(false);
+    setIsBatchRevealModalOpen(false);
     handleRegenerate();
   }, [handleRegenerate]);
 
-  // この記事でもう一枚生成
-  const handleCreateAnotherFromArticle = useCallback(() => {
-    setIsRevealModalOpen(false);
-    if (article) {
-      // 状態をリセットしてカード生成開始
-      setCardGenState('idle');
-      setGeneratedCard(null);
-      setCardGenError(null);
-      generateCard(article.id, selectedRarity);
-    }
-  }, [article, generateCard, selectedRarity]);
+  // コレクションを見る
+  const handleViewCollection = useCallback(() => {
+    router.push('/collection');
+  }, [router]);
+
+  // もう一度生成
+  const handleGenerateMore = useCallback(() => {
+    setIsBatchRevealModalOpen(false);
+    handleRegenerate();
+  }, [handleRegenerate]);
 
   // 記事を読む（モーダルを閉じるだけ）
   const handleReadArticle = useCallback(() => {
@@ -269,6 +281,10 @@ export default function HomePage() {
   // モーダルを閉じる
   const handleCloseModal = useCallback(() => {
     setIsRevealModalOpen(false);
+  }, []);
+
+  const handleCloseBatchModal = useCallback(() => {
+    setIsBatchRevealModalOpen(false);
   }, []);
 
   // カードクリック時
@@ -288,10 +304,8 @@ export default function HomePage() {
         return 'ready';
       case 'opening':
         return 'opening';
-      case 'error':
-        return 'error';
       default:
-        return 'generating'; // idle状態でも表示する場合はgenerating
+        return 'generating';
     }
   };
 
@@ -336,7 +350,12 @@ export default function HomePage() {
                   transition={{ duration: 0.3 }}
                   className="space-y-4"
                 >
-                  <ThemeInput onSubmit={handleSubmit} />
+                  <ThemeInput
+                    onSubmit={handleSubmit}
+                    isLoading={isLoadingEligibility}
+                    isBatchEligible={eligibility?.eligible ?? false}
+                    coinBalance={eligibility?.coinBalance ?? 0}
+                  />
                   {/* 開発者モード: レアリティ指定 */}
                   {profile?.isDeveloper && (
                     <RaritySelector
@@ -369,15 +388,12 @@ export default function HomePage() {
                 >
                   <ArticleResult
                     article={article}
-                    onGenerateCard={handleGenerateCard}
                     onRegenerate={handleRegenerate}
-                    isLoading={isGeneratingCard}
-                    // カード同時生成用のプロパティ
-                    autoCardEnabled={withCardGeneration}
-                    cardPackState={withCardGeneration ? getCardPackState() : undefined}
+                    isLoading={false}
+                    // カード同時生成用のプロパティ（1枚の場合のみ）
+                    autoCardEnabled={cardCount === 1 && cardGenState !== 'idle'}
+                    cardPackState={cardCount === 1 ? getCardPackState() : undefined}
                     onPackClick={handlePackClick}
-                    cardGenError={cardGenError}
-                    onRetryCardGen={handleRetryCardGen}
                   />
                 </motion.div>
               )}
@@ -426,15 +442,42 @@ export default function HomePage() {
         </motion.div>
       </motion.div>
 
-      {/* カード開封モーダル */}
+      {/* バッチカード生成進捗（フローティングオーバーレイ） */}
+      <AnimatePresence>
+        {batchState.isGenerating && cardCount > 1 && (
+          <motion.div
+            initial={{ opacity: 0, y: 100 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 100 }}
+            transition={{ duration: 0.3 }}
+            className="fixed bottom-4 left-1/2 z-50 w-full max-w-md -translate-x-1/2 px-4"
+          >
+            <BatchGenerationProgress
+              state={batchState}
+              onCancel={cancelGeneration}
+              variant="floating"
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* カード開封モーダル（1枚の場合） */}
       <CardRevealModal
         isOpen={isRevealModalOpen}
         card={generatedCard}
         onClose={handleCloseModal}
         onGoHome={handleGoHome}
-        onCreateAnotherFromArticle={handleCreateAnotherFromArticle}
         onReadArticle={handleReadArticle}
         isGenerating={cardGenState === 'generating'}
+      />
+
+      {/* バッチカードリビールモーダル（複数枚の場合） */}
+      <BatchCardRevealModal
+        isOpen={isBatchRevealModalOpen}
+        cards={batchState.cards}
+        onClose={handleCloseBatchModal}
+        onViewCollection={handleViewCollection}
+        onGenerateMore={handleGenerateMore}
       />
     </>
   );

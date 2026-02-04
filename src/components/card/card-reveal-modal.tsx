@@ -14,7 +14,7 @@ export interface CardRevealModalProps {
   card: Card | null;
   onClose: () => void;
   onGoHome: () => void;
-  onCreateAnotherFromArticle: () => void;
+  onCreateAnotherFromArticle?: () => void;
   onReadArticle: () => void;
   isGenerating?: boolean;
 }
@@ -215,9 +215,11 @@ export function CardRevealModal({
                   <Button onClick={onGoHome} variant="secondary" disabled={isGenerating}>
                     トップに戻る
                   </Button>
-                  <Button onClick={onCreateAnotherFromArticle} disabled={isGenerating} isLoading={isGenerating}>
-                    この記事でもう一枚生成
-                  </Button>
+                  {onCreateAnotherFromArticle && (
+                    <Button onClick={onCreateAnotherFromArticle} disabled={isGenerating} isLoading={isGenerating}>
+                      この記事でもう一枚生成
+                    </Button>
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>

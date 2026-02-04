@@ -4,6 +4,7 @@ import {
   selectRandomKeyword,
   analyzeContext,
   generateFlavorText,
+  type ContextAnalysisResult,
 } from '@/lib/openai';
 import { calculateRarity } from '@/lib/card/rarity';
 import { generateCardIllustration } from '@/lib/flux/image-generation';
@@ -18,7 +19,12 @@ import {
 import { hasEnoughCoins, consumeCoins } from '@/lib/services/coin-service';
 import { COIN_COSTS } from '@/lib/constants/coins';
 import { ApiError } from '@/lib/errors';
-import type { Card } from '@prisma/client';
+import {
+  processPaginationResult,
+  buildCursorOptions,
+  DEFAULT_PAGE_SIZE,
+} from '@/lib/utils/pagination';
+import type { Card, Article } from '@prisma/client';
 import type { Rarity } from '@/types/database';
 
 export interface CreateCardParams {
@@ -40,27 +46,41 @@ export interface CardListResult {
   hasMore: boolean;
 }
 
+// カード生成時の画像URL
+interface CardImageUrls {
+  illustrationUrl: string;
+  cardImageUrl: string;
+  cardBackImageUrl: string;
+  thumbnailUrl: string;
+}
+
+// カード生成時のコンテンツ
+interface CardContent {
+  contextAnalysis: ContextAnalysisResult;
+  rarity: Rarity;
+  flavorText: string;
+}
+
 /**
- * 記事からカードを生成
+ * カード生成前の検証
+ * - コイン残高チェック
+ * - 記事の存在・所有権確認
  */
-export async function createCard({
-  userId,
-  articleId,
-  specifiedRarity,
-}: CreateCardParams): Promise<Card> {
-  // コイン残高チェック
-  const cardCost = COIN_COSTS.CARD_GENERATION;
-  const hasCoins = await hasEnoughCoins(userId, cardCost);
+async function validateCardCreation(
+  userId: string,
+  articleId: string
+): Promise<{ article: Article; cost: number }> {
+  const cost = COIN_COSTS.CARD_GENERATION;
+  const hasCoins = await hasEnoughCoins(userId, cost);
 
   if (!hasCoins) {
     throw new ApiError(
       'INSUFFICIENT_COINS',
-      `カード生成には${cardCost}コインが必要です`,
+      `カード生成には${cost}コインが必要です`,
       400
     );
   }
 
-  // 記事を取得
   const article = await prisma.article.findUnique({
     where: { id: articleId },
   });
@@ -69,17 +89,25 @@ export async function createCard({
     throw new Error('記事が見つかりません');
   }
 
-  // 既存のカードで使用されたキーワードを取得
+  return { article, cost };
+}
+
+/**
+ * キーワードを選択
+ * - 既存カードで使用済みのキーワードを除外
+ * - 利用可能なキーワードからランダム選択
+ */
+async function selectKeywordForCard(
+  articleId: string,
+  content: string
+): Promise<string> {
   const existingCards = await prisma.card.findMany({
     where: { articleId },
     select: { keyword: true },
   });
   const usedKeywords = existingCards.map((c) => c.keyword);
 
-  // キーワード抽出
-  const extractedKeywords = await extractKeywords(article.content);
-
-  // 使用可能なキーワードを選択
+  const extractedKeywords = await extractKeywords(content);
   const keyword = selectRandomKeyword(extractedKeywords, usedKeywords);
 
   if (!keyword) {
@@ -88,13 +116,22 @@ export async function createCard({
     );
   }
 
-  // 文脈分析
-  const contextAnalysis = await analyzeContext(keyword, article.content);
+  return keyword;
+}
 
-  // レア度決定（指定がなければ確率ベース）
+/**
+ * カードコンテンツを生成
+ * - 文脈分析
+ * - レア度決定
+ * - フレーバーテキスト生成
+ */
+async function generateCardContent(
+  keyword: string,
+  articleContent: string,
+  specifiedRarity?: Rarity
+): Promise<CardContent> {
+  const contextAnalysis = await analyzeContext(keyword, articleContent);
   const rarity = calculateRarity(specifiedRarity);
-
-  // フレーバーテキスト生成
   const flavorText = await generateFlavorText({
     keyword,
     contextDescription: contextAnalysis.contextDescription,
@@ -102,8 +139,37 @@ export async function createCard({
     emotionalTone: contextAnalysis.emotionalTone,
   });
 
-  // イラスト生成（レアリティに応じたモデルを使用）
-  // 英語の詳細プロンプトを使用して画像品質を向上
+  return { contextAnalysis, rarity, flavorText };
+}
+
+/**
+ * カード番号を決定
+ * - 同一キーワードの最大番号 + 1
+ */
+async function determineCardNumber(keyword: string): Promise<number> {
+  const maxNumberResult = await prisma.card.aggregate({
+    where: { keyword },
+    _max: { cardNumber: true },
+  });
+  return (maxNumberResult._max.cardNumber ?? 0) + 1;
+}
+
+/**
+ * 画像を生成してアップロード
+ * - イラスト生成
+ * - カード画像合成
+ * - GCSへアップロード
+ */
+async function generateAndUploadImages(
+  contextAnalysis: ContextAnalysisResult,
+  rarity: Rarity,
+  keyword: string,
+  cardNumber: number,
+  flavorText: string,
+  tempCardId: string,
+  createdAt: Date
+): Promise<{ images: CardImageUrls; imagePrompt: string; imageModel: string; imageProvider: string; imageCost: number }> {
+  // イラスト生成
   const {
     imageBuffer: illustrationBuffer,
     prompt: imagePrompt,
@@ -120,18 +186,7 @@ export async function createCard({
 
   console.log(`Image generated with ${imageModel} (${imageProvider}), estimated cost: $${imageCost.toFixed(4)}`);
 
-  // 仮のカードIDを生成（UUIDは後で取得）
-  const tempCardId = crypto.randomUUID();
-  const createdAt = new Date();
-
-  // 同一キーワードの最大番号を取得してカード番号を決定
-  const maxNumberResult = await prisma.card.aggregate({
-    where: { keyword },
-    _max: { cardNumber: true },
-  });
-  const cardNumber = (maxNumberResult._max.cardNumber ?? 0) + 1;
-
-  // カード画像合成（表面・裏面・サムネイル）
+  // カード画像合成
   const { cardImageBuffer, cardBackImageBuffer, thumbnailBuffer } = await composeCardImage({
     illustrationBuffer,
     keyword,
@@ -142,24 +197,47 @@ export async function createCard({
     createdAt,
   });
 
-  // 画像をアップロード（GCS SDKのストリーム競合を避けるため順次実行）
+  // GCSへアップロード（順次実行でストリーム競合を回避）
   const illustrationUpload = await uploadCardIllustration(illustrationBuffer, tempCardId);
   const cardImageUpload = await uploadCardImage(cardImageBuffer, tempCardId);
   const cardBackImageUpload = await uploadCardBackImage(cardBackImageBuffer, tempCardId);
   const thumbnailUpload = await uploadThumbnail(thumbnailBuffer, tempCardId);
 
-  // データベースに保存（トランザクションで番号の競合を防止）
-  const card = await prisma.$transaction(async (tx) => {
+  return {
+    images: {
+      illustrationUrl: illustrationUpload.url,
+      cardImageUrl: cardImageUpload.url,
+      cardBackImageUrl: cardBackImageUpload.url,
+      thumbnailUrl: thumbnailUpload.url,
+    },
+    imagePrompt,
+    imageModel,
+    imageProvider,
+    imageCost,
+  };
+}
+
+/**
+ * カードをDBに保存（トランザクション）
+ */
+async function saveCard(
+  tempCardId: string,
+  userId: string,
+  articleId: string,
+  keyword: string,
+  rarity: Rarity,
+  flavorText: string,
+  contextAnalysis: ContextAnalysisResult,
+  images: CardImageUrls,
+  imagePrompt: string
+): Promise<Card> {
+  return prisma.$transaction(async (tx) => {
     // 再度最大番号を確認（同時実行時の競合対策）
     const latestMaxResult = await tx.card.aggregate({
       where: { keyword },
       _max: { cardNumber: true },
     });
     const finalCardNumber = (latestMaxResult._max.cardNumber ?? 0) + 1;
-
-    // 番号が変わった場合は画像を再生成する必要があるが、
-    // 同時生成は稀なため、番号の不一致は許容する
-    // （画像の番号と DB の番号が異なる可能性がある）
 
     return tx.card.create({
       data: {
@@ -172,17 +250,69 @@ export async function createCard({
         flavorText,
         contextCategory: contextAnalysis.contextCategory,
         contextDescription: contextAnalysis.contextDescription,
-        illustrationUrl: illustrationUpload.url,
-        cardImageUrl: cardImageUpload.url,
-        cardBackImageUrl: cardBackImageUpload.url,
-        thumbnailUrl: thumbnailUpload.url,
+        illustrationUrl: images.illustrationUrl,
+        cardImageUrl: images.cardImageUrl,
+        cardBackImageUrl: images.cardBackImageUrl,
+        thumbnailUrl: images.thumbnailUrl,
         fluxPrompt: imagePrompt,
       },
     });
   });
+}
 
-  // カード生成成功後にコイン消費
-  await consumeCoins(userId, cardCost, `カード生成: ${keyword}`);
+/**
+ * 記事からカードを生成
+ */
+export async function createCard({
+  userId,
+  articleId,
+  specifiedRarity,
+}: CreateCardParams): Promise<Card> {
+  // 1. 検証（コイン残高・記事の存在確認）
+  const { article, cost } = await validateCardCreation(userId, articleId);
+
+  // 2. キーワード選択
+  const keyword = await selectKeywordForCard(articleId, article.content);
+
+  // 3. カードコンテンツ生成（文脈分析・レア度・フレーバーテキスト）
+  const { contextAnalysis, rarity, flavorText } = await generateCardContent(
+    keyword,
+    article.content,
+    specifiedRarity
+  );
+
+  // 4. カード番号決定（画像生成前に取得）
+  const cardNumber = await determineCardNumber(keyword);
+
+  // 5. 画像生成・アップロード
+  const tempCardId = crypto.randomUUID();
+  const createdAt = new Date();
+
+  const { images, imagePrompt } = await generateAndUploadImages(
+    contextAnalysis,
+    rarity,
+    keyword,
+    cardNumber,
+    flavorText,
+    tempCardId,
+    createdAt
+  );
+
+  // 6. DB保存（トランザクション）
+  const card = await saveCard(
+    tempCardId,
+    userId,
+    articleId,
+    keyword,
+    rarity,
+    flavorText,
+    contextAnalysis,
+    images,
+    imagePrompt
+  );
+
+  // 7. コイン消費
+  await consumeCoins(userId, cost, `カード生成: ${keyword}`);
 
   return card;
 }
@@ -193,7 +323,7 @@ export async function createCard({
 export async function getCardsByUser({
   userId,
   cursor,
-  limit = 20,
+  limit = DEFAULT_PAGE_SIZE,
   rarity,
 }: CardListParams): Promise<CardListResult> {
   const cards = await prisma.card.findMany({
@@ -203,18 +333,13 @@ export async function getCardsByUser({
     },
     orderBy: { createdAt: 'desc' },
     take: limit + 1,
-    ...(cursor && {
-      cursor: { id: cursor },
-      skip: 1,
-    }),
+    ...buildCursorOptions(cursor),
   });
 
-  const hasMore = cards.length > limit;
-  const resultCards = hasMore ? cards.slice(0, -1) : cards;
-  const nextCursor = hasMore ? resultCards[resultCards.length - 1].id : null;
+  const { items, nextCursor, hasMore } = processPaginationResult(cards, limit);
 
   return {
-    cards: resultCards,
+    cards: items,
     nextCursor,
     hasMore,
   };
@@ -308,5 +433,44 @@ export async function getCardStatsByUser(userId: string) {
   return {
     total: totalCount,
     byRarity,
+  };
+}
+
+/**
+ * 記事で利用可能なキーワード数を取得
+ * バッチ生成時の上限決定に使用
+ */
+export async function getAvailableKeywordCount(
+  articleId: string,
+  userId: string
+): Promise<{ available: number; total: number; used: number }> {
+  // 記事の存在・所有権確認
+  const article = await prisma.article.findUnique({
+    where: { id: articleId },
+  });
+
+  if (!article || article.userId !== userId) {
+    throw new Error('記事が見つかりません');
+  }
+
+  // キーワード抽出
+  const extractedKeywords = await extractKeywords(article.content);
+
+  // 既存のカードで使用されたキーワードを取得
+  const existingCards = await prisma.card.findMany({
+    where: { articleId },
+    select: { keyword: true },
+  });
+  const usedKeywords = new Set(existingCards.map((c) => c.keyword));
+
+  // 利用可能なキーワード数を計算
+  const availableKeywords = extractedKeywords.filter(
+    (kw) => !usedKeywords.has(kw)
+  );
+
+  return {
+    available: availableKeywords.length,
+    total: extractedKeywords.length,
+    used: usedKeywords.size,
   };
 }
