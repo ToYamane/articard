@@ -34,9 +34,9 @@ export const DAILY_LIMITS = {
  * ランク閾値（スコア）
  */
 export const RANK_THRESHOLDS = {
-  B: 400,
-  A: 600,
-  S: 800,
+  B: 250,
+  A: 350,
+  S: 450,
 } as const;
 
 /**
