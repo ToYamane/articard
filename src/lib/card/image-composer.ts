@@ -2,6 +2,44 @@ import sharp from 'sharp';
 import type { Rarity } from '@/types/database';
 import { getRarityColor } from './rarity';
 
+// フォント設定
+interface FontConfig {
+  name: string;
+  family: string;
+  weight: number; // 出現重み
+}
+
+const CARD_FONTS: FontConfig[] = [
+  // 高出現率 (weight: 2)
+  { name: 'Noto Sans JP', family: "'Noto Sans JP', sans-serif", weight: 2 },
+  { name: 'Noto Serif JP', family: "'Noto Serif JP', serif", weight: 2 },
+  { name: 'Dela Gothic One', family: "'Dela Gothic One', sans-serif", weight: 2 },
+  { name: 'Kaisei Tokumin', family: "'Kaisei Tokumin', serif", weight: 2 },
+  // 低出現率 (weight: 1)
+  { name: 'Reggae One', family: "'Reggae One', sans-serif", weight: 1 },
+  { name: 'Yuji Syuku', family: "'Yuji Syuku', serif", weight: 1 },
+  { name: 'Kiwi Maru', family: "'Kiwi Maru', serif", weight: 1 },
+  { name: 'Hachi Maru Pop', family: "'Hachi Maru Pop', cursive", weight: 1 },
+  { name: 'DotGothic16', family: "'DotGothic16', sans-serif", weight: 1 },
+  { name: 'Stick', family: "'Stick', sans-serif", weight: 1 },
+];
+
+/**
+ * 重み付きランダムでフォントを選択
+ */
+function selectRandomFont(): FontConfig {
+  const totalWeight = CARD_FONTS.reduce((sum, f) => sum + f.weight, 0);
+  let random = Math.random() * totalWeight;
+
+  for (const font of CARD_FONTS) {
+    random -= font.weight;
+    if (random <= 0) {
+      return font;
+    }
+  }
+  return CARD_FONTS[0]; // フォールバック
+}
+
 // カードサイズ
 const CARD_WIDTH = 512;
 const CARD_HEIGHT = 768;
@@ -114,6 +152,9 @@ async function createCardFront(
     })
     .toBuffer();
 
+  // ランダムでフォントを選択
+  const selectedFont = selectRandomFont();
+
   // タイトルバーのSVG
   const titleBarSvg = `
     <svg width="${CARD_WIDTH}" height="${TITLE_HEIGHT}" xmlns="http://www.w3.org/2000/svg">
@@ -132,7 +173,7 @@ async function createCardFront(
       </defs>
       <rect width="${CARD_WIDTH}" height="${TITLE_HEIGHT}" fill="${rarity === 'legend' ? 'url(#legendTitleGradient)' : '#1a1a2e'}"/>
       <text x="${CARD_WIDTH / 2}" y="${TITLE_HEIGHT / 2 + 8}"
-            font-family="'Noto Sans JP', 'Yu Gothic', 'Meiryo', sans-serif"
+            font-family="${selectedFont.family}"
             font-size="24"
             font-weight="bold"
             fill="${color}"

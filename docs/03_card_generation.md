@@ -387,6 +387,74 @@ const generateImagePrompt = (
 | スーパーレア | 紫 | 強いグロー |
 | レジェンド | 金 | 虹色グラデーション + パーティクル |
 
+### カード名フォントのランダム化
+
+カード名（キーワード）のフォントは、カード生成時に重み付きランダムで選択される。これにより、カードごとに異なるフォントが適用され、コレクションに多様性が生まれる。
+
+#### フォント設定
+
+**高出現率フォント（各 2/14 ≈ 14.3%）**
+
+| フォント名 | スタイル | 特徴 |
+|-----------|---------|------|
+| Noto Sans JP | ゴシック | 標準的で読みやすい |
+| Noto Serif JP | 明朝 | 上品で伝統的 |
+| Dela Gothic One | ゴシック | 太字で力強い |
+| Kaisei Tokumin | 明朝 | 毛筆風で雅やか |
+
+**低出現率フォント（各 1/14 ≈ 7.1%）**
+
+| フォント名 | スタイル | 特徴 |
+|-----------|---------|------|
+| Reggae One | デザイン | ポップで楽しい |
+| Yuji Syuku | 毛筆 | 繊細な筆文字 |
+| Kiwi Maru | 丸ゴシック | 柔らかく親しみやすい |
+| Hachi Maru Pop | 手書き風 | カジュアルで可愛い |
+| DotGothic16 | ドット | レトロゲーム風 |
+| Stick | 棒体 | シンプルで直線的 |
+
+#### 実装
+
+```typescript
+interface FontConfig {
+  name: string;
+  family: string;
+  weight: number; // 出現重み
+}
+
+const CARD_FONTS: FontConfig[] = [
+  // 高出現率 (weight: 2)
+  { name: 'Noto Sans JP', family: "'Noto Sans JP', sans-serif", weight: 2 },
+  { name: 'Noto Serif JP', family: "'Noto Serif JP', serif", weight: 2 },
+  { name: 'Dela Gothic One', family: "'Dela Gothic One', sans-serif", weight: 2 },
+  { name: 'Kaisei Tokumin', family: "'Kaisei Tokumin', serif", weight: 2 },
+  // 低出現率 (weight: 1)
+  { name: 'Reggae One', family: "'Reggae One', sans-serif", weight: 1 },
+  { name: 'Yuji Syuku', family: "'Yuji Syuku', serif", weight: 1 },
+  { name: 'Kiwi Maru', family: "'Kiwi Maru', serif", weight: 1 },
+  { name: 'Hachi Maru Pop', family: "'Hachi Maru Pop', cursive", weight: 1 },
+  { name: 'DotGothic16', family: "'DotGothic16', sans-serif", weight: 1 },
+  { name: 'Stick', family: "'Stick', sans-serif", weight: 1 },
+];
+
+function selectRandomFont(): FontConfig {
+  const totalWeight = CARD_FONTS.reduce((sum, f) => sum + f.weight, 0);
+  let random = Math.random() * totalWeight;
+
+  for (const font of CARD_FONTS) {
+    random -= font.weight;
+    if (random <= 0) {
+      return font;
+    }
+  }
+  return CARD_FONTS[0]; // フォールバック
+}
+```
+
+#### フォントのインストール
+
+これらのフォントはGoogle Fontsから入手可能。サーバー環境ではシステムフォントとしてインストールが必要。
+
 ## 3.9 カード画像合成
 
 ### サーバーサイド処理
