@@ -115,8 +115,27 @@ describe('article-service', () => {
 
       expect(result.id).toBe(mockArticle.id);
       expect(mockIsThemeSafe).toHaveBeenCalledWith('テストテーマ');
-      expect(mockGenerateArticle).toHaveBeenCalledWith('テストテーマ');
+      expect(mockGenerateArticle).toHaveBeenCalledWith('テストテーマ', 'essay');
       expect(mockCreate).toHaveBeenCalled();
+    });
+
+    it('contentTypeを指定した場合、その値が使用される', async () => {
+      mockIsThemeSafe.mockResolvedValue({ safe: true });
+      mockGenerateArticle.mockResolvedValue({
+        content: '生成された物語',
+        model: 'gpt-4o-mini',
+        tokenUsage: { total: 600 },
+      });
+      mockCreate.mockResolvedValue({ ...mockArticle, contentType: 'story' });
+
+      const result = await createArticle({
+        userId: mockUser.id,
+        theme: 'テストテーマ',
+        contentType: 'story',
+      });
+
+      expect(result.id).toBe(mockArticle.id);
+      expect(mockGenerateArticle).toHaveBeenCalledWith('テストテーマ', 'story');
     });
 
     it('不適切なテーマの場合、エラーをスロー', async () => {

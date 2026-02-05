@@ -78,7 +78,7 @@
 - `User` - ユーザー情報 (Firebase UIDをPKとして使用)
 - `Article` - 生成された記事
 - `Card` - 生成されたカード
-- `KnowledgeTransaction` - ナレッジ取引履歴 (Phase 2用)
+- `KnowledgeTransaction` - コイン取引履歴 (Phase 2用)
 
 **インデックス設定:**
 - 各テーブルに適切なインデックスを設定

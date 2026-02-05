@@ -113,6 +113,25 @@ describe('/api/articles', () => {
         expect(mockCreateArticle).toHaveBeenCalledWith({
           userId: 'test-user-id-123',
           theme: 'プログラミング入門',
+          contentType: 'essay',
+        });
+      });
+
+      it('contentTypeを指定した場合、その値が使用される', async () => {
+        mockCreateArticle.mockResolvedValue({ ...mockArticle, contentType: 'story' });
+
+        const req = createAuthenticatedRequest('/api/articles', {
+          method: 'POST',
+          body: { theme: 'ファンタジー冒険', contentType: 'story' },
+        });
+        const response = await POST(req);
+        const data = await expectSuccessResponse(response, 200);
+
+        expect(data.id).toBe(mockArticle.id);
+        expect(mockCreateArticle).toHaveBeenCalledWith({
+          userId: 'test-user-id-123',
+          theme: 'ファンタジー冒険',
+          contentType: 'story',
         });
       });
     });
