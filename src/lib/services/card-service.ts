@@ -37,7 +37,7 @@ export interface CardListParams {
   userId: string;
   cursor?: string;
   limit?: number;
-  rarity?: string;
+  rarity?: Rarity;
 }
 
 export interface CardListResult {

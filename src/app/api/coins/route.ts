@@ -54,7 +54,7 @@ export const GET = withAuth<CoinBalanceResponse>(async (authUser) => {
     }),
   ]);
 
-  const tier = user?.subscriptionTier as SubscriptionTier | null;
+  const tier = user?.subscriptionTier ?? null;
   const plan = tier ? SUBSCRIPTION_PLANS[tier] : null;
 
   return {

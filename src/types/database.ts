@@ -1,6 +1,7 @@
 // Database types for Articard
 
-export type Rarity = 'common' | 'rare' | 'super_rare' | 'legend';
+import { type Rarity } from '@prisma/client';
+export { Rarity, TransactionType } from '@prisma/client';
 
 export type ContextCategory =
   | 'historical_event'
@@ -10,8 +11,6 @@ export type ContextCategory =
   | 'biographical'
   | 'general'
   | 'metaphorical';
-
-export type TransactionType = 'purchase' | 'bonus' | 'consume' | 'refund';
 
 export type EmotionalTone =
   | 'epic'

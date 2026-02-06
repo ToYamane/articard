@@ -38,10 +38,9 @@ function getFreeChallenges(tier: string | null): number {
   return plan?.freeChallenges ?? DAILY_LIMITS.FREE_CHALLENGES;
 }
 
-/**
- * トランザクションタイプ
- */
-export type TransactionType = 'purchase' | 'bonus' | 'consume' | 'refund' | 'daily';
+// TransactionType is re-exported from Prisma
+import { type TransactionType } from '@prisma/client';
+export { TransactionType } from '@prisma/client';
 
 /**
  * トランザクション情報

@@ -10,6 +10,40 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ========================================
+// Enums
+// ========================================
+
+enum Rarity {
+  common
+  rare
+  super_rare
+  legend
+}
+
+enum SessionStatus {
+  in_progress
+  completed
+  abandoned
+}
+
+enum TransactionType {
+  purchase
+  bonus
+  consume
+  refund
+  daily
+}
+
+enum SubscriptionTier {
+  plus
+  premium
+}
+
+// ========================================
+// Models
+// ========================================
+
 model User {
   id                      String    @id @db.VarChar(128)
   nickname                String    @unique @db.VarChar(20)
@@ -21,7 +55,7 @@ model User {
   isPremium               Boolean   @default(false) @map("is_premium")
   isDeveloper             Boolean   @default(false) @map("is_developer")
   premiumExpiresAt        DateTime? @map("premium_expires_at") @db.Timestamptz
-  subscriptionTier          String?   @map("subscription_tier") @db.VarChar(20) // 'plus' | 'premium' | null
+  subscriptionTier          SubscriptionTier? @map("subscription_tier")
   subscriptionBonusReceived Boolean   @default(false) @map("subscription_bonus_received")
   stripeCustomerId          String?   @unique @map("stripe_customer_id") @db.VarChar(255)
   stripeSubscriptionId      String?   @unique @map("stripe_subscription_id") @db.VarChar(255)
@@ -37,7 +71,6 @@ model User {
   challengeAchievements ChallengeAchievement[]
 
   @@index([createdAt])
-  @@index([isPremium])
   @@map("users")
 }
 
@@ -65,8 +98,8 @@ model Card {
   userId             String   @map("user_id") @db.VarChar(128)
   articleId          String   @map("article_id") @db.Uuid
   keyword            String   @db.VarChar(50)
-  cardNumber         Int?     @map("card_number")
-  rarity             String   @db.VarChar(20)
+  cardNumber         Int      @map("card_number")
+  rarity             Rarity
   flavorText         String   @map("flavor_text") @db.VarChar(100)
   contextCategory    String   @map("context_category") @db.VarChar(30)
   contextDescription String   @map("context_description") @db.Text
@@ -95,7 +128,7 @@ model KnowledgeTransaction {
   id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId          String   @map("user_id") @db.VarChar(128)
   amount          Int
-  transactionType String   @map("transaction_type") @db.VarChar(20)
+  transactionType TransactionType @map("transaction_type")
   description     String?  @db.VarChar(100)
   balanceAfter    Int      @map("balance_after")
   createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
@@ -104,7 +137,7 @@ model KnowledgeTransaction {
 
   @@index([userId])
   @@index([createdAt])
-  @@index([transactionType])
+  @@index([userId, createdAt(sort: Desc)])
   @@map("knowledge_transactions")
 }
 
@@ -126,7 +159,7 @@ model ChallengeSession {
   id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId       String    @map("user_id") @db.VarChar(128)
   scenarioId   String    @map("scenario_id") @db.VarChar(50)
-  status       String    @db.VarChar(20) // "in_progress" | "completed" | "abandoned"
+  status       SessionStatus
   currentPhase Int       @default(0) @map("current_phase")
   gameState    Json?     @map("game_state") // { deck: [...], phases: [...] }
   startedAt    DateTime  @default(now()) @map("started_at") @db.Timestamptz
@@ -137,6 +170,7 @@ model ChallengeSession {
   @@index([userId])
   @@index([status])
   @@index([userId, status])
+  @@index([userId, startedAt(sort: Desc)])
   @@map("challenge_sessions")
 }
 

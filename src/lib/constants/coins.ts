@@ -78,7 +78,7 @@ export const SUBSCRIPTION_PLANS = {
   },
 } as const;
 
-export type SubscriptionTier = keyof typeof SUBSCRIPTION_PLANS;
+export { SubscriptionTier } from '@prisma/client';
 
 /**
  * コイン購入パッケージ定義

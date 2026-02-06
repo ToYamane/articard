@@ -109,11 +109,10 @@ export async function getSubscriptionStatus(
     throw new Error('ユーザーが見つかりません');
   }
 
-  const tier = user.subscriptionTier as SubscriptionTier | null;
-  const plan = tier ? SUBSCRIPTION_PLANS[tier] : null;
+  const plan = user.subscriptionTier ? SUBSCRIPTION_PLANS[user.subscriptionTier] : null;
 
   return {
-    tier,
+    tier: user.subscriptionTier,
     expiresAt: user.premiumExpiresAt,
     bonusReceived: user.subscriptionBonusReceived,
     plan,
@@ -148,6 +147,5 @@ export async function canUseBatchGeneration(userId: string): Promise<boolean> {
     return false;
   }
 
-  const tier = user.subscriptionTier as SubscriptionTier | null;
-  return tier === 'plus' || tier === 'premium';
+  return user.subscriptionTier === 'plus' || user.subscriptionTier === 'premium';
 }

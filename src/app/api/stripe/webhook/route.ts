@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import Stripe from 'stripe';
+import type { SubscriptionTier } from '@prisma/client';
 import { stripe, STRIPE_PRICE_TO_TIER } from '@/lib/stripe';
 import { prisma } from '@/lib/prisma';
 import { activateSubscription, cancelSubscription } from '@/lib/services/subscription-service';
@@ -90,7 +91,7 @@ export async function POST(req: NextRequest) {
  */
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const userId = session.metadata?.userId;
-  const tier = session.metadata?.tier as 'plus' | 'premium' | undefined;
+  const tier = session.metadata?.tier as SubscriptionTier | undefined;
 
   if (!userId || !tier) {
     console.error('Missing metadata in checkout session:', session.id);

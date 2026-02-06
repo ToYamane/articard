@@ -1,13 +1,12 @@
 // Challenge Mode types for Articard
 
 import type { Rarity } from './database';
+import { type SessionStatus } from '@prisma/client';
 
-// Session status
+// Session status (re-exported from Prisma enum)
 // Note: 'deck_building' phase is now represented by status='in_progress' with currentPhase=0
-export type ChallengeSessionStatus =
-  | 'in_progress'
-  | 'completed'
-  | 'abandoned';
+export { SessionStatus as ChallengeSessionStatus } from '@prisma/client';
+type ChallengeSessionStatus = SessionStatus;
 
 // Phase type determines card requirements
 export type PhaseType = 'single' | 'combo' | 'triple';
