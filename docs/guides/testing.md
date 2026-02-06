@@ -1,292 +1,247 @@
-# 09. テスト方針
+# 09. テスト運用ガイド
 
 ## 9.1 概要
 
-本プロジェクトでは、API・ビジネスロジックに焦点を当てたテスト戦略を採用する。
-フロントエンドコンポーネントやE2Eテストは対象外とし、バックエンドの品質担保を優先する。
+本プロジェクトでは、API ルート・ビジネスロジックに焦点を当てたテスト戦略を採用している。
+フロントエンドコンポーネントや E2E テストは対象外とし、バックエンドの品質担保を優先する。
+
+**現在の規模:**
+
+| 指標 | 値 |
+|------|-----|
+| テストファイル数 | 36 |
+| テスト数 | 528（526 passing / 2 failing） |
+| 実行時間 | 約 9 秒 |
 
 ## 9.2 テスト対象
 
-### 対象
+### カバレッジ状況
 
-| カテゴリ | 対象 | ツール |
-|---------|------|--------|
-| API Routes | 全エンドポイント | Jest + supertest |
-| ビジネスロジック | レア度計算、キーワード抽出等 | Jest |
-| データベース | Prismaクエリ、トランザクション | Jest + Prisma |
-| バリデーション | Zodスキーマ | Jest |
+| カテゴリ | ファイル数 | 主な対象 |
+|---------|-----------|---------|
+| API ルートテスト | 22 | articles, cards, challenge, coins, stripe, subscription, auth, stats, users |
+| サービステスト | 5 | article, card, challenge, coin, subscription |
+| チャレンジロジック | 3 | game-state, rewards, scenarios |
+| バリデーション | 3 | article, card, user |
+| エラーハンドリング | 2 | api-error, error-messages |
+| カードロジック | 1 | rarity |
 
-### 対象外
+### 未テスト
 
-- React コンポーネント
-- E2E テスト（Playwright等）
-- スタイリング / UI
+- `suggested-theme-service` — サービステスト未作成
+- React コンポーネント（対象外）
+- E2E テスト（対象外）
 
 ## 9.3 テストツール
 
 ```json
 {
   "devDependencies": {
-    "jest": "^29.x",
-    "@types/jest": "^29.x",
-    "ts-jest": "^29.x",
-    "supertest": "^6.x",
-    "@types/supertest": "^2.x"
+    "jest": "^30.2.0",
+    "jest-environment-jsdom": "^30.2.0",
+    "@types/jest": "^30.0.0",
+    "ts-jest": "^29.4.6",
+    "@testing-library/jest-dom": "^6.9.1"
   }
 }
 ```
 
+- **jest** + **ts-jest**: テストランナー・TypeScript 変換
+- **jest-environment-jsdom**: Next.js API ルートテスト用の DOM 環境
+- **@testing-library/jest-dom**: カスタムマッチャー
+- `jest.setup.js` で `TextEncoder`, `Request/Response`, `ReadableStream` 等のポリフィルを設定
+
 ## 9.4 ディレクトリ構成
 
+テストは `src/` の外の `__tests__/` ディレクトリに配置する。ソースコードのディレクトリ構造をミラーする。
+
 ```
-src/
-├── lib/
-│   ├── rarity.ts
-│   ├── rarity.test.ts          # ユニットテスト
-│   ├── keyword-extraction.ts
-│   └── keyword-extraction.test.ts
+__tests__/
+├── __mocks__/                    # 外部サービスモック
+│   ├── firebase.ts               #   Firebase Auth
+│   ├── openai.ts                 #   OpenAI API
+│   ├── flux.ts                   #   FLUX 画像生成
+│   ├── stripe.ts                 #   Stripe 決済
+│   ├── index.ts                  #   re-export
+│   └── next/
+│       └── server.ts             #   Next.js Server API (NextRequest/NextResponse)
+├── helpers/                      # テストヘルパー
+│   ├── api-test-helpers.ts       #   createAuthenticatedRequest 等
+│   ├── db-helpers.ts             #   Prisma モックヘルパー
+│   ├── coin-test-data.ts         #   コイン関連テストデータ
+│   └── index.ts                  #   re-export
 ├── app/
-│   └── api/
+│   └── api/                      # API ルートテスト（src/app/api をミラー）
 │       ├── articles/
-│       │   ├── route.ts
-│       │   └── route.test.ts   # API テスト
-│       └── cards/
-│           ├── route.ts
-│           └── route.test.ts
-└── __tests__/
-    └── integration/            # 統合テスト
-        └── card-generation.test.ts
+│       ├── auth/
+│       ├── cards/
+│       ├── challenge/
+│       ├── coins/
+│       ├── stats/
+│       ├── stripe/
+│       ├── subscription/
+│       └── users/
+└── lib/                          # ライブラリ・サービステスト
+    ├── card/                     #   レア度計算
+    ├── challenge/                #   ゲームロジック
+    ├── errors/                   #   エラークラス
+    ├── services/                 #   ビジネスロジック
+    └── validations/              #   Zod バリデーション
 ```
 
-## 9.5 テストケース
+## 9.5 テストパターン
 
-### 9.5.1 レア度計算 (`lib/rarity.test.ts`)
+本プロジェクトのテストは主に 3 パターンに分類される。
 
-```typescript
-describe('calculateRarity', () => {
-  describe('文脈スコア計算', () => {
-    it('歴史的出来事は+40点', () => {
-      const score = calculateContextScore('historical_event');
-      expect(score).toBe(40);
-    });
+### 9.5.1 サービステスト
 
-    it('神話・伝説は+35点', () => {
-      const score = calculateContextScore('myth_legend');
-      expect(score).toBe(35);
-    });
-
-    it('一般的は+5点', () => {
-      const score = calculateContextScore('general');
-      expect(score).toBe(5);
-    });
-  });
-
-  describe('レア度判定（確率ベース）', () => {
-    it('指定されたレア度を返す', () => {
-      expect(calculateRarity('legend')).toBe('legend');
-      expect(calculateRarity('super_rare')).toBe('super_rare');
-      expect(calculateRarity('rare')).toBe('rare');
-      expect(calculateRarity('common')).toBe('common');
-    });
-
-    it('指定なしの場合は確率に基づいてレア度を返す', () => {
-      // 確率分布: legend 5%, super_rare 10%, rare 25%, common 60%
-      const results = Array.from({ length: 1000 }, () => calculateRarity());
-      const counts = results.reduce((acc, r) => {
-        acc[r] = (acc[r] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
-
-      // 大まかな分布チェック（許容範囲あり）
-      expect(counts.common).toBeGreaterThan(500);  // ~60%
-      expect(counts.rare).toBeGreaterThan(150);    // ~25%
-    });
-  });
-});
-```
-
-### 9.5.2 キーワード重複チェック (`lib/keyword.test.ts`)
+Prisma クライアントを `jest.mock` で個別メソッドごとにモックし、ビジネスロジックをテストする。
 
 ```typescript
-describe('selectAvailableKeyword', () => {
-  it('未使用のキーワードから選択される', async () => {
-    const extracted = ['りんご', '重力', 'ニュートン'];
-    const used = ['りんご'];
+// __tests__/lib/services/card-service.test.ts の例
 
-    const result = await selectAvailableKeyword(extracted, used);
-
-    expect(['重力', 'ニュートン']).toContain(result);
-    expect(result).not.toBe('りんご');
-  });
-
-  it('全キーワードが使用済みの場合はエラー', async () => {
-    const extracted = ['りんご', '重力'];
-    const used = ['りんご', '重力'];
-
-    await expect(
-      selectAvailableKeyword(extracted, used)
-    ).rejects.toThrow('この記事から生成できるカードはもうありません');
-  });
-});
-```
-
-### 9.5.3 API テスト (`app/api/articles/route.test.ts`)
-
-```typescript
-import { createMocks } from 'node-mocks-http';
-import { POST } from './route';
-
-describe('POST /api/articles', () => {
-  it('正常なテーマで記事が生成される', async () => {
-    const { req, res } = createMocks({
-      method: 'POST',
-      body: { theme: '万有引力の発見' },
-    });
-
-    // モック設定
-    jest.spyOn(auth, 'verifyAuth').mockResolvedValue({ uid: 'user123' });
-    jest.spyOn(moderation, 'checkModeration').mockResolvedValue({ flagged: false });
-    jest.spyOn(openai, 'generateArticle').mockResolvedValue({
-      content: '記事本文...',
-      model: 'gpt-4o-mini',
-      tokenUsage: 500,
-    });
-
-    await POST(req as any);
-
-    expect(res._getStatusCode()).toBe(200);
-    const data = JSON.parse(res._getData());
-    expect(data.success).toBe(true);
-    expect(data.data.theme).toBe('万有引力の発見');
-  });
-
-  it('認証なしでは401エラー', async () => {
-    const { req, res } = createMocks({
-      method: 'POST',
-      body: { theme: 'テスト' },
-    });
-
-    jest.spyOn(auth, 'verifyAuth').mockResolvedValue(null);
-
-    await POST(req as any);
-
-    expect(res._getStatusCode()).toBe(401);
-  });
-
-  it('不適切なテーマは400エラー', async () => {
-    const { req, res } = createMocks({
-      method: 'POST',
-      body: { theme: '不適切なコンテンツ' },
-    });
-
-    jest.spyOn(auth, 'verifyAuth').mockResolvedValue({ uid: 'user123' });
-    jest.spyOn(moderation, 'checkModeration').mockResolvedValue({ flagged: true });
-
-    await POST(req as any);
-
-    expect(res._getStatusCode()).toBe(400);
-    const data = JSON.parse(res._getData());
-    expect(data.error.code).toBe('MODERATION_BLOCKED');
-  });
-
-  it('テーマが短すぎると400エラー', async () => {
-    const { req, res } = createMocks({
-      method: 'POST',
-      body: { theme: 'a' },
-    });
-
-    jest.spyOn(auth, 'verifyAuth').mockResolvedValue({ uid: 'user123' });
-
-    await POST(req as any);
-
-    expect(res._getStatusCode()).toBe(400);
-    const data = JSON.parse(res._getData());
-    expect(data.error.code).toBe('VALIDATION_ERROR');
-  });
-});
-```
-
-### 9.5.4 削除API テスト
-
-```typescript
-describe('DELETE /api/cards/:id', () => {
-  it('所有するカードを削除できる', async () => {
-    // テスト実装
-  });
-
-  it('他人のカードは削除できない', async () => {
-    // 403エラーを期待
-  });
-
-  it('存在しないカードは404エラー', async () => {
-    // 404エラーを期待
-  });
-});
-
-describe('DELETE /api/articles/:id', () => {
-  it('記事削除で関連カードも連動削除される', async () => {
-    // deletedCardsCount を検証
-  });
-});
-```
-
-## 9.6 モック戦略
-
-### 外部サービスのモック
-
-```typescript
-// OpenAI API
-jest.mock('@/lib/openai', () => ({
-  generateArticle: jest.fn(),
-  extractKeywords: jest.fn(),
-  generateFlavorText: jest.fn(),
+jest.mock('@/lib/prisma', () => ({
+  __esModule: true,
+  default: {
+    card: {
+      findMany: jest.fn(),
+      findUnique: jest.fn(),
+      create: jest.fn(),
+      delete: jest.fn(),
+    },
+    article: { findUnique: jest.fn() },
+    user: { findUnique: jest.fn() },
+    $transaction: jest.fn(),
+  },
 }));
 
-// FLUX API (画像生成)
-jest.mock('@/lib/flux', () => ({
-  generateIllustration: jest.fn(),
-}));
+import prisma from '@/lib/prisma';
+const mockPrisma = prisma as jest.Mocked<typeof prisma>;
 
-// Firebase Auth
+describe('CardService', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('ユーザーのカード一覧を取得できる', async () => {
+    (mockPrisma.card.findMany as jest.Mock).mockResolvedValue([/* ... */]);
+    const result = await cardService.getCards('user-id');
+    expect(result).toHaveLength(1);
+  });
+});
+```
+
+**`$transaction` のモック:**
+
+```typescript
+const mockTxPrisma = {
+  card: { create: jest.fn() },
+  knowledgeTransaction: { create: jest.fn() },
+};
+(mockPrisma.$transaction as jest.Mock).mockImplementation(
+  async (cb) => cb(mockTxPrisma)
+);
+```
+
+### 9.5.2 API ルートテスト
+
+`verifyAuth` をモックし、`createAuthenticatedRequest` ヘルパーでリクエストを構築する。
+
+```typescript
+// __tests__/app/api/articles/route.test.ts の例
+
 jest.mock('@/lib/auth', () => ({
   verifyAuth: jest.fn(),
 }));
+
+import { verifyAuth } from '@/lib/auth';
+import { createAuthenticatedRequest } from '@/__tests__/helpers';
+import { GET } from '@/app/api/articles/route';
+
+describe('GET /api/articles', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (verifyAuth as jest.Mock).mockResolvedValue({ uid: 'test-user-id' });
+  });
+
+  it('記事一覧を返す', async () => {
+    // Prisma モックを設定
+    const response = await GET(createAuthenticatedRequest('GET'));
+    const data = await response.json();
+    expect(data.success).toBe(true);
+  });
+});
 ```
 
-### データベースのモック
+**`withAuthParams` ルートの呼び出し:**
+
+パス付きルート（例: `/api/cards/[id]`）は第二引数に params を渡す。
 
 ```typescript
-// Prisma Client のモック
-jest.mock('@/lib/prisma', () => ({
-  prisma: {
-    article: {
-      create: jest.fn(),
-      findUnique: jest.fn(),
-      findMany: jest.fn(),
-      delete: jest.fn(),
-    },
-    card: {
-      create: jest.fn(),
-      findUnique: jest.fn(),
-      findMany: jest.fn(),
-      delete: jest.fn(),
-      deleteMany: jest.fn(),
-    },
-    user: {
-      findUnique: jest.fn(),
-      update: jest.fn(),
-    },
-  },
-}));
+import { DELETE } from '@/app/api/cards/[id]/route';
+
+const response = await DELETE(
+  createAuthenticatedRequest('DELETE'),
+  { params: Promise.resolve({ id: 'card-id' }) }
+);
+```
+
+### 9.5.3 純関数テスト
+
+外部依存のないロジックはモック不要でテストする。
+
+```typescript
+// __tests__/lib/challenge/scenarios.test.ts の例
+import { getScenarioById, getAllScenarios } from '@/lib/challenge/scenarios';
+
+describe('scenarios', () => {
+  it('IDでシナリオを取得できる', () => {
+    const scenario = getScenarioById('science-basics');
+    expect(scenario).toBeDefined();
+    expect(scenario!.name).toBe('科学の基礎');
+  });
+});
+```
+
+## 9.6 モック
+
+### 外部サービスモック（`__tests__/__mocks__/`）
+
+| ファイル | モック対象 | 主なエクスポート |
+|---------|----------|---------------|
+| `firebase.ts` | `@/lib/firebase/admin` | `adminAuth.verifyIdToken` 等 |
+| `openai.ts` | `@/lib/openai/*` | `generateArticle`, `extractKeywords`, `generateFlavorText` |
+| `flux.ts` | `@/lib/flux` | `generateIllustration` |
+| `stripe.ts` | `stripe` パッケージ | `Stripe` コンストラクタ |
+| `next/server.ts` | `next/server` | `NextRequest`, `NextResponse` の互換実装 |
+
+### テストヘルパー（`__tests__/helpers/`）
+
+| ファイル | 用途 |
+|---------|------|
+| `api-test-helpers.ts` | `createAuthenticatedRequest(method, options)` — Bearer トークン付きリクエスト生成 |
+| `db-helpers.ts` | Prisma モック生成ヘルパー、テスト用データファクトリ |
+| `coin-test-data.ts` | コイン残高・トランザクションのテストデータ |
+
+### モックリセット
+
+各テストファイルの `beforeEach` で `jest.clearAllMocks()` を呼び出す。
+
+```typescript
+beforeEach(() => {
+  jest.clearAllMocks();
+});
 ```
 
 ## 9.7 テスト実行
 
-### コマンド
-
 ```bash
 # 全テスト実行
 npm test
+
+# 特定ファイルのみ
+npm test -- __tests__/lib/services/card-service.test.ts
+
+# パターンで絞り込み
+npm test -- --testPathPattern="challenge"
 
 # 監視モード
 npm test -- --watch
@@ -294,56 +249,45 @@ npm test -- --watch
 # カバレッジ付き
 npm test -- --coverage
 
-# 特定ファイルのみ
-npm test -- rarity.test.ts
+# テスト一覧のみ表示
+npm test -- --listTests
+
+# verbose（詳細出力）
+npm test -- --verbose
 ```
 
-### Jest設定 (`jest.config.js`)
+## 9.8 新テスト追加手順
 
-```javascript
-module.exports = {
-  preset: 'ts-jest',
-  testEnvironment: 'node',
-  roots: ['<rootDir>/src'],
-  testMatch: ['**/*.test.ts'],
-  moduleNameMapper: {
-    '^@/(.*)$': '<rootDir>/src/$1',
-  },
-  setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
-  collectCoverageFrom: [
-    'src/lib/**/*.ts',
-    'src/app/api/**/*.ts',
-    '!src/**/*.d.ts',
-  ],
-};
-```
+### サービステストを追加する場合
 
-## 9.8 CI/CD連携
+1. `__tests__/lib/services/<name>-service.test.ts` を作成
+2. `jest.mock('@/lib/prisma')` でデフォルトエクスポートの Prisma をモック
+3. 必要に応じて外部サービスもモック（`jest.mock('@/lib/openai/...')`等）
+4. `beforeEach` で `jest.clearAllMocks()`
+5. 各 Prisma メソッドの戻り値を `mockResolvedValue` で設定
+6. `$transaction` が必要なら `mockImplementation(async (cb) => cb(mockTxPrisma))` パターンを使用
+7. `npm test -- __tests__/lib/services/<name>-service.test.ts` で実行確認
 
-GitHub Actionsでテストを自動実行：
+### API ルートテストを追加する場合
 
-```yaml
-# .github/workflows/test.yml
-name: Test
+1. `__tests__/app/api/<path>/route.test.ts` を作成（ソースのディレクトリ構造をミラー）
+2. `jest.mock('@/lib/auth')` で認証をモック
+3. `jest.mock('@/lib/prisma')` でデータベースをモック
+4. `createAuthenticatedRequest` ヘルパーを使ってリクエストを生成
+5. ルートハンドラ（`GET`, `POST`, `DELETE` 等）を直接インポートして呼び出す
+6. `response.json()` で結果を取得し、`success`, `data`, `error` を検証
+7. パス付きルートの場合は `{ params: Promise.resolve({ id }) }` を第二引数に渡す
 
-on:
-  push:
-    branches: [main, develop]
-  pull_request:
-    branches: [main]
+### チェックリスト
 
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-      - run: npm ci
-      - run: npm test -- --coverage
-      - uses: codecov/codecov-action@v3
-        with:
-          files: ./coverage/lcov.info
-```
+- [ ] `jest.clearAllMocks()` を `beforeEach` に追加したか
+- [ ] モックの戻り値は適切に設定したか
+- [ ] 正常系・異常系（認証エラー、バリデーションエラー、404 等）をカバーしたか
+- [ ] `npm test` で全体の既存テストに影響がないか確認したか
+
+## 9.9 既知の問題
+
+| ファイル | 問題 | 備考 |
+|---------|------|------|
+| `__tests__/app/api/users/me/route.test.ts` | 2 テスト失敗 | テストが `USER_NOT_FOUND` を期待するが実際は `NOT_FOUND` を返す。エラーコードの統一が必要 |
+| `suggested-theme-service` | テスト未作成 | サービス 6 件中唯一の未テスト |

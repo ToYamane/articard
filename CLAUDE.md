@@ -22,6 +22,23 @@ npm run db:push             # Push schema changes
 npm run db:studio           # Open Prisma Studio GUI
 ```
 
+## Testing
+
+### Test Structure
+テストは `__tests__/` ディレクトリに配置（src外）:
+- `__tests__/__mocks__/` - 外部サービスモック（Firebase, OpenAI, FLUX, Stripe, next/server）
+- `__tests__/helpers/` - テストヘルパー・データファクトリ
+- `__tests__/lib/` - ライブラリ・サービスのユニットテスト
+- `__tests__/app/api/` - APIルートテスト
+
+### Test Patterns
+- サービステスト: `jest.mock('@/lib/prisma')` で個別メソッドをモック
+- APIルートテスト: `jest.mock('@/lib/auth')` + helpers の `createAuthenticatedRequest`
+- withAuthParams ルート: `handler(req, { params: Promise.resolve({ id }) })`
+- $transaction モック: `mockImplementation(async (cb) => cb(mockTxPrisma))`
+
+詳細は [テスト運用ガイド](docs/guides/testing.md) を参照。
+
 ## Architecture
 
 ### Tech Stack
@@ -126,43 +143,22 @@ Required in `.env`:
 - `GOOGLE_GEMINI_API_KEY`: Gemini image generation
 - `GCS_BUCKET_NAME`, `GOOGLE_APPLICATION_CREDENTIALS`: Cloud Storage
 
-## Database Setup
-
-```bash
-# Start Cloud SQL Proxy (required for development)
-./cloud-sql-proxy.exe articard-ff673:asia-northeast1:articard-db --port 5433
-
-# Push schema changes
-npm run db:push
-```
-
 ## Infrastructure
 
-### GCP Project (Development)
-- **Project ID**: articard-ff673
-- **Region**: asia-northeast1
+See [Production Setup Guide](docs/guides/production-setup.md) for full details.
 
-### Cloud SQL
-- **Instance**: articard-db
-- **Database**: articard
-- **User**: articard_user
+| Resource | Value |
+|----------|-------|
+| GCP Project | articard-ff673 (asia-northeast1) |
+| Database | Cloud SQL PostgreSQL (articard-db) |
+| Storage | GCS: illustrations/, cards/, thumbnails/ |
+| Auth | Firebase (Email/Password, Google OAuth) |
+| AI APIs | OpenAI, FLUX (BFL), Gemini |
 
-### Cloud Storage
-- **Bucket**: articard-ff673.appspot.com (or custom bucket)
-- **Structure**:
-  - illustrations/{cardId}_illustration.jpg
-  - cards/{cardId}_card.jpg
-  - cards/{cardId}_back.jpg
-  - thumbnails/{cardId}_thumb.jpg
+## Compact Instructions
 
-### Firebase
-- **Project**: articard-ff673
-- **Auth**: Email/Password, Google OAuth
-
-### External APIs
-- **OpenAI**: GPT-4o-mini (articles), DALL-E 3 HD (legend cards)
-- **FLUX (BFL)**: flux-2-klein (common), flux-2-pro (super_rare)
-- **Gemini**: gemini-2.0-flash-exp (rare cards)
-
-### Related Docs
-- [Production Setup Guide](docs/production-setup.md)
+When context is compacted, preserve:
+- API patterns: `{ success, data }` / `{ success, error }` format
+- Card rarity system: Common(60%)/Rare(25%)/SuperRare(10%)/Legend(5%)
+- Key locations: `src/lib/services/`, `src/lib/validations/`, `src/lib/errors/`
+- Auth pattern: Firebase Bearer token validation

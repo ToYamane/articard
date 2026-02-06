@@ -39,6 +39,34 @@ export const mockPrisma = {
     create: jest.fn(),
     deleteMany: jest.fn(),
   },
+  challengeSession: {
+    findUnique: jest.fn(),
+    findFirst: jest.fn(),
+    findMany: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+    deleteMany: jest.fn(),
+    count: jest.fn(),
+  },
+  challengeHighScore: {
+    findUnique: jest.fn(),
+    findFirst: jest.fn(),
+    findMany: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    upsert: jest.fn(),
+    delete: jest.fn(),
+    deleteMany: jest.fn(),
+  },
+  challengeAchievement: {
+    findUnique: jest.fn(),
+    findFirst: jest.fn(),
+    findMany: jest.fn(),
+    create: jest.fn(),
+    delete: jest.fn(),
+    deleteMany: jest.fn(),
+  },
   $transaction: jest.fn((callback) => callback(mockPrisma)),
   $connect: jest.fn(),
   $disconnect: jest.fn(),
@@ -76,6 +104,34 @@ export const mockPrisma = {
   knowledgeTransaction: {
     findMany: jest.Mock;
     create: jest.Mock;
+    deleteMany: jest.Mock;
+  };
+  challengeSession: {
+    findUnique: jest.Mock;
+    findFirst: jest.Mock;
+    findMany: jest.Mock;
+    create: jest.Mock;
+    update: jest.Mock;
+    delete: jest.Mock;
+    deleteMany: jest.Mock;
+    count: jest.Mock;
+  };
+  challengeHighScore: {
+    findUnique: jest.Mock;
+    findFirst: jest.Mock;
+    findMany: jest.Mock;
+    create: jest.Mock;
+    update: jest.Mock;
+    upsert: jest.Mock;
+    delete: jest.Mock;
+    deleteMany: jest.Mock;
+  };
+  challengeAchievement: {
+    findUnique: jest.Mock;
+    findFirst: jest.Mock;
+    findMany: jest.Mock;
+    create: jest.Mock;
+    delete: jest.Mock;
     deleteMany: jest.Mock;
   };
   $transaction: jest.Mock;
@@ -117,6 +173,66 @@ export const mockCard = {
   thumbnailUrl: 'https://storage.example.com/thumbnails/test.jpg',
   fluxPrompt: 'test prompt for illustration',
   createdAt: new Date('2026-01-01T00:00:00Z'),
+};
+
+// モックチャレンジセッションデータ
+export const mockChallengeSession = {
+  id: 'test-session-id-123',
+  userId: 'test-user-id-123',
+  scenarioId: 'space_exploration',
+  status: 'in_progress',
+  currentPhase: 1,
+  gameState: {
+    deck: [
+      {
+        cardId: 'card-1',
+        keyword: 'Quantum',
+        rarity: 'rare',
+        flavorText: 'A quantum leap',
+        contextDescription: 'Quantum physics',
+        thumbnailUrl: 'https://example.com/thumb1.jpg',
+        cardImageUrl: 'https://example.com/card1.jpg',
+        isUsed: false,
+        usedInPhase: null,
+      },
+      {
+        cardId: 'card-2',
+        keyword: 'Gravity',
+        rarity: 'common',
+        flavorText: 'Pull of the universe',
+        contextDescription: 'Gravitational force',
+        thumbnailUrl: 'https://example.com/thumb2.jpg',
+        cardImageUrl: 'https://example.com/card2.jpg',
+        isUsed: false,
+        usedInPhase: null,
+      },
+    ],
+    phases: [],
+    totalScore: 0,
+  },
+  startedAt: new Date('2026-01-15T10:00:00Z'),
+  completedAt: null,
+};
+
+// モックハイスコアデータ
+export const mockChallengeHighScore = {
+  id: 'test-highscore-id-123',
+  userId: 'test-user-id-123',
+  scenarioId: 'space_exploration',
+  highScore: 350,
+  bestRank: 'A',
+  playCount: 3,
+  updatedAt: new Date('2026-01-15T12:00:00Z'),
+};
+
+// モック達成報酬データ
+export const mockChallengeAchievement = {
+  id: 'test-achievement-id-123',
+  userId: 'test-user-id-123',
+  scenarioId: 'space_exploration',
+  rank: 'B',
+  coinsAwarded: 30,
+  createdAt: new Date('2026-01-15T12:00:00Z'),
 };
 
 // 別のユーザーのモックデータ
@@ -179,6 +295,34 @@ export function resetPrismaMock() {
   mockPrisma.knowledgeTransaction.create.mockReset();
   mockPrisma.knowledgeTransaction.deleteMany.mockReset();
 
+  // ChallengeSession
+  mockPrisma.challengeSession.findUnique.mockReset();
+  mockPrisma.challengeSession.findFirst.mockReset();
+  mockPrisma.challengeSession.findMany.mockReset();
+  mockPrisma.challengeSession.create.mockReset();
+  mockPrisma.challengeSession.update.mockReset();
+  mockPrisma.challengeSession.delete.mockReset();
+  mockPrisma.challengeSession.deleteMany.mockReset();
+  mockPrisma.challengeSession.count.mockReset();
+
+  // ChallengeHighScore
+  mockPrisma.challengeHighScore.findUnique.mockReset();
+  mockPrisma.challengeHighScore.findFirst.mockReset();
+  mockPrisma.challengeHighScore.findMany.mockReset();
+  mockPrisma.challengeHighScore.create.mockReset();
+  mockPrisma.challengeHighScore.update.mockReset();
+  mockPrisma.challengeHighScore.upsert.mockReset();
+  mockPrisma.challengeHighScore.delete.mockReset();
+  mockPrisma.challengeHighScore.deleteMany.mockReset();
+
+  // ChallengeAchievement
+  mockPrisma.challengeAchievement.findUnique.mockReset();
+  mockPrisma.challengeAchievement.findFirst.mockReset();
+  mockPrisma.challengeAchievement.findMany.mockReset();
+  mockPrisma.challengeAchievement.create.mockReset();
+  mockPrisma.challengeAchievement.delete.mockReset();
+  mockPrisma.challengeAchievement.deleteMany.mockReset();
+
   // Transaction
   mockPrisma.$transaction.mockReset();
   mockPrisma.$transaction.mockImplementation((callback) => callback(mockPrisma));
@@ -227,4 +371,24 @@ export function mockCardStatsSuccess(total = 10) {
     { rarity: 'rare', _count: 3 },
     { rarity: 'super_rare', _count: 2 },
   ]);
+}
+
+// チャレンジセッション検索成功をモック
+export function mockSessionFindSuccess(session = mockChallengeSession) {
+  mockPrisma.challengeSession.findUnique.mockResolvedValue(session);
+}
+
+// チャレンジセッション作成成功をモック
+export function mockSessionCreateSuccess(session = mockChallengeSession) {
+  mockPrisma.challengeSession.create.mockResolvedValue(session);
+}
+
+// ハイスコア検索成功をモック
+export function mockHighScoreFindSuccess(highScore = mockChallengeHighScore) {
+  mockPrisma.challengeHighScore.findUnique.mockResolvedValue(highScore);
+}
+
+// 達成報酬検索成功をモック
+export function mockAchievementFindManySuccess(achievements = [mockChallengeAchievement]) {
+  mockPrisma.challengeAchievement.findMany.mockResolvedValue(achievements);
 }
