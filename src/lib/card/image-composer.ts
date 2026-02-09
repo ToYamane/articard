@@ -17,8 +17,8 @@ interface FontConfig {
 
 const CARD_FONTS: FontConfig[] = [
   // 高出現率 (weight: 2) - 標準的なフォント
-  { name: 'Noto Sans JP', family: "'Noto Sans CJK JP', 'Noto Sans JP', sans-serif", weight: 2 },
-  { name: 'Noto Serif JP', family: "'Noto Serif CJK JP', 'Noto Serif JP', serif", weight: 2 },
+  { name: 'Noto Sans JP', family: "'Noto Sans JP', sans-serif", weight: 2 },
+  { name: 'Noto Serif JP', family: "'Noto Serif JP', serif", weight: 2 },
   { name: 'Dela Gothic One', family: "'Dela Gothic One', sans-serif", weight: 2 },
   { name: 'Kaisei Tokumin', family: "'Kaisei Tokumin', serif", weight: 2 },
   // 低出現率 (weight: 1) - 個性的なフォント
@@ -55,8 +55,8 @@ const THUMBNAIL_WIDTH = 128;
 const THUMBNAIL_HEIGHT = 192;
 
 // タイトル設定（全レアリティ共通）
-const TITLE_FONT_SIZE = 30;
-const TITLE_Y = 48;
+const TITLE_FONT_SIZE = 36;
+const TITLE_Y = 52;
 
 // カードデザイン設定（レアリティ別SVGパラメータ）
 interface CardDesign {
@@ -86,17 +86,17 @@ const CARD_DESIGN: Record<Rarity, CardDesign> = {
     accentLine: true,
   },
   super_rare: {
-    border: { width: 10, color: '#8B5CF6', rx: 12 },
-    titleColor: '#C4B5FD',
-    topGradient: { height: 85, opacity: 0.7, tint: '#8B5CF6' },
+    border: { width: 10, color: '#F59E0B', rx: 12 },
+    titleColor: '#FDE68A',
+    topGradient: { height: 85, opacity: 0.7, tint: '#F59E0B' },
     innerLine: { width: 2, opacity: 0.5, inset: 20 },
     cornerDecoration: 'diamond',
     accentLine: true,
   },
   legend: {
     border: { width: 12, color: '#F59E0B', rx: 14 },
-    titleColor: '#FDE68A',
-    topGradient: { height: 90, opacity: 0.7, tint: '#F59E0B' },
+    titleColor: '#FFFFFF',
+    topGradient: { height: 90, opacity: 0.7 },
     innerLine: { width: 2.5, opacity: 0.6, inset: 24 },
     cornerDecoration: 'ornate',
     bottomGlow: { color: '#F59E0B', height: 30, opacity: 0.2 },
@@ -196,16 +196,21 @@ function generateFrameSvg(rarity: Rarity): Buffer {
   if (rarity === 'super_rare') {
     defs.push(`
       <linearGradient id="borderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stop-color="#8B5CF6"/>
-        <stop offset="100%" stop-color="#7C3AED"/>
+        <stop offset="0%" stop-color="#F59E0B"/>
+        <stop offset="50%" stop-color="#D97706"/>
+        <stop offset="100%" stop-color="#F59E0B"/>
       </linearGradient>`);
     strokeAttr = 'url(#borderGrad)';
   } else if (rarity === 'legend') {
     defs.push(`
       <linearGradient id="borderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stop-color="#F59E0B"/>
-        <stop offset="50%" stop-color="#D97706"/>
-        <stop offset="100%" stop-color="#F59E0B"/>
+        <stop offset="0%" stop-color="#FF6B6B"/>
+        <stop offset="16%" stop-color="#F59E0B"/>
+        <stop offset="33%" stop-color="#FBBF24"/>
+        <stop offset="50%" stop-color="#34D399"/>
+        <stop offset="66%" stop-color="#60A5FA"/>
+        <stop offset="83%" stop-color="#A78BFA"/>
+        <stop offset="100%" stop-color="#F472B6"/>
       </linearGradient>`);
     strokeAttr = 'url(#borderGrad)';
   } else {
@@ -418,11 +423,10 @@ async function createCardFront(
       <text x="${CARD_WIDTH / 2}" y="${TITLE_Y}"
             font-family="${selectedFont.family}"
             font-size="${TITLE_FONT_SIZE}"
-            font-weight="bold"
             fill="${CARD_DESIGN[rarity].titleColor}"
             text-anchor="middle"
             stroke="#000000"
-            stroke-width="3"
+            stroke-width="4"
             paint-order="stroke">${escapeXml(keyword)}</text>
     </svg>
   `;

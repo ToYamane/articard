@@ -1,6 +1,6 @@
 ---
 name: dev
-description: 開発サーバーの起動・停止・再起動・状態確認
+description: 開発サーバー（Next.js + DB）の起動・停止・再起動・状態確認
 argument-hint: [start|stop|restart|status]
 disable-model-invocation: true
 allowed-tools: Bash
@@ -8,37 +8,49 @@ allowed-tools: Bash
 
 # 開発サーバー制御
 
-開発サーバー（Next.js）を制御するコマンド。
+開発サーバー（Next.js + Cloud SQL Proxy）を制御するコマンド。
+`/dev start` で DB Proxy と Next.js を同時にバックグラウンド起動する。
 
 ## 引数
 
-- `start` - 開発サーバーをバックグラウンドで起動
-- `stop` - 実行中の開発サーバーを停止
+- `start` または引数なし - DB Proxy + 開発サーバーをバックグラウンドで起動
+- `stop` - 実行中のプロセスをすべて停止
 - `restart` - 停止して再起動
-- `status` または引数なし - 現在の状態を確認
+- `status` - 現在の状態を確認
 
 ## 実行手順
 
-### `/dev start`
+### `/dev start` または `/dev`
 
-1. 既存のプロセスを確認
-2. バックグラウンドで `npm run dev` を実行（run_in_background: true）
-3. 数秒待ってからポート確認
+1. 既存のプロセスを確認（node, cloud-sql-proxy）
+2. Cloud SQL Proxy をバックグラウンドで起動（run_in_background: true）
+3. Next.js 開発サーバーをバックグラウンドで起動（run_in_background: true）
+4. 数秒待ってからポート確認
 
+Cloud SQL Proxy 起動:
 ```bash
-npm run dev
+# Windows
+./cloud-sql-proxy.exe articard-ff673:asia-northeast1:articard-db --port 5433
+
+# Mac/Linux
+./cloud-sql-proxy articard-ff673:asia-northeast1:articard-db --port 5433
+```
+
+Next.js 起動:
+```bash
+npm run dev:next
 ```
 
 ### `/dev stop`
 
-Node.js プロセスを停止:
+すべてのプロセスを停止:
 
 ```bash
 # Windows
-taskkill /F /IM node.exe
+taskkill /F /IM cloud-sql-proxy.exe 2>nul; taskkill /F /IM node.exe
 
 # Mac/Linux
-pkill -f "next dev" || pkill -f "node.*next"
+pkill -f cloud-sql-proxy; pkill -f "next dev" || pkill -f "node.*next"
 ```
 
 ### `/dev restart`
@@ -47,21 +59,22 @@ pkill -f "next dev" || pkill -f "node.*next"
 2. 2秒待機
 3. 起動処理を実行
 
-### `/dev status` または引数なし
+### `/dev status`
 
 プロセスとポートの状態を確認:
 
 ```bash
 # Windows
-tasklist | findstr node
-netstat -ano | findstr :3000
+tasklist | findstr /i "node cloud-sql-proxy"
+netstat -ano | findstr ":3000 :5433"
 
 # Mac/Linux
-ps aux | grep -E "next|node" | grep -v grep
-lsof -i :3000
+ps aux | grep -E "next|node|cloud-sql-proxy" | grep -v grep
+lsof -i :3000 -i :5433
 ```
 
 ## 確認事項
 
-- サーバー起動後は http://localhost:3000 でアクセス可能か確認
+- Cloud SQL Proxy: ポート5433がLISTENINGになっているか
+- Next.js: http://localhost:3000 でアクセス可能か
 - ポート3000が使用中の場合は3001、3002も確認

@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "concurrently --kill-others -n proxy,next -c blue,green \"npm run db:proxy\" \"next dev\"",
+    "dev:next": "next dev",
+    "db:proxy": "./cloud-sql-proxy.exe articard-ff673:asia-northeast1:articard-db --port 5433",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -49,6 +51,7 @@
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "@types/sharp": "^0.31.1",
+    "concurrently": "^9.2.1",
     "eslint": "^8",
     "eslint-config-next": "14.2.35",
     "eslint-config-prettier": "^10.1.8",

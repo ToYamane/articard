@@ -18,6 +18,8 @@ export function LoadingSpinner({ size = 'md', className }: LoadingSpinnerProps) 
     <div className={cn('flex items-center justify-center', className)}>
       <svg
         className={cn('animate-spin text-blue-600', sizes[size])}
+        width={size === 'sm' ? 16 : size === 'lg' ? 48 : 32}
+        height={size === 'sm' ? 16 : size === 'lg' ? 48 : 32}
         xmlns="http://www.w3.org/2000/svg"
         fill="none"
         viewBox="0 0 24 24"

@@ -67,26 +67,43 @@ export function useAuth() {
 
   // Initialize auth state listener
   useEffect(() => {
-    const unsubscribe = subscribeToAuthState((firebaseUser) => {
-      setUser(firebaseUser);
+    let unsubscribe: (() => void) | undefined;
 
-      // Set initialized immediately after Firebase auth state is confirmed
-      // This prevents blocking on API calls
-      if (!isInitialized) {
+    try {
+      unsubscribe = subscribeToAuthState((firebaseUser) => {
+        setUser(firebaseUser);
+
+        if (!useAuthStore.getState().isInitialized) {
+          setInitialized(true);
+          setLoading(false);
+        }
+
+        if (firebaseUser) {
+          fetchProfileInBackground(firebaseUser);
+        } else {
+          setProfile(null);
+        }
+      });
+    } catch (error) {
+      console.error('[Auth] Failed to subscribe to auth state:', error);
+      setInitialized(true);
+      setLoading(false);
+    }
+
+    // Timeout: placed outside try-catch so it's always registered
+    const timeout = setTimeout(() => {
+      if (!useAuthStore.getState().isInitialized) {
+        console.warn('[Auth] Firebase auth state timeout - forcing initialization');
         setInitialized(true);
         setLoading(false);
       }
+    }, 5000);
 
-      if (firebaseUser) {
-        // Fetch profile in background (non-blocking)
-        fetchProfileInBackground(firebaseUser);
-      } else {
-        setProfile(null);
-      }
-    });
-
-    return () => unsubscribe();
-  }, [setUser, setProfile, setLoading, setInitialized, isInitialized, fetchProfileInBackground]);
+    return () => {
+      unsubscribe?.();
+      clearTimeout(timeout);
+    };
+  }, [setUser, setProfile, setLoading, setInitialized, fetchProfileInBackground]);
 
   // Login with email/password
   const loginWithEmail = useCallback(

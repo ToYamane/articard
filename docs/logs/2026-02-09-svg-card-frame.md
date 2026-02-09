@@ -49,7 +49,7 @@
 | 要素 | Common | Rare | Super Rare | Legend |
 |------|--------|------|------------|--------|
 | **ボーダー幅** | 6px | 8px | 10px | 12px |
-| **ボーダー色** | #9CA3AF (gray) | #3B82F6 (blue) | グラデーション (紫) | グラデーション (金) |
+| **ボーダー色** | #9CA3AF (gray) | #3B82F6 (blue) | グラデーション (金) | グラデーション (虹色) |
 | **角丸** | rx=8 | rx=10 | rx=12 | rx=14 |
 | **上部帯** | 70px, 黒0.6 | 80px, 黒0.65 | 85px, 黒0.7+紫ティント | 90px, 黒0.7+金ティント |
 | **インナーライン** | なし | 1.5px, inset 16 | 2px, inset 20 | 2.5px, inset 24 |
@@ -60,13 +60,14 @@
 
 ### タイトルテキスト（全レアリティ共通）
 
-- フォントサイズ: 30px
-- y座標: 48
-- ストローク: 黒3px (paint-order: stroke)
-- フォント: 既存の重み付きランダム選択
+- フォントサイズ: 36px
+- y座標: 52
+- ストローク: 黒4px (paint-order: stroke)
+- font-weight: なし（各フォント固有のウェイトを活かす）
+- フォント: 既存の重み付きランダム選択（10種のGoogle Fonts）
 
 タイトル色のみレアリティ別:
-- Common: #D1D5DB / Rare: #93C5FD / Super Rare: #C4B5FD / Legend: #FDE68A
+- Common: #D1D5DB / Rare: #93C5FD / Super Rare: #FDE68A / Legend: #FFFFFF
 
 ## 主な変更点
 
