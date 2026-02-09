@@ -22,6 +22,7 @@ export default function SettingsPage() {
     activateSubscription,
     cancelSubscription,
     purchaseCoins,
+    devChargeCoins,
     fetchData,
   } = useSubscription();
   const { success, error: showError } = useToast();
@@ -31,6 +32,7 @@ export default function SettingsPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [processingAction, setProcessingAction] = useState<string | null>(null);
+  const [customChargeAmount, setCustomChargeAmount] = useState('');
 
   // Handle Stripe redirect results
   useEffect(() => {
@@ -137,6 +139,19 @@ export default function SettingsPage() {
       success(`${result.coins} コインを購入しました！`);
     } catch (err) {
       showError(err instanceof Error ? err.message : 'コインの購入に失敗しました');
+    } finally {
+      setProcessingAction(null);
+    }
+  };
+
+  const handleDevCharge = async (amount: number) => {
+    setProcessingAction(`dev-charge-${amount}`);
+    try {
+      const result = await devChargeCoins(amount);
+      success(`${result.amount} コインをチャージしました！`);
+      setCustomChargeAmount('');
+    } catch (err) {
+      showError(err instanceof Error ? err.message : 'コインのチャージに失敗しました');
     } finally {
       setProcessingAction(null);
     }
@@ -360,6 +375,56 @@ export default function SettingsPage() {
               </div>
             ))}
         </div>
+
+        {/* Developer Only: Instant Charge */}
+        {profile?.isDeveloper && (
+          <div className="mt-4 rounded-lg border border-orange-300 bg-orange-50 p-4 dark:border-orange-700 dark:bg-orange-950/30">
+            <p className="mb-3 text-sm font-medium text-orange-700 dark:text-orange-400">
+              開発者専用：即時チャージ（テスト用）
+            </p>
+            <div className="mb-3 flex flex-wrap gap-2">
+              {[100, 500, 1000, 5000].map((amount) => (
+                <Button
+                  key={amount}
+                  onClick={() => handleDevCharge(amount)}
+                  disabled={isSubscriptionLoading || processingAction !== null}
+                  isLoading={processingAction === `dev-charge-${amount}`}
+                  variant="secondary"
+                  className="text-sm"
+                >
+                  +{amount.toLocaleString()}
+                </Button>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <Input
+                type="number"
+                value={customChargeAmount}
+                onChange={(e) => setCustomChargeAmount(e.target.value)}
+                placeholder="任意の金額（1〜99999）"
+                min={1}
+                max={99999}
+                className="flex-1"
+              />
+              <Button
+                onClick={() => handleDevCharge(parseInt(customChargeAmount, 10))}
+                disabled={
+                  isSubscriptionLoading ||
+                  processingAction !== null ||
+                  !customChargeAmount ||
+                  parseInt(customChargeAmount, 10) < 1 ||
+                  parseInt(customChargeAmount, 10) > 99999 ||
+                  !Number.isInteger(Number(customChargeAmount))
+                }
+                isLoading={processingAction === `dev-charge-${parseInt(customChargeAmount, 10)}`}
+                variant="secondary"
+                className="text-sm"
+              >
+                チャージ
+              </Button>
+            </div>
+          </div>
+        )}
       </SectionContainer>
 
       {/* Logout Section */}

@@ -222,6 +222,45 @@ export function useSubscription() {
     [fetchData]
   );
 
+  // Dev charge coins (developer only)
+  const devChargeCoins = useCallback(
+    async (amount: number) => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const token = await getIdToken();
+        if (!token) throw new Error('認証が必要です');
+
+        const response = await fetch('/api/coins/dev-charge', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ amount }),
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+          throw new Error(data.error?.message || 'コインのチャージに失敗しました');
+        }
+
+        // Refresh data after charge
+        await fetchData();
+
+        return data.data;
+      } catch (err) {
+        const message = err instanceof Error ? err.message : '不明なエラーが発生しました';
+        setError(message);
+        throw err;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [fetchData]
+  );
+
   return {
     // Data
     coinData,
@@ -241,5 +280,6 @@ export function useSubscription() {
     activateSubscription, // Legacy for dev/testing
     cancelSubscription,
     purchaseCoins,
+    devChargeCoins,
   };
 }
