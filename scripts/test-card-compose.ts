@@ -10,19 +10,9 @@
  * 外部API不要（OpenAI/Firebase/GCS なし）
  */
 
-// fontconfig キャッシュクリア & 設定（sharp import前に必要）
 import path from 'path';
 import fs from 'fs';
-
-const cacheDir = path.join(process.cwd(), '.fontconfig-cache');
-if (fs.existsSync(cacheDir)) {
-  fs.rmSync(cacheDir, { recursive: true, force: true });
-  console.log('[FontConfig] キャッシュクリア:', cacheDir);
-}
-
-process.env.FONTCONFIG_PATH = process.env.FONTCONFIG_PATH || path.join(process.cwd(), 'fonts');
-console.log('[FontConfig] FONTCONFIG_PATH:', process.env.FONTCONFIG_PATH);
-
+import opentype from 'opentype.js';
 import sharp from 'sharp';
 import { composeCardImage } from '@/lib/card/image-composer';
 import type { CardCompositionInput } from '@/lib/card/image-composer';
@@ -36,18 +26,20 @@ type Rarity = 'common' | 'rare' | 'super_rare' | 'legend';
 
 const RARITIES: Rarity[] = ['common', 'rare', 'super_rare', 'legend'];
 
+const FONTS_DIR = path.join(process.cwd(), 'fonts');
+
 // image-composer.ts の CARD_FONTS と同じリスト（モジュール内プライベートのため再定義）
 const CARD_FONTS = [
-  { name: 'Noto Sans JP', family: "'Noto Sans JP', sans-serif" },
-  { name: 'Noto Serif JP', family: "'Noto Serif JP', serif" },
-  { name: 'Dela Gothic One', family: "'Dela Gothic One', sans-serif" },
-  { name: 'Kaisei Tokumin', family: "'Kaisei Tokumin', serif" },
-  { name: 'Reggae One', family: "'Reggae One', sans-serif" },
-  { name: 'Yuji Syuku', family: "'Yuji Syuku', serif" },
-  { name: 'Kiwi Maru', family: "'Kiwi Maru', sans-serif" },
-  { name: 'Hachi Maru Pop', family: "'Hachi Maru Pop', sans-serif" },
-  { name: 'DotGothic16', family: "'DotGothic16', sans-serif" },
-  { name: 'Stick', family: "'Stick', sans-serif" },
+  { name: 'Noto Sans JP', file: 'NotoSansJP-Bold.ttf' },
+  { name: 'Noto Serif JP', file: 'NotoSerifJP-Bold.ttf' },
+  { name: 'Dela Gothic One', file: 'DelaGothicOne-Regular.ttf' },
+  { name: 'Kaisei Tokumin', file: 'KaiseiTokumin-Bold.ttf' },
+  { name: 'Reggae One', file: 'ReggaeOne-Regular.ttf' },
+  { name: 'Yuji Syuku', file: 'YujiSyuku-Regular.ttf' },
+  { name: 'Kiwi Maru', file: 'KiwiMaru-Medium.ttf' },
+  { name: 'Hachi Maru Pop', file: 'HachiMaruPop-Regular.ttf' },
+  { name: 'DotGothic16', file: 'DotGothic16-Regular.ttf' },
+  { name: 'Stick', file: 'Stick-Regular.ttf' },
 ];
 
 // 本番と同一のタイトルパラメータ
@@ -59,6 +51,24 @@ const TITLE_COLOR = '#D1D5DB'; // common のタイトルカラー
 const OUTPUT_DIR = path.join(process.cwd(), 'tmp/card-test');
 
 // --- ヘルパー ---
+
+function textToSvgPath(
+  text: string,
+  font: opentype.Font,
+  fontSize: number,
+  centerX: number,
+  y: number
+): string {
+  const scale = fontSize / font.unitsPerEm;
+  let totalWidth = 0;
+  for (let i = 0; i < text.length; i++) {
+    const glyph = font.charToGlyph(text[i]);
+    totalWidth += (glyph.advanceWidth ?? 0) * scale;
+  }
+  const startX = centerX - totalWidth / 2;
+  const svgPath = font.getPath(text, startX, y, fontSize);
+  return svgPath.toSVG(2);
+}
 
 function escapeXml(text: string): string {
   return text
@@ -166,27 +176,29 @@ async function main() {
     },
   }).png().toBuffer();
 
-  for (const font of CARD_FONTS) {
-    const fontNameNoSpaces = font.name.replace(/\s+/g, '');
-    console.log(`[Font] ${font.name} (family: ${font.family})`);
+  for (const fontDef of CARD_FONTS) {
+    const fontNameNoSpaces = fontDef.name.replace(/\s+/g, '');
+    console.log(`[Font] ${fontDef.name} (file: ${fontDef.file})`);
 
     try {
-      // 本番と同一パラメータのタイトルSVG
+      // opentype.jsでTTFを直接ロード
+      const fontPath = path.join(FONTS_DIR, fontDef.file);
+      const font = opentype.loadSync(fontPath);
+
+      // 本番と同一パラメータのタイトルをパスに変換
+      const titlePath = textToSvgPath('フォントテスト', font, TITLE_FONT_SIZE, CARD_WIDTH / 2, TITLE_Y);
+
+      // フォント名ラベル（システムフォントで描画 — ラベルなので問題なし）
       const titleSvg = `
         <svg width="${CARD_WIDTH}" height="${CARD_HEIGHT}" xmlns="http://www.w3.org/2000/svg">
-          <text x="${CARD_WIDTH / 2}" y="${TITLE_Y}"
-                font-family="${font.family}"
-                font-size="${TITLE_FONT_SIZE}"
-                fill="${TITLE_COLOR}"
-                text-anchor="middle"
-                stroke="#000000"
-                stroke-width="${TITLE_STROKE_WIDTH}"
-                paint-order="stroke">${escapeXml('フォントテスト')}</text>
+          <g fill="${TITLE_COLOR}"
+             stroke="#000000" stroke-width="${TITLE_STROKE_WIDTH}" paint-order="stroke">
+            ${titlePath}
+          </g>
           <text x="${CARD_WIDTH / 2}" y="${TITLE_Y + 50}"
-                font-family="${font.family}"
                 font-size="20"
                 fill="#808080"
-                text-anchor="middle">${escapeXml(font.name)}</text>
+                text-anchor="middle">${escapeXml(fontDef.name)}</text>
         </svg>
       `;
 

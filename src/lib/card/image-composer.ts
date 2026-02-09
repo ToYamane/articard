@@ -1,33 +1,33 @@
-// fontconfigの設定（sharp import前に設定が必要）
 import path from 'path';
-process.env.FONTCONFIG_PATH = process.env.FONTCONFIG_PATH || path.join(process.cwd(), 'fonts');
-console.log('[FontConfig] FONTCONFIG_PATH:', process.env.FONTCONFIG_PATH);
-
+import opentype from 'opentype.js';
 import sharp from 'sharp';
 import type { Rarity } from '@/types/database';
 import { getRarityColor } from './rarity';
 import { RARITY_CONFIG } from '@/lib/constants/rarity-config';
 
-// フォント設定（ローカルインストールのGoogle Fontsを使用）
+// フォント設定（opentype.jsでTTFファイルを直接読み込み）
+const FONTS_DIR = path.join(process.cwd(), 'fonts');
+
 interface FontConfig {
   name: string;
-  family: string;
-  weight: number; // 出現重み
+  file: string;       // TTFファイル名
+  weight: number;     // 出現重み
+  font?: opentype.Font; // 遅延ロード
 }
 
 const CARD_FONTS: FontConfig[] = [
   // 高出現率 (weight: 2) - 標準的なフォント
-  { name: 'Noto Sans JP', family: "'Noto Sans JP', sans-serif", weight: 2 },
-  { name: 'Noto Serif JP', family: "'Noto Serif JP', serif", weight: 2 },
-  { name: 'Dela Gothic One', family: "'Dela Gothic One', sans-serif", weight: 2 },
-  { name: 'Kaisei Tokumin', family: "'Kaisei Tokumin', serif", weight: 2 },
+  { name: 'Noto Sans JP', file: 'NotoSansJP-Bold.ttf', weight: 2 },
+  { name: 'Noto Serif JP', file: 'NotoSerifJP-Bold.ttf', weight: 2 },
+  { name: 'Dela Gothic One', file: 'DelaGothicOne-Regular.ttf', weight: 2 },
+  { name: 'Kaisei Tokumin', file: 'KaiseiTokumin-Bold.ttf', weight: 2 },
   // 低出現率 (weight: 1) - 個性的なフォント
-  { name: 'Reggae One', family: "'Reggae One', sans-serif", weight: 1 },
-  { name: 'Yuji Syuku', family: "'Yuji Syuku', serif", weight: 1 },
-  { name: 'Kiwi Maru', family: "'Kiwi Maru', sans-serif", weight: 1 },
-  { name: 'Hachi Maru Pop', family: "'Hachi Maru Pop', sans-serif", weight: 1 },
-  { name: 'DotGothic16', family: "'DotGothic16', sans-serif", weight: 1 },
-  { name: 'Stick', family: "'Stick', sans-serif", weight: 1 },
+  { name: 'Reggae One', file: 'ReggaeOne-Regular.ttf', weight: 1 },
+  { name: 'Yuji Syuku', file: 'YujiSyuku-Regular.ttf', weight: 1 },
+  { name: 'Kiwi Maru', file: 'KiwiMaru-Medium.ttf', weight: 1 },
+  { name: 'Hachi Maru Pop', file: 'HachiMaruPop-Regular.ttf', weight: 1 },
+  { name: 'DotGothic16', file: 'DotGothic16-Regular.ttf', weight: 1 },
+  { name: 'Stick', file: 'Stick-Regular.ttf', weight: 1 },
 ];
 
 /**
@@ -46,6 +46,42 @@ function selectRandomFont(): FontConfig {
   }
   console.log('[FontConfig] Fallback to:', CARD_FONTS[0].name);
   return CARD_FONTS[0]; // フォールバック
+}
+
+/**
+ * フォントを遅延ロード
+ */
+function loadFont(config: FontConfig): opentype.Font {
+  if (!config.font) {
+    const fontPath = path.join(FONTS_DIR, config.file);
+    config.font = opentype.loadSync(fontPath);
+    console.log('[FontConfig] Loaded font:', config.name, 'from', fontPath);
+  }
+  return config.font;
+}
+
+/**
+ * テキストをSVGパスに変換（中央揃え）
+ */
+function textToSvgPath(
+  text: string,
+  font: opentype.Font,
+  fontSize: number,
+  centerX: number,
+  y: number
+): string {
+  // テキスト幅を計測してセンタリング
+  const scale = fontSize / font.unitsPerEm;
+  let totalWidth = 0;
+  for (let i = 0; i < text.length; i++) {
+    const glyph = font.charToGlyph(text[i]);
+    totalWidth += (glyph.advanceWidth ?? 0) * scale;
+  }
+  const startX = centerX - totalWidth / 2;
+
+  // パスを生成
+  const svgPath = font.getPath(text, startX, y, fontSize);
+  return svgPath.toSVG(2);
 }
 
 // カードサイズ
@@ -411,23 +447,21 @@ async function createCardFront(
     })
     .toBuffer();
 
-  // ランダムでフォントを選択
+  // ランダムでフォントを選択してロード
   const selectedFont = selectRandomFont();
+  const font = loadFont(selectedFont);
 
   // フレームSVGを生成
   const frameSvg = generateFrameSvg(rarity);
 
-  // タイトルSVG（キーワード名のみ）
+  // タイトルSVG（opentype.jsでテキストをパスに変換）
+  const titlePath = textToSvgPath(keyword, font, TITLE_FONT_SIZE, CARD_WIDTH / 2, TITLE_Y);
   const titleSvg = `
     <svg width="${CARD_WIDTH}" height="${CARD_HEIGHT}" xmlns="http://www.w3.org/2000/svg">
-      <text x="${CARD_WIDTH / 2}" y="${TITLE_Y}"
-            font-family="${selectedFont.family}"
-            font-size="${TITLE_FONT_SIZE}"
-            fill="${CARD_DESIGN[rarity].titleColor}"
-            text-anchor="middle"
-            stroke="#000000"
-            stroke-width="4"
-            paint-order="stroke">${escapeXml(keyword)}</text>
+      <g fill="${CARD_DESIGN[rarity].titleColor}"
+         stroke="#000000" stroke-width="4" paint-order="stroke">
+        ${titlePath}
+      </g>
     </svg>
   `;
 
