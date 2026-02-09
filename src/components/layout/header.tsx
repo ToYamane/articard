@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -133,12 +134,23 @@ export function Header() {
         {/* ロゴ */}
         <Link
           href="/home"
-          className="flex items-center gap-2 text-xl font-bold text-blue-600 transition-colors hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+          className="flex items-center gap-1.5 transition-opacity hover:opacity-80"
         >
-          <svg className="h-6 w-6" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14l-5-5 1.41-1.41L12 14.17l4.59-4.58L18 11l-6 6z"/>
-          </svg>
-          Articard
+          <Image
+            src="/logo/icon.png"
+            alt="ArtiCard"
+            width={32}
+            height={32}
+            className="h-8 w-8"
+          />
+          <Image
+            src="/logo/text.png"
+            alt="ArtiCard"
+            width={120}
+            height={32}
+            className="h-6 w-auto"
+            priority
+          />
         </Link>
 
         <div className="flex items-center gap-3">

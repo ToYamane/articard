@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button, Input } from '@/components/ui';
@@ -78,9 +79,16 @@ export function LoginForm() {
 
   return (
     <div className="w-full max-w-md space-y-6">
-      <div className="text-center">
+      <div className="flex flex-col items-center gap-3">
+        <Image
+          src="/logo/icon.png"
+          alt="ArtiCard"
+          width={80}
+          height={80}
+          className="h-20 w-20"
+        />
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">ログイン</h1>
-        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+        <p className="text-sm text-gray-600 dark:text-gray-400">
           Articardへようこそ
         </p>
       </div>

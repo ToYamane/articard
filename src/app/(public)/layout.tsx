@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import type { ReactNode } from 'react';
 
 export default function PublicLayout({ children }: { children: ReactNode }) {
@@ -6,8 +7,21 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
       {/* Simple Header */}
       <header className="border-b border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
         <div className="mx-auto flex h-14 max-w-4xl items-center justify-between px-4">
-          <a href="/home" className="text-xl font-bold text-blue-600 dark:text-blue-400">
-            Articard
+          <a href="/home" className="flex items-center gap-1.5 transition-opacity hover:opacity-80">
+            <Image
+              src="/logo/icon.png"
+              alt="ArtiCard"
+              width={32}
+              height={32}
+              className="h-8 w-8"
+            />
+            <Image
+              src="/logo/text.png"
+              alt="ArtiCard"
+              width={120}
+              height={32}
+              className="h-6 w-auto"
+            />
           </a>
         </div>
       </header>
