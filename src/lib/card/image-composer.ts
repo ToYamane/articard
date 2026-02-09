@@ -1,15 +1,12 @@
-import sharp from 'sharp';
+// fontconfigの設定（sharp import前に設定が必要）
 import path from 'path';
+process.env.FONTCONFIG_PATH = process.env.FONTCONFIG_PATH || path.join(process.cwd(), 'fonts');
+console.log('[FontConfig] FONTCONFIG_PATH:', process.env.FONTCONFIG_PATH);
+
+import sharp from 'sharp';
 import type { Rarity } from '@/types/database';
 import { getRarityColor } from './rarity';
 import { RARITY_CONFIG } from '@/lib/constants/rarity-config';
-
-// fontconfigの設定（ローカルフォントディレクトリを参照）
-// 環境変数が未設定の場合はデフォルトパスを設定
-if (!process.env.FONTCONFIG_PATH) {
-  process.env.FONTCONFIG_PATH = path.join(process.cwd(), 'fonts');
-}
-console.log('[FontConfig] FONTCONFIG_PATH:', process.env.FONTCONFIG_PATH);
 
 // フォント設定（ローカルインストールのGoogle Fontsを使用）
 interface FontConfig {
@@ -57,8 +54,56 @@ const CARD_HEIGHT = 768;
 const THUMBNAIL_WIDTH = 128;
 const THUMBNAIL_HEIGHT = 192;
 
-// レイアウト設定
-const TITLE_HEIGHT = 60;
+// タイトル設定（全レアリティ共通）
+const TITLE_FONT_SIZE = 30;
+const TITLE_Y = 48;
+
+// カードデザイン設定（レアリティ別SVGパラメータ）
+interface CardDesign {
+  border: { width: number; color: string; rx: number };
+  titleColor: string;
+  topGradient: { height: number; opacity: number; tint?: string };
+  innerLine?: { width: number; opacity: number; inset: number };
+  cornerDecoration?: 'bracket' | 'bracket_dot' | 'diamond' | 'ornate';
+  bottomGlow?: { color: string; height: number; opacity: number };
+  topOrnament?: boolean;
+  accentLine?: boolean;
+}
+
+const CARD_DESIGN: Record<Rarity, CardDesign> = {
+  common: {
+    border: { width: 6, color: '#9CA3AF', rx: 8 },
+    titleColor: '#D1D5DB',
+    topGradient: { height: 70, opacity: 0.6 },
+    cornerDecoration: 'bracket',
+  },
+  rare: {
+    border: { width: 8, color: '#3B82F6', rx: 10 },
+    titleColor: '#93C5FD',
+    topGradient: { height: 80, opacity: 0.65 },
+    innerLine: { width: 1.5, opacity: 0.4, inset: 16 },
+    cornerDecoration: 'bracket_dot',
+    accentLine: true,
+  },
+  super_rare: {
+    border: { width: 10, color: '#8B5CF6', rx: 12 },
+    titleColor: '#C4B5FD',
+    topGradient: { height: 85, opacity: 0.7, tint: '#8B5CF6' },
+    innerLine: { width: 2, opacity: 0.5, inset: 20 },
+    cornerDecoration: 'diamond',
+    accentLine: true,
+  },
+  legend: {
+    border: { width: 12, color: '#F59E0B', rx: 14 },
+    titleColor: '#FDE68A',
+    topGradient: { height: 90, opacity: 0.7, tint: '#F59E0B' },
+    innerLine: { width: 2.5, opacity: 0.6, inset: 24 },
+    cornerDecoration: 'ornate',
+    bottomGlow: { color: '#F59E0B', height: 30, opacity: 0.2 },
+    topOrnament: true,
+    accentLine: true,
+  },
+};
 
 // 日本語フォント対応のため、テキストはSVGで描画
 // sharp はSVGでフォントをサポートするが、システムフォントに依存
@@ -135,24 +180,227 @@ function wrapText(text: string, maxCharsPerLine: number): string[] {
 }
 
 /**
+ * レアリティに応じたフレームSVGを動的生成
+ */
+function generateFrameSvg(rarity: Rarity): Buffer {
+  const design = CARD_DESIGN[rarity];
+  const { width: bw, rx } = design.border;
+  const W = CARD_WIDTH;
+  const H = CARD_HEIGHT;
+
+  const defs: string[] = [];
+  const elements: string[] = [];
+
+  // ボーダーグラデーション（super_rare / legend）
+  let strokeAttr: string;
+  if (rarity === 'super_rare') {
+    defs.push(`
+      <linearGradient id="borderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#8B5CF6"/>
+        <stop offset="100%" stop-color="#7C3AED"/>
+      </linearGradient>`);
+    strokeAttr = 'url(#borderGrad)';
+  } else if (rarity === 'legend') {
+    defs.push(`
+      <linearGradient id="borderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#F59E0B"/>
+        <stop offset="50%" stop-color="#D97706"/>
+        <stop offset="100%" stop-color="#F59E0B"/>
+      </linearGradient>`);
+    strokeAttr = 'url(#borderGrad)';
+  } else {
+    strokeAttr = design.border.color;
+  }
+
+  // 上部暗色グラデーション
+  defs.push(`
+    <linearGradient id="topDark" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="black" stop-opacity="${design.topGradient.opacity}"/>
+      <stop offset="100%" stop-color="black" stop-opacity="0"/>
+    </linearGradient>`);
+
+  // 上部ティントグラデーション（super_rare / legend）
+  if (design.topGradient.tint) {
+    defs.push(`
+      <linearGradient id="topTint" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="${design.topGradient.tint}" stop-opacity="0.15"/>
+        <stop offset="100%" stop-color="${design.topGradient.tint}" stop-opacity="0"/>
+      </linearGradient>`);
+  }
+
+  // 下部グローグラデーション（legend のみ）
+  if (design.bottomGlow) {
+    defs.push(`
+      <linearGradient id="bottomGlow" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="${design.bottomGlow.color}" stop-opacity="0"/>
+        <stop offset="100%" stop-color="${design.bottomGlow.color}" stop-opacity="${design.bottomGlow.opacity}"/>
+      </linearGradient>`);
+  }
+
+  // クリップパス（内部要素をカード形状に制限）
+  defs.push(`
+    <clipPath id="cardClip">
+      <rect x="${bw}" y="${bw}" width="${W - 2 * bw}" height="${H - 2 * bw}" rx="${Math.max(rx - 2, 0)}"/>
+    </clipPath>`);
+
+  // 外枠ボーダー
+  elements.push(`
+    <rect x="${bw / 2}" y="${bw / 2}" width="${W - bw}" height="${H - bw}"
+          fill="none" stroke="${strokeAttr}" stroke-width="${bw}" rx="${rx}"/>`);
+
+  // クリップされた内部要素（上部帯・下部グロー）
+  const clipped: string[] = [];
+  clipped.push(`
+      <rect x="${bw}" y="${bw}" width="${W - 2 * bw}" height="${design.topGradient.height}"
+            fill="url(#topDark)"/>`);
+
+  if (design.topGradient.tint) {
+    clipped.push(`
+      <rect x="${bw}" y="${bw}" width="${W - 2 * bw}" height="${design.topGradient.height}"
+            fill="url(#topTint)"/>`);
+  }
+
+  if (design.bottomGlow) {
+    clipped.push(`
+      <rect x="${bw}" y="${H - bw - design.bottomGlow.height}" width="${W - 2 * bw}" height="${design.bottomGlow.height}"
+            fill="url(#bottomGlow)"/>`);
+  }
+
+  elements.push(`
+    <g clip-path="url(#cardClip)">${clipped.join('')}
+    </g>`);
+
+  // インナーライン（rare 以上）
+  if (design.innerLine) {
+    const { width: lw, opacity: op, inset } = design.innerLine;
+    elements.push(`
+    <rect x="${inset}" y="${inset}" width="${W - 2 * inset}" height="${H - 2 * inset}"
+          fill="none" stroke="${strokeAttr}" stroke-width="${lw}" opacity="${op}" rx="${Math.max(rx - 2, 0)}"/>`);
+  }
+
+  // コーナー装飾
+  if (design.cornerDecoration === 'bracket') {
+    // シンプルなL字コーナーマーク（Common用）
+    const bracketLen = 16;
+    const off = bw + 4;
+    const c = design.border.color;
+    elements.push(`
+    <path d="M${off},${off + bracketLen} L${off},${off} L${off + bracketLen},${off}" fill="none" stroke="${c}" stroke-width="1.5" opacity="0.5"/>
+    <path d="M${W - off - bracketLen},${off} L${W - off},${off} L${W - off},${off + bracketLen}" fill="none" stroke="${c}" stroke-width="1.5" opacity="0.5"/>
+    <path d="M${off},${H - off - bracketLen} L${off},${H - off} L${off + bracketLen},${H - off}" fill="none" stroke="${c}" stroke-width="1.5" opacity="0.5"/>
+    <path d="M${W - off - bracketLen},${H - off} L${W - off},${H - off} L${W - off},${H - off - bracketLen}" fill="none" stroke="${c}" stroke-width="1.5" opacity="0.5"/>`);
+  } else if (design.cornerDecoration === 'bracket_dot') {
+    // L字マーク＋ドットアクセント（Rare用）
+    const bracketLen = 20;
+    const off = bw + 4;
+    const c = design.border.color;
+    elements.push(`
+    <path d="M${off},${off + bracketLen} L${off},${off} L${off + bracketLen},${off}" fill="none" stroke="${c}" stroke-width="2" opacity="0.6"/>
+    <circle cx="${off + 2}" cy="${off + 2}" r="2.5" fill="${c}" opacity="0.5"/>
+    <path d="M${W - off - bracketLen},${off} L${W - off},${off} L${W - off},${off + bracketLen}" fill="none" stroke="${c}" stroke-width="2" opacity="0.6"/>
+    <circle cx="${W - off - 2}" cy="${off + 2}" r="2.5" fill="${c}" opacity="0.5"/>
+    <path d="M${off},${H - off - bracketLen} L${off},${H - off} L${off + bracketLen},${H - off}" fill="none" stroke="${c}" stroke-width="2" opacity="0.6"/>
+    <circle cx="${off + 2}" cy="${H - off - 2}" r="2.5" fill="${c}" opacity="0.5"/>
+    <path d="M${W - off - bracketLen},${H - off} L${W - off},${H - off} L${W - off},${H - off - bracketLen}" fill="none" stroke="${c}" stroke-width="2" opacity="0.6"/>
+    <circle cx="${W - off - 2}" cy="${H - off - 2}" r="2.5" fill="${c}" opacity="0.5"/>`);
+  } else if (design.cornerDecoration === 'diamond') {
+    // ダイヤ型ジェム＋装飾ライン（Super Rare用）
+    const gemSize = 9;
+    const off = bw + 10;
+    const c = design.border.color;
+    const corners = [
+      [off, off], [W - off, off],
+      [off, H - off], [W - off, H - off],
+    ];
+    for (const [cx, cy] of corners) {
+      elements.push(`
+    <polygon points="${cx},${cy - gemSize} ${cx + gemSize},${cy} ${cx},${cy + gemSize} ${cx - gemSize},${cy}"
+             fill="${c}" opacity="0.6"/>
+    <polygon points="${cx},${cy - gemSize + 2} ${cx + gemSize - 2},${cy} ${cx},${cy + gemSize - 2} ${cx - gemSize + 2},${cy}"
+             fill="${c}" opacity="0.3"/>`);
+    }
+    // 上辺・下辺の装飾ライン
+    const midX = W / 2;
+    const lineLen = 40;
+    elements.push(`
+    <line x1="${midX - lineLen}" y1="${off}" x2="${midX + lineLen}" y2="${off}" stroke="${c}" stroke-width="1" opacity="0.35"/>
+    <circle cx="${midX}" cy="${off}" r="2" fill="${c}" opacity="0.4"/>
+    <line x1="${midX - lineLen}" y1="${H - off}" x2="${midX + lineLen}" y2="${H - off}" stroke="${c}" stroke-width="1" opacity="0.35"/>
+    <circle cx="${midX}" cy="${H - off}" r="2" fill="${c}" opacity="0.4"/>`);
+  } else if (design.cornerDecoration === 'ornate') {
+    // 装飾的なコーナーピース＋スクロール（Legend用）
+    const off = bw + 6;
+    const size = 28;
+    const c = '#F59E0B';
+    // 四隅コーナーピース（L字＋カーブ＋ジェム）
+    elements.push(`
+    <path d="M${off},${off + size} L${off},${off} L${off + size},${off}" fill="none" stroke="${c}" stroke-width="2.5" opacity="0.8"/>
+    <path d="M${off + 4},${off + size - 6} Q${off + 4},${off + 4} ${off + size - 6},${off + 4}" fill="none" stroke="${c}" stroke-width="1" opacity="0.4"/>
+    <circle cx="${off + 3}" cy="${off + 3}" r="3" fill="${c}" opacity="0.7"/>
+    <path d="M${W - off - size},${off} L${W - off},${off} L${W - off},${off + size}" fill="none" stroke="${c}" stroke-width="2.5" opacity="0.8"/>
+    <path d="M${W - off - size + 6},${off + 4} Q${W - off - 4},${off + 4} ${W - off - 4},${off + size - 6}" fill="none" stroke="${c}" stroke-width="1" opacity="0.4"/>
+    <circle cx="${W - off - 3}" cy="${off + 3}" r="3" fill="${c}" opacity="0.7"/>
+    <path d="M${off},${H - off - size} L${off},${H - off} L${off + size},${H - off}" fill="none" stroke="${c}" stroke-width="2.5" opacity="0.8"/>
+    <path d="M${off + 4},${H - off - size + 6} Q${off + 4},${H - off - 4} ${off + size - 6},${H - off - 4}" fill="none" stroke="${c}" stroke-width="1" opacity="0.4"/>
+    <circle cx="${off + 3}" cy="${H - off - 3}" r="3" fill="${c}" opacity="0.7"/>
+    <path d="M${W - off - size},${H - off} L${W - off},${H - off} L${W - off},${H - off - size}" fill="none" stroke="${c}" stroke-width="2.5" opacity="0.8"/>
+    <path d="M${W - off - size + 6},${H - off - 4} Q${W - off - 4},${H - off - 4} ${W - off - 4},${H - off - size + 6}" fill="none" stroke="${c}" stroke-width="1" opacity="0.4"/>
+    <circle cx="${W - off - 3}" cy="${H - off - 3}" r="3" fill="${c}" opacity="0.7"/>`);
+    // 上辺・下辺の装飾ライン（中央にジェム）
+    const midX = W / 2;
+    const lineLen = 50;
+    elements.push(`
+    <line x1="${midX - lineLen}" y1="${off}" x2="${midX - 6}" y2="${off}" stroke="${c}" stroke-width="1" opacity="0.4"/>
+    <polygon points="${midX},${off - 4} ${midX + 4},${off} ${midX},${off + 4} ${midX - 4},${off}" fill="${c}" opacity="0.5"/>
+    <line x1="${midX + 6}" y1="${off}" x2="${midX + lineLen}" y2="${off}" stroke="${c}" stroke-width="1" opacity="0.4"/>
+    <line x1="${midX - lineLen}" y1="${H - off}" x2="${midX - 6}" y2="${H - off}" stroke="${c}" stroke-width="1" opacity="0.4"/>
+    <polygon points="${midX},${H - off - 4} ${midX + 4},${H - off} ${midX},${H - off + 4} ${midX - 4},${H - off}" fill="${c}" opacity="0.5"/>
+    <line x1="${midX + 6}" y1="${H - off}" x2="${midX + lineLen}" y2="${H - off}" stroke="${c}" stroke-width="1" opacity="0.4"/>`);
+  }
+
+  // アクセントライン（rare 以上：下部の装飾ライン）
+  if (design.accentLine) {
+    const y = H - bw - 35;
+    const x1 = bw + 30;
+    const x2 = W - bw - 30;
+    const midX = W / 2;
+    elements.push(`
+    <line x1="${x1}" y1="${y}" x2="${midX - 8}" y2="${y}" stroke="${design.border.color}" stroke-width="0.75" opacity="0.3"/>
+    <circle cx="${midX}" cy="${y}" r="2" fill="${design.border.color}" opacity="0.3"/>
+    <line x1="${midX + 8}" y1="${y}" x2="${x2}" y2="${y}" stroke="${design.border.color}" stroke-width="0.75" opacity="0.3"/>`);
+  }
+
+  // 上部オーナメント（legend のみ：クラウン型装飾）
+  if (design.topOrnament) {
+    const cx = W / 2;
+    const ty = bw + 3;
+    elements.push(`
+    <path d="M${cx - 30},${ty + 12} L${cx - 18},${ty + 4} L${cx - 8},${ty + 10} L${cx},${ty - 2} L${cx + 8},${ty + 10} L${cx + 18},${ty + 4} L${cx + 30},${ty + 12}" fill="none" stroke="#F59E0B" stroke-width="1.5" opacity="0.7"/>
+    <circle cx="${cx}" cy="${ty - 2}" r="3" fill="#FDE68A" opacity="0.85"/>
+    <circle cx="${cx - 18}" cy="${ty + 4}" r="2" fill="#FDE68A" opacity="0.6"/>
+    <circle cx="${cx + 18}" cy="${ty + 4}" r="2" fill="#FDE68A" opacity="0.6"/>`);
+  }
+
+  const svg = `<svg width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg">
+  <defs>${defs.join('')}
+  </defs>${elements.join('')}
+</svg>`;
+
+  return Buffer.from(svg);
+}
+
+/**
  * 表面カード画像を生成
+ * 合成フロー: 背景 → イラスト(全面) → フレームSVG → タイトルSVG
  */
 async function createCardFront(
   illustrationBuffer: Buffer,
   keyword: string,
-  cardNumber: number,
   rarity: Rarity
 ): Promise<Buffer> {
-  const color = getRarityColor(rarity);
-  const borderWidth = getRarityBorderWidth(rarity);
-
-  // イラスト領域のサイズ計算
-  const illustrationWidth = CARD_WIDTH - borderWidth * 2;
-  const illustrationHeight = CARD_HEIGHT - borderWidth * 2 - TITLE_HEIGHT;
-
-  // イラストをリサイズ
+  // イラストをカード全体サイズにリサイズ
   const resizedIllustration = await sharp(illustrationBuffer)
-    .resize(illustrationWidth, illustrationHeight, {
+    .resize(CARD_WIDTH, CARD_HEIGHT, {
       fit: 'cover',
       position: 'center',
     })
@@ -161,60 +409,21 @@ async function createCardFront(
   // ランダムでフォントを選択
   const selectedFont = selectRandomFont();
 
-  // タイトルバーのSVG
-  const titleBarSvg = `
-    <svg width="${CARD_WIDTH}" height="${TITLE_HEIGHT}" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        ${
-          rarity === 'legend'
-            ? `
-          <linearGradient id="legendTitleGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" style="stop-color:#1a1a2e"/>
-            <stop offset="50%" style="stop-color:#16213e"/>
-            <stop offset="100%" style="stop-color:#1a1a2e"/>
-          </linearGradient>
-        `
-            : ''
-        }
-      </defs>
-      <rect width="${CARD_WIDTH}" height="${TITLE_HEIGHT}" fill="${rarity === 'legend' ? 'url(#legendTitleGradient)' : '#1a1a2e'}"/>
-      <text x="${CARD_WIDTH / 2}" y="${TITLE_HEIGHT / 2 + 8}"
-            font-family="${selectedFont.family}"
-            font-size="24"
-            font-weight="bold"
-            fill="${color}"
-            text-anchor="middle">${escapeXml(keyword)} #${cardNumber}</text>
-    </svg>
-  `;
+  // フレームSVGを生成
+  const frameSvg = generateFrameSvg(rarity);
 
-  // 枠のSVG
-  const frameSvg = `
+  // タイトルSVG（キーワード名のみ）
+  const titleSvg = `
     <svg width="${CARD_WIDTH}" height="${CARD_HEIGHT}" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        ${
-          rarity === 'legend'
-            ? `
-          <linearGradient id="legendFrameGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" style="stop-color:#FFD700"/>
-            <stop offset="25%" style="stop-color:#FFA500"/>
-            <stop offset="50%" style="stop-color:#FFD700"/>
-            <stop offset="75%" style="stop-color:#FFA500"/>
-            <stop offset="100%" style="stop-color:#FFD700"/>
-          </linearGradient>
-        `
-            : ''
-        }
-      </defs>
-      <rect
-        x="${borderWidth / 2}"
-        y="${borderWidth / 2}"
-        width="${CARD_WIDTH - borderWidth}"
-        height="${CARD_HEIGHT - borderWidth}"
-        fill="none"
-        stroke="${rarity === 'legend' ? 'url(#legendFrameGradient)' : color}"
-        stroke-width="${borderWidth}"
-        rx="12"
-      />
+      <text x="${CARD_WIDTH / 2}" y="${TITLE_Y}"
+            font-family="${selectedFont.family}"
+            font-size="${TITLE_FONT_SIZE}"
+            font-weight="bold"
+            fill="${CARD_DESIGN[rarity].titleColor}"
+            text-anchor="middle"
+            stroke="#000000"
+            stroke-width="3"
+            paint-order="stroke">${escapeXml(keyword)}</text>
     </svg>
   `;
 
@@ -230,27 +439,12 @@ async function createCardFront(
     .png()
     .toBuffer();
 
-  // 合成
+  // 合成: 背景 → イラスト → フレームSVG → タイトルSVG
   const cardImage = await sharp(background)
     .composite([
-      // タイトルバー
-      {
-        input: Buffer.from(titleBarSvg),
-        top: borderWidth,
-        left: 0,
-      },
-      // イラスト
-      {
-        input: resizedIllustration,
-        top: borderWidth + TITLE_HEIGHT,
-        left: borderWidth,
-      },
-      // 枠
-      {
-        input: Buffer.from(frameSvg),
-        top: 0,
-        left: 0,
-      },
+      { input: resizedIllustration, top: 0, left: 0 },
+      { input: frameSvg, top: 0, left: 0 },
+      { input: Buffer.from(titleSvg), top: 0, left: 0 },
     ])
     .jpeg({ quality: 90 })
     .toBuffer();
@@ -426,7 +620,6 @@ export async function composeCardImage(
   const cardImageBuffer = await createCardFront(
     input.illustrationBuffer,
     input.keyword,
-    input.cardNumber,
     input.rarity
   );
 
