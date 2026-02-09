@@ -545,18 +545,41 @@ async function createCardBack(
     )
     .join('');
 
+  // レアリティ別グラデーション設定
+  const bgGradients: Record<Rarity, [string, string, string]> = {
+    common: ['#1a1a2e', '#16162a', '#1a1a2e'],
+    rare: ['#0f1a2e', '#0a1628', '#0f1a2e'],
+    super_rare: ['#1a0f2e', '#140a28', '#1a0f2e'],
+    legend: ['#1a1a2e', '#0f0f1a', '#1a1a2e'],
+  };
+
+  // レアリティ別パターン透明度
+  const patternOpacity: Record<Rarity, number> = {
+    common: 0.08,
+    rare: 0.12,
+    super_rare: 0.15,
+    legend: 0.2,
+  };
+
+  const [bgStart, bgMid, bgEnd] = bgGradients[rarity];
+  const pOpacity = patternOpacity[rarity];
+
+  // コーナー装飾のサイズ
+  const cornerSize = 30;
+  const cornerInset = borderWidth + 8;
+
   // 裏面全体のSVG
   const backSvg = `
     <svg width="${CARD_WIDTH}" height="${CARD_HEIGHT}" xmlns="http://www.w3.org/2000/svg">
       <defs>
+        <linearGradient id="backGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" style="stop-color:${bgStart}"/>
+          <stop offset="50%" style="stop-color:${bgMid}"/>
+          <stop offset="100%" style="stop-color:${bgEnd}"/>
+        </linearGradient>
         ${
           rarity === 'legend'
             ? `
-          <linearGradient id="legendBackGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" style="stop-color:#1a1a2e"/>
-            <stop offset="50%" style="stop-color:#0f0f1a"/>
-            <stop offset="100%" style="stop-color:#1a1a2e"/>
-          </linearGradient>
           <linearGradient id="legendBorderGradient" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" style="stop-color:#FFD700"/>
             <stop offset="25%" style="stop-color:#FFA500"/>
@@ -567,17 +590,38 @@ async function createCardBack(
         `
             : ''
         }
-        <pattern id="cardPattern" patternUnits="userSpaceOnUse" width="40" height="40">
-          <rect width="40" height="40" fill="transparent"/>
-          <circle cx="20" cy="20" r="1" fill="${color}" opacity="0.15"/>
+        <!-- ひし形パターン -->
+        <pattern id="diamondPattern" patternUnits="userSpaceOnUse" width="32" height="32">
+          <rect width="32" height="32" fill="transparent"/>
+          <path d="M16 0 L32 16 L16 32 L0 16 Z" fill="none" stroke="${color}" stroke-width="0.5" opacity="${pOpacity}"/>
+        </pattern>
+        <!-- 微細ラインテクスチャ -->
+        <pattern id="lineTexture" patternUnits="userSpaceOnUse" width="16" height="16" patternTransform="rotate(45)">
+          <rect width="16" height="16" fill="transparent"/>
+          <line x1="0" y1="8" x2="16" y2="8" stroke="${color}" stroke-width="0.3" opacity="${pOpacity * 0.5}"/>
         </pattern>
       </defs>
 
-      <!-- 背景 -->
-      <rect width="${CARD_WIDTH}" height="${CARD_HEIGHT}" fill="${rarity === 'legend' ? 'url(#legendBackGradient)' : '#1a1a2e'}" rx="12"/>
-      <rect width="${CARD_WIDTH}" height="${CARD_HEIGHT}" fill="url(#cardPattern)" rx="12"/>
+      <!-- 背景グラデーション -->
+      <rect width="${CARD_WIDTH}" height="${CARD_HEIGHT}" fill="url(#backGradient)" rx="12"/>
+      <!-- ひし形パターン -->
+      <rect width="${CARD_WIDTH}" height="${CARD_HEIGHT}" fill="url(#diamondPattern)" rx="12"/>
+      <!-- ラインテクスチャ -->
+      <rect width="${CARD_WIDTH}" height="${CARD_HEIGHT}" fill="url(#lineTexture)" rx="12"/>
 
-      <!-- 枠 -->
+      <!-- 中央ウォーターマーク（本+カード簡略形） -->
+      <g transform="translate(${CARD_WIDTH / 2}, ${CARD_HEIGHT / 2})" opacity="${rarity === 'legend' ? 0.06 : 0.04}">
+        <!-- 本のシルエット -->
+        <path d="M-40,-50 L-5,-45 L-5,45 L-40,40 Z" fill="${color}"/>
+        <path d="M40,-50 L5,-45 L5,45 L40,40 Z" fill="${color}"/>
+        <!-- カードのシルエット（本の上に重ねて） -->
+        <rect x="-18" y="-30" width="36" height="50" rx="3" fill="${color}" opacity="0.7"/>
+        <line x1="-10" y1="-15" x2="10" y2="-15" stroke="${bgMid}" stroke-width="2"/>
+        <line x1="-10" y1="-5" x2="10" y2="-5" stroke="${bgMid}" stroke-width="2"/>
+        <line x1="-10" y1="5" x2="5" y2="5" stroke="${bgMid}" stroke-width="2"/>
+      </g>
+
+      <!-- 外枠 -->
       <rect
         x="${borderWidth / 2}"
         y="${borderWidth / 2}"
@@ -588,6 +632,32 @@ async function createCardBack(
         stroke-width="${borderWidth}"
         rx="12"
       />
+      <!-- 内枠 -->
+      <rect
+        x="${borderWidth + 4}"
+        y="${borderWidth + 4}"
+        width="${CARD_WIDTH - (borderWidth + 4) * 2}"
+        height="${CARD_HEIGHT - (borderWidth + 4) * 2}"
+        fill="none"
+        stroke="${color}"
+        stroke-width="1"
+        opacity="0.3"
+        rx="8"
+      />
+
+      <!-- 四隅コーナー装飾 -->
+      <!-- 左上 -->
+      <path d="M${cornerInset},${cornerInset + cornerSize} L${cornerInset},${cornerInset} L${cornerInset + cornerSize},${cornerInset}"
+            fill="none" stroke="${color}" stroke-width="2" opacity="0.6"/>
+      <!-- 右上 -->
+      <path d="M${CARD_WIDTH - cornerInset - cornerSize},${cornerInset} L${CARD_WIDTH - cornerInset},${cornerInset} L${CARD_WIDTH - cornerInset},${cornerInset + cornerSize}"
+            fill="none" stroke="${color}" stroke-width="2" opacity="0.6"/>
+      <!-- 左下 -->
+      <path d="M${cornerInset},${CARD_HEIGHT - cornerInset - cornerSize} L${cornerInset},${CARD_HEIGHT - cornerInset} L${cornerInset + cornerSize},${CARD_HEIGHT - cornerInset}"
+            fill="none" stroke="${color}" stroke-width="2" opacity="0.6"/>
+      <!-- 右下 -->
+      <path d="M${CARD_WIDTH - cornerInset - cornerSize},${CARD_HEIGHT - cornerInset} L${CARD_WIDTH - cornerInset},${CARD_HEIGHT - cornerInset} L${CARD_WIDTH - cornerInset},${CARD_HEIGHT - cornerInset - cornerSize}"
+            fill="none" stroke="${color}" stroke-width="2" opacity="0.6"/>
 
       <!-- ヘッダー区切り線 -->
       <line x1="40" y1="140" x2="${CARD_WIDTH - 40}" y2="140" stroke="${color}" stroke-width="1" opacity="0.5"/>
