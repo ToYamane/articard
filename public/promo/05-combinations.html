@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1280">
+<title>ArtiCard - 組み合わせ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=DotGothic16&family=Hachi+Maru+Pop&family=Kaisei+Tokumin:wght@700&family=Kiwi+Maru:wght@500&family=Noto+Sans+JP:wght@700&family=Noto+Serif+JP:wght@700&family=Reggae+One&family=Stick&family=Yuji+Syuku&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    width: 1280px;
+    height: 720px;
+    overflow: hidden;
+    font-family: 'Segoe UI', 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+  }
+
+  .container {
+    width: 1280px;
+    height: 720px;
+    background: #ffffff;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    padding: 0 56px;
+  }
+
+  .container::before {
+    content: '';
+    position: absolute;
+    top: -200px;
+    right: -200px;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(139, 92, 246, 0.04) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  /* Header area */
+  .top-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 28px;
+  }
+
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 4px;
+  }
+
+  .header-icon { width: 40px; height: auto; }
+
+  .header-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1e293b;
+  }
+
+  .header-title span { color: #7c3aed; }
+
+  .hero-number {
+    font-size: 80px;
+    font-weight: 800;
+    background: linear-gradient(135deg, #7c3aed, #2563eb);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1.1;
+  }
+
+  .hero-sub {
+    font-size: 16px;
+    color: #94a3b8;
+  }
+
+  /* 3-column layout */
+  .combo-row {
+    display: flex;
+    align-items: flex-start;
+    width: 100%;
+  }
+
+  .combo-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .combo-multiply {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    flex-shrink: 0;
+    font-size: 40px;
+    font-weight: 300;
+    color: #c4b5fd;
+    padding-top: 160px;
+  }
+
+  .section-label {
+    font-size: 15px;
+    font-weight: 700;
+    color: #475569;
+    margin-bottom: 12px;
+    text-align: center;
+  }
+
+  /* Item cards - style & rarity */
+  .items-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .item-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+  }
+
+  .item-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 7px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 15px;
+  }
+
+  .item-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1e293b;
+    flex: 1;
+  }
+
+  /* Rarity cards */
+  .item-card.rarity-legend {
+    border-color: #fbbf24;
+    background: linear-gradient(135deg, #fffbeb, #fef3c7);
+  }
+  .item-card.rarity-super_rare {
+    border-color: #a78bfa;
+    background: linear-gradient(135deg, #f5f3ff, #ede9fe);
+  }
+  .item-card.rarity-rare {
+    border-color: #60a5fa;
+    background: linear-gradient(135deg, #eff6ff, #dbeafe);
+  }
+  .item-card.rarity-common {
+    border-color: #86efac;
+    background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+  }
+
+  .rarity-name {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 5px;
+    flex-shrink: 0;
+  }
+
+  .rarity-legend { background: #fef3c7; color: #b45309; }
+  .rarity-super_rare { background: #ede9fe; color: #6d28d9; }
+  .rarity-rare { background: #dbeafe; color: #1d4ed8; }
+  .rarity-common { background: #dcfce7; color: #15803d; }
+
+  /* Style icons */
+  .style-essay { background: #dbeafe; color: #2563eb; }
+  .style-story { background: #fce7f3; color: #db2777; }
+  .style-dialogue { background: #d1fae5; color: #059669; }
+  .style-poem { background: #ede9fe; color: #7c3aed; }
+  .style-explanation { background: #ffedd5; color: #ea580c; }
+
+  /* Model icons */
+  .model-dalle { background: #0a0a0a; }
+  .model-flux { background: #f3e8ff; }
+  .model-gemini { background: #e8f0fe; }
+
+  .item-icon img, .item-icon svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  /* Font grid */
+  .font-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .font-card {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+  }
+
+  .font-sample {
+    font-size: 20px;
+    color: #7c3aed;
+    width: 26px;
+    text-align: center;
+    flex-shrink: 0;
+    line-height: 1;
+  }
+
+  .font-name {
+    font-size: 11px;
+    font-weight: 600;
+    color: #334155;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <!-- Top: logo + 200+ -->
+  <div class="top-area">
+    <div class="header">
+      <img src="../logo/icon.png" alt="ArtiCard" class="header-icon">
+      <div class="header-title"><span>ArtiCard</span> の多彩なバリエーション</div>
+    </div>
+    <div class="hero-number">200+</div>
+    <div class="hero-sub">世界に一枚だけのカードをコレクションしよう</div>
+  </div>
+
+  <!-- 3 columns -->
+  <div class="combo-row">
+    <!-- 文体 -->
+    <div class="combo-section">
+      <div class="section-label">記事の文体</div>
+      <div class="items-grid">
+        <div class="item-card">
+          <div class="item-icon style-essay">📄</div>
+          <div class="item-name">論文形式</div>
+        </div>
+        <div class="item-card">
+          <div class="item-icon style-story">📖</div>
+          <div class="item-name">物語形式</div>
+        </div>
+        <div class="item-card">
+          <div class="item-icon style-dialogue">💬</div>
+          <div class="item-name">会話形式</div>
+        </div>
+        <div class="item-card">
+          <div class="item-icon style-poem">🎋</div>
+          <div class="item-name">詩</div>
+        </div>
+        <div class="item-card">
+          <div class="item-icon style-explanation">💡</div>
+          <div class="item-name">やさしい解説</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="combo-multiply">&times;</div>
+
+    <!-- レアリティ × AI -->
+    <div class="combo-section">
+      <div class="section-label">レアリティ × 生成AI</div>
+      <div class="items-grid">
+        <div class="item-card rarity-legend">
+          <div class="item-icon model-dalle">
+            <svg viewBox="0 0 24 24" fill="#fff"><path d="M22.282 9.821a5.985 5.985 0 00-.516-4.91 6.046 6.046 0 00-6.51-2.9A6.065 6.065 0 0011.053.188a6.048 6.048 0 00-5.77 4.203 6.017 6.017 0 00-3.485 2.578 6.048 6.048 0 00.744 7.113 5.985 5.985 0 00.516 4.911 6.048 6.048 0 006.51 2.9A6.06 6.06 0 0013.947 23.812a6.047 6.047 0 005.77-4.203 6.013 6.013 0 003.485-2.578 6.046 6.046 0 00-.744-7.113z"/></svg>
+          </div>
+          <div class="item-name">DALL-E 3 HD</div>
+          <div class="rarity-name rarity-legend">Legend</div>
+        </div>
+        <div class="item-card rarity-super_rare">
+          <div class="item-icon model-flux">
+            <svg viewBox="0 0 24 24" fill="#7c3aed"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5" fill="none" stroke="#7c3aed" stroke-width="2"/><path d="M2 12l10 5 10-5" fill="none" stroke="#7c3aed" stroke-width="2"/></svg>
+          </div>
+          <div class="item-name">FLUX.2 Pro</div>
+          <div class="rarity-name rarity-super_rare">Super Rare</div>
+        </div>
+        <div class="item-card rarity-rare">
+          <div class="item-icon model-gemini">
+            <img src="https://cdn.simpleicons.org/googlegemini/2563eb" alt="Gemini">
+          </div>
+          <div class="item-name">Gemini 2.5 Flash</div>
+          <div class="rarity-name rarity-rare">Rare</div>
+        </div>
+        <div class="item-card rarity-common">
+          <div class="item-icon model-flux">
+            <svg viewBox="0 0 24 24" fill="#059669"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5" fill="none" stroke="#059669" stroke-width="2"/><path d="M2 12l10 5 10-5" fill="none" stroke="#059669" stroke-width="2"/></svg>
+          </div>
+          <div class="item-name">FLUX.2 Klein</div>
+          <div class="rarity-name rarity-common">Common</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="combo-multiply">&times;</div>
+
+    <!-- フォント -->
+    <div class="combo-section">
+      <div class="section-label">タイトルフォント</div>
+      <div class="font-grid">
+        <div class="font-card">
+          <div class="font-sample" style="font-family: 'Noto Sans JP', sans-serif;">あ</div>
+          <div class="font-name">Noto Sans JP</div>
+        </div>
+        <div class="font-card">
+          <div class="font-sample" style="font-family: 'Noto Serif JP', serif;">あ</div>
+          <div class="font-name">Noto Serif JP</div>
+        </div>
+        <div class="font-card">
+          <div class="font-sample" style="font-family: 'Dela Gothic One', sans-serif;">あ</div>
+          <div class="font-name">Dela Gothic One</div>
+        </div>
+        <div class="font-card">
+          <div class="font-sample" style="font-family: 'Kaisei Tokumin', serif;">あ</div>
+          <div class="font-name">Kaisei Tokumin</div>
+        </div>
+        <div class="font-card">
+          <div class="font-sample" style="font-family: 'Reggae One', cursive;">あ</div>
+          <div class="font-name">Reggae One</div>
+        </div>
+        <div class="font-card">
+          <div class="font-sample" style="font-family: 'Yuji Syuku', serif;">あ</div>
+          <div class="font-name">Yuji Syuku</div>
+        </div>
+        <div class="font-card">
+          <div class="font-sample" style="font-family: 'Kiwi Maru', serif;">あ</div>
+          <div class="font-name">Kiwi Maru</div>
+        </div>
+        <div class="font-card">
+          <div class="font-sample" style="font-family: 'Hachi Maru Pop', cursive;">あ</div>
+          <div class="font-name">Hachi Maru Pop</div>
+        </div>
+        <div class="font-card">
+          <div class="font-sample" style="font-family: 'DotGothic16', sans-serif;">あ</div>
+          <div class="font-name">DotGothic16</div>
+        </div>
+        <div class="font-card">
+          <div class="font-sample" style="font-family: 'Stick', sans-serif;">あ</div>
+          <div class="font-name">Stick</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

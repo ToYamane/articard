@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1280">
+<title>ArtiCard - 記事からカードが生まれる</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    width: 1280px;
+    height: 720px;
+    overflow: hidden;
+    font-family: 'Segoe UI', 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+  }
+
+  .container {
+    width: 1280px;
+    height: 720px;
+    background: #ffffff;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow: hidden;
+    padding: 32px 48px;
+  }
+
+  /* Subtle grid pattern */
+  .container::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(148, 163, 184, 0.08) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+  }
+
+  /* Ambient glows */
+  .glow-1 {
+    position: absolute;
+    top: -80px;
+    left: 200px;
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(139, 92, 246, 0.06) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .glow-2 {
+    position: absolute;
+    bottom: -100px;
+    right: 150px;
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, rgba(59, 130, 246, 0.05) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  /* Header */
+  .header {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+
+  .header-icon {
+    width: 52px;
+    height: auto;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+  }
+
+  .header-title {
+    font-size: 32px;
+    font-weight: 700;
+    color: #1e293b;
+    letter-spacing: 0.05em;
+  }
+
+  .header-title span {
+    color: #7c3aed;
+  }
+
+  /* Main content area */
+  .main-content {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex: 1;
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Article screenshot */
+  .article-section {
+    flex-shrink: 0;
+  }
+
+  .article-screenshot {
+    width: 380px;
+    height: auto;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e2e8f0;
+  }
+
+  /* Arrow section */
+  .arrow-section {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100px;
+    flex-shrink: 0;
+  }
+
+  .arrow {
+    display: flex;
+    align-items: center;
+    gap: 0;
+  }
+
+  .arrow-line {
+    width: 40px;
+    height: 4px;
+    background: linear-gradient(90deg, #7c3aed, #2563eb);
+    border-radius: 2px;
+  }
+
+  .arrow-head {
+    width: 0;
+    height: 0;
+    border-top: 12px solid transparent;
+    border-bottom: 12px solid transparent;
+    border-left: 18px solid #2563eb;
+  }
+
+  /* Cards fan section */
+  .cards-section {
+    flex-shrink: 0;
+    position: relative;
+    width: 560px;
+    height: 480px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .card-wrapper {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .card-wrapper img {
+    width: 155px;
+    height: auto;
+    border-radius: 10px;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.15), 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Card positions - fan layout with wider spread */
+  .card-wrapper:nth-child(1) {
+    transform: rotate(-10deg) translateX(-190px);
+    z-index: 1;
+  }
+  .card-wrapper:nth-child(2) {
+    transform: rotate(-3.5deg) translateX(-65px);
+    z-index: 2;
+  }
+  .card-wrapper:nth-child(3) {
+    transform: rotate(3.5deg) translateX(65px);
+    z-index: 3;
+  }
+  .card-wrapper:nth-child(4) {
+    transform: rotate(10deg) translateX(190px);
+    z-index: 4;
+  }
+
+  /* Footer caption */
+  .footer-caption {
+    position: relative;
+    z-index: 10;
+    margin-top: auto;
+    padding-top: 12px;
+    font-size: 18px;
+    font-weight: 600;
+    color: #64748b;
+    letter-spacing: 0.05em;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="glow-1"></div>
+  <div class="glow-2"></div>
+
+  <!-- Header -->
+  <div class="header">
+    <img src="../logo/icon.png" alt="ArtiCard" class="header-icon">
+    <div class="header-title"><span>記事</span>からカードが生まれる</div>
+  </div>
+
+  <!-- Main content -->
+  <div class="main-content">
+    <!-- Article screenshot -->
+    <div class="article-section">
+      <img src="../../image/promo/スクリーンショット 2026-02-09 202212.png" alt="記事ページ" class="article-screenshot">
+    </div>
+
+    <!-- Arrow -->
+    <div class="arrow-section">
+      <div class="arrow">
+        <div class="arrow-line"></div>
+        <div class="arrow-head"></div>
+      </div>
+    </div>
+
+    <!-- Cards fan -->
+    <div class="cards-section">
+      <div class="card-wrapper">
+        <img src="../../image/promo/1ec0a331-b96f-45bb-8f60-5b16ca1d802d_card.webp" alt="コロッセオ">
+        <div class="card-keyword">コロッセオ</div>
+      </div>
+      <div class="card-wrapper">
+        <img src="../../image/promo/cdce1261-dfe6-40e8-b9f8-70dde6ed5298_card.webp" alt="浮世絵">
+        <div class="card-keyword">浮世絵</div>
+      </div>
+      <div class="card-wrapper">
+        <img src="../../image/promo/026495f1-3d50-455c-916c-4e5da1e224d8_card.webp" alt="RSA暗号">
+        <div class="card-keyword">RSA暗号</div>
+      </div>
+      <div class="card-wrapper">
+        <img src="../../image/promo/1c5049bc-6ac4-41c7-bb37-6c9cfe82f0d7_card.webp" alt="地下水">
+        <div class="card-keyword">地下水</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer caption -->
+  <div class="footer-caption">AIが記事のキーワードから多彩なカードを自動生成</div>
+</div>
+</body>
+</html>

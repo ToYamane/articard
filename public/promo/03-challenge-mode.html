@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1280">
+<title>ArtiCard - カードで物語を紡ぐ</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    width: 1280px;
+    height: 720px;
+    overflow: hidden;
+    font-family: 'Segoe UI', 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+  }
+
+  .container {
+    width: 1280px;
+    height: 720px;
+    background: #ffffff;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow: hidden;
+    padding: 32px 48px 28px;
+  }
+
+  /* Subtle grid pattern */
+  .container::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(148, 163, 184, 0.08) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+  }
+
+  /* Ambient glows */
+  .glow-1 {
+    position: absolute;
+    top: -80px;
+    left: 200px;
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(139, 92, 246, 0.06) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .glow-2 {
+    position: absolute;
+    bottom: -100px;
+    right: 150px;
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, rgba(59, 130, 246, 0.05) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  /* Header */
+  .header {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+
+  .header-icon {
+    width: 52px;
+    height: auto;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+  }
+
+  .header-title {
+    font-size: 32px;
+    font-weight: 700;
+    color: #1e293b;
+    letter-spacing: 0.05em;
+  }
+
+  .header-title span {
+    color: #7c3aed;
+  }
+
+  /* Screenshots row */
+  .screenshots-row {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    align-items: flex-start;
+    gap: 40px;
+    justify-content: center;
+  }
+
+  .screenshot-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .screenshot-item img {
+    width: 480px;
+    height: auto;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e2e8f0;
+  }
+
+  .screenshot-caption {
+    font-size: 15px;
+    font-weight: 600;
+    color: #475569;
+    text-align: center;
+    letter-spacing: 0.03em;
+  }
+
+  /* Bottom bar: caption left, scenarios right */
+  .bottom-bar {
+    position: relative;
+    z-index: 10;
+    margin-top: auto;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .footer-caption {
+    font-size: 17px;
+    font-weight: 600;
+    color: #64748b;
+    letter-spacing: 0.05em;
+  }
+
+  /* Scenario section */
+  .scenarios {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .scenarios-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #94a3b8;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+  }
+
+  .scenario-card {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  }
+
+  .scenario-icon {
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  .scenario-name {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1e293b;
+    white-space: nowrap;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="glow-1"></div>
+  <div class="glow-2"></div>
+
+  <!-- Header -->
+  <div class="header">
+    <img src="../logo/icon.png" alt="ArtiCard" class="header-icon">
+    <div class="header-title"><span>カード</span>で物語を紡ぐ</div>
+  </div>
+
+  <!-- Screenshots -->
+  <div class="screenshots-row">
+    <div class="screenshot-item">
+      <img src="../../image/promo/スクリーンショット 2026-02-09 191214.png" alt="最終決戦フェーズ">
+      <div class="screenshot-caption">手持ちのカードで状況に挑む</div>
+    </div>
+    <div class="screenshot-item">
+      <img src="../../image/promo/スクリーンショット 2026-02-09 203422.png" alt="スコア画面">
+      <div class="screenshot-caption">AIがカードの適合度をリアルタイム評価</div>
+    </div>
+  </div>
+
+  <!-- Bottom bar -->
+  <div class="bottom-bar">
+    <div class="footer-caption">5フェーズの物語に、あなたのカードで挑戦しよう</div>
+    <div class="scenarios">
+      <div class="scenarios-label">シナリオ例:</div>
+      <div class="scenario-card">
+        <div class="scenario-icon">&#x23F3;</div>
+        <div class="scenario-name">タイムトラベル</div>
+      </div>
+      <div class="scenario-card">
+        <div class="scenario-icon">&#x2694;&#xFE0F;</div>
+        <div class="scenario-name">魔王討伐</div>
+      </div>
+      <div class="scenario-card">
+        <div class="scenario-icon">&#x1F3DD;&#xFE0F;</div>
+        <div class="scenario-name">無人島</div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
