@@ -2,15 +2,61 @@ import type { Rarity, EmotionalTone } from '@/types/database';
 import { generateCardImageByRarity, type ImageGenerationResult } from '@/lib/image-generation';
 import { RARITY_CONFIG } from '@/lib/constants/rarity-config';
 
-// トーンによるスタイル修飾子（簡略化）
-const TONE_MODIFIERS: Record<EmotionalTone, string> = {
-  epic: 'epic scale, heroic',
-  mysterious: 'ethereal glow, mysterious',
-  scientific: 'technical precision',
-  warm: 'warm colors, friendly',
-  dramatic: 'dramatic lighting, intense',
-  neutral: 'balanced composition',
+// トーンによるスタイル修飾子（各トーンに複数バリエーション）
+const TONE_MODIFIERS: Record<EmotionalTone, string[]> = {
+  epic: [
+    'epic scale, heroic atmosphere',
+    'grand vista, monumental presence',
+    'sweeping panorama, awe-inspiring',
+    'towering silhouette, legendary aura',
+  ],
+  mysterious: [
+    'ethereal glow, mysterious ambiance',
+    'shrouded in mist, enigmatic',
+    'twilight shadows, arcane energy',
+    'moonlit silhouette, otherworldly',
+  ],
+  scientific: [
+    'technical precision, analytical clarity',
+    'microscopic detail, clinical observation',
+    'schematic elegance, data visualization',
+    'laboratory atmosphere, empirical beauty',
+  ],
+  warm: [
+    'warm colors, friendly atmosphere',
+    'golden hour light, gentle radiance',
+    'soft pastels, cozy intimacy',
+    'sunlit warmth, nostalgic glow',
+  ],
+  dramatic: [
+    'dramatic lighting, intense contrast',
+    'chiaroscuro shadows, powerful tension',
+    'storm-lit scene, raw energy',
+    'bold contrasts, cinematic intensity',
+  ],
+  neutral: [
+    'balanced composition, clean tones',
+    'harmonious arrangement, subtle palette',
+    'even lighting, understated elegance',
+    'refined simplicity, measured balance',
+  ],
 };
+
+// アートスタイルプール（ランダムに選択して視覚的多様性を注入）
+const ART_STYLES = [
+  'digital painting',
+  'concept art',
+  'watercolor illustration',
+  'oil painting style',
+  'cel-shaded art',
+  'ink wash painting',
+  'gouache illustration',
+  'colored pencil art',
+];
+
+function pickRandom<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
 
 export interface ImageGenerationInput {
   imageSubject: string;
@@ -34,10 +80,10 @@ export interface CardIllustrationResult {
  */
 export function generateImagePrompt(input: ImageGenerationInput): string {
   const styleModifier = RARITY_CONFIG[input.rarity].styleModifier;
-  const toneModifier = TONE_MODIFIERS[input.emotionalTone];
+  const toneModifier = pickRandom(TONE_MODIFIERS[input.emotionalTone]);
+  const artStyle = pickRandom(ART_STYLES);
 
-  // 記事内容を優先（約70%）、スタイル・固定部分を簡略化（約30%）
-  return `${input.imageSubject}, ${input.imageScene}, ${input.imageDetails}, ${styleModifier}, ${toneModifier}, trading card illustration, centered, high quality`.trim();
+  return `${input.imageSubject}, ${input.imageScene}, ${input.imageDetails}, ${artStyle}, ${styleModifier}, ${toneModifier}, trading card illustration, high quality`.trim();
 }
 
 /**

@@ -21,6 +21,9 @@ Important:
 - image_subject/scene/details must be in English and visually descriptive
 - Focus on what can be visually represented, not abstract concepts
 - Make descriptions vivid and specific for image generation
+- Each keyword should produce a UNIQUE visual interpretation
+- Vary art direction: consider different perspectives, compositions, and visual metaphors
+- Avoid generic fantasy/epic descriptions - be specific and creative
 - context_description_ja is an EDUCATIONAL EXPLANATION of the keyword's meaning, NOT a visual description
 - Write context_description_ja so readers can understand what the keyword means based on the article content`;
 
@@ -56,7 +59,7 @@ export async function analyzeContext(
   const response = await client.chat.completions.create({
     model: 'gpt-4o-mini',
     messages: [{ role: 'user', content: prompt }],
-    temperature: 0.5,
+    temperature: 0.85,
     max_tokens: 500,
     response_format: { type: 'json_object' },
   });
