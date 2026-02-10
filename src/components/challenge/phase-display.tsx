@@ -1,6 +1,6 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import type { PhaseDefinition } from '@/types/challenge';
 
@@ -19,11 +19,12 @@ export function PhaseDisplay({
   totalScore,
   className,
 }: PhaseDisplayProps) {
-  const progress = (currentPhase / totalPhases) * 100;
+  const shouldReduceMotion = useReducedMotion();
+  const progress = ((currentPhase - 1) / totalPhases) * 100;
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: -20 }}
+      initial={shouldReduceMotion ? false : { opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       className={cn(
         'rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800',
@@ -54,7 +55,7 @@ export function PhaseDisplay({
       <div className="text-center">
         <motion.h2
           key={phase.phaseNumber}
-          initial={{ opacity: 0, x: 20 }}
+          initial={shouldReduceMotion ? false : { opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           className="mb-2 text-xl font-bold text-gray-900 dark:text-gray-100"
         >
@@ -75,7 +76,7 @@ export function PhaseDisplay({
       <div className="mt-4 flex justify-center gap-4 text-xs text-gray-500 dark:text-gray-500">
         <span className="flex items-center gap-1">
           <span className="h-2 w-2 rounded-full bg-blue-500" />
-          {phase.cardCount === 1 ? '1枚選択' : '2枚選択（コンボ）'}
+          {phase.cardCount === 1 ? '1枚選択' : phase.cardCount === 2 ? '2枚選択（コンボ）' : '3枚選択（トリプル）'}
         </span>
         {phase.consumesCard && (
           <span className="flex items-center gap-1">
@@ -106,6 +107,8 @@ export function PhaseTimeline({
   completedPhases,
   className,
 }: PhaseTimelineProps) {
+  const shouldReduceMotion = useReducedMotion();
+
   return (
     <div className={cn('flex items-center justify-center gap-2', className)}>
       {Array.from({ length: totalPhases }).map((_, index) => {
@@ -116,9 +119,9 @@ export function PhaseTimeline({
         return (
           <div key={phaseNumber} className="flex items-center">
             <motion.div
-              initial={{ scale: 0 }}
+              initial={shouldReduceMotion ? false : { scale: 0 }}
               animate={{ scale: 1 }}
-              transition={{ delay: index * 0.1 }}
+              transition={shouldReduceMotion ? { duration: 0 } : { delay: index * 0.1 }}
               className={cn(
                 'flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold',
                 isCompleted

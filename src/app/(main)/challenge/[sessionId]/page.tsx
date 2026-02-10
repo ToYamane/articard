@@ -75,6 +75,19 @@ export default function ChallengeGamePage() {
   const [lastResult, setLastResult] = useState<SubmitResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isStartingNewGame, setIsStartingNewGame] = useState(false);
+  const [loadingTextIndex, setLoadingTextIndex] = useState(0);
+  const loadingTexts = ['AIが評価中...', '物語を紡いでいます...', 'カードの力を解析中...', '結果をまとめています...'];
+
+  useEffect(() => {
+    if (gameState !== 'submitting') {
+      setLoadingTextIndex(0);
+      return;
+    }
+    const interval = setInterval(() => {
+      setLoadingTextIndex((prev) => (prev + 1) % loadingTexts.length);
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [gameState, loadingTexts.length]);
 
   // セッション情報を取得
   const fetchSession = useCallback(async () => {
@@ -105,7 +118,7 @@ export default function ChallengeGamePage() {
       const token = await getIdToken();
       if (!token) throw new Error('認証トークンの取得に失敗しました');
 
-      const response = await fetch('/api/cards?limit=50', {
+      const response = await fetch('/api/cards?limit=200', {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -373,16 +386,7 @@ export default function ChallengeGamePage() {
         scenario &&
         challenge &&
         phaseDefinition && (
-          <div className="flex h-[calc(100vh-120px)] flex-col gap-3">
-            {/* フェーズ進行状況 */}
-            <div className="flex-shrink-0">
-              <PhaseTimeline
-                totalPhases={scenario.totalPhases}
-                currentPhase={session.currentPhase}
-                completedPhases={session.phases.map((p) => p.phaseNumber)}
-              />
-            </div>
-
+          <div className="relative flex h-[calc(100vh-120px)] flex-col gap-3">
             {/* フェーズ情報 */}
             <div className="flex-shrink-0">
               <PhaseDisplay
@@ -408,6 +412,24 @@ export default function ChallengeGamePage() {
                 className="h-full"
               />
             </div>
+
+            {gameState === 'submitting' && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-xl bg-white/80 backdrop-blur-sm dark:bg-gray-900/80"
+              >
+                <LoadingSpinner size="lg" />
+                <motion.p
+                  key={loadingTextIndex}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mt-4 text-lg font-medium text-gray-700 dark:text-gray-300"
+                >
+                  {loadingTexts[loadingTextIndex]}
+                </motion.p>
+              </motion.div>
+            )}
           </div>
         )}
 

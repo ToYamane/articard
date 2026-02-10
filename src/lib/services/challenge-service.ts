@@ -705,6 +705,7 @@ export async function submitPhaseCards(
       id: c.id,
       keyword: c.keyword,
       rarity: c.rarity,
+      thumbnailUrl: c.thumbnailUrl,
     })),
     evaluation: {
       fitScore: evaluation.fitScore,

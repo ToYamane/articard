@@ -1,6 +1,6 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui';
 import type { ScenarioListItem } from '@/types/challenge';
@@ -8,7 +8,7 @@ import { DIFFICULTY_DISPLAY_NAMES } from '@/types/challenge';
 import { getScoreRank } from '@/lib/challenge';
 
 interface ScenarioCardProps {
-  scenario: ScenarioListItem & { highScore?: number | null };
+  scenario: ScenarioListItem & { highScore?: number | null; playCount?: number | null };
   onSelect: () => void;
   isLoading?: boolean;
   className?: string;
@@ -26,9 +26,11 @@ export function ScenarioCard({
   isLoading,
   className,
 }: ScenarioCardProps) {
+  const shouldReduceMotion = useReducedMotion();
+
   return (
     <motion.div
-      whileHover={{ scale: 1.02 }}
+      whileHover={shouldReduceMotion ? undefined : { scale: 1.02 }}
       className={cn(
         'rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md dark:border-gray-700 dark:bg-gray-800',
         className
@@ -59,6 +61,9 @@ export function ScenarioCard({
       <div className="mb-4 flex gap-4 text-xs text-gray-500 dark:text-gray-500">
         <span>フェーズ: {scenario.totalPhases}</span>
         <span>デッキ: {scenario.deckSize}枚</span>
+        {scenario.playCount !== undefined && scenario.playCount !== null && scenario.playCount > 0 && (
+          <span>プレイ: {scenario.playCount}回</span>
+        )}
       </div>
 
       {/* ハイスコア */}

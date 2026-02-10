@@ -9,7 +9,7 @@ export const createCardSchema = z.object({
 // カード一覧取得クエリスキーマ
 export const getCardsQuerySchema = z.object({
   cursor: z.string().uuid().optional(),
-  limit: z.coerce.number().int().min(1).max(50).default(20),
+  limit: z.coerce.number().int().min(1).max(200).default(20),
   rarity: z
     .enum(['common', 'rare', 'super_rare', 'legend'])
     .optional(),

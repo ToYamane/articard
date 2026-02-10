@@ -12,6 +12,7 @@ import { DIFFICULTY_DISPLAY_NAMES } from '@/types/challenge';
 import { cn } from '@/lib/utils';
 
 type DifficultyFilter = 'all' | 'easy' | 'normal' | 'hard';
+type SortOption = 'default' | 'highScore' | 'playCount';
 
 const DIFFICULTY_FILTER_OPTIONS: { value: DifficultyFilter; label: string }[] = [
   { value: 'all', label: '全て' },
@@ -31,10 +32,11 @@ export default function ChallengePage() {
   const router = useRouter();
   const { addToast } = useToast();
 
-  const [scenarios, setScenarios] = useState<ScenarioListItem[]>([]);
+  const [scenarios, setScenarios] = useState<(ScenarioListItem & { highScore?: number | null; playCount?: number | null })[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState<string | null>(null);
   const [difficultyFilter, setDifficultyFilter] = useState<DifficultyFilter>('all');
+  const [sortOption, setSortOption] = useState<SortOption>('default');
   const [existingSession, setExistingSession] = useState<{
     id: string;
     scenarioId: string;
@@ -44,11 +46,17 @@ export default function ChallengePage() {
 
   // フィルタリングされたシナリオ一覧
   const filteredScenarios = useMemo(() => {
-    if (difficultyFilter === 'all') {
-      return scenarios;
+    let result = scenarios;
+    if (difficultyFilter !== 'all') {
+      result = result.filter((scenario) => scenario.difficulty === difficultyFilter);
     }
-    return scenarios.filter((scenario) => scenario.difficulty === difficultyFilter);
-  }, [scenarios, difficultyFilter]);
+    if (sortOption === 'highScore') {
+      result = [...result].sort((a, b) => (b.highScore ?? 0) - (a.highScore ?? 0));
+    } else if (sortOption === 'playCount') {
+      result = [...result].sort((a, b) => (b.playCount ?? 0) - (a.playCount ?? 0));
+    }
+    return result;
+  }, [scenarios, difficultyFilter, sortOption]);
 
   // シナリオ一覧と進行中セッションを取得
   useEffect(() => {
@@ -59,8 +67,8 @@ export default function ChallengePage() {
           throw new Error('認証トークンの取得に失敗しました');
         }
 
-        // シナリオ一覧、セッション一覧、コイン情報を並列取得
-        const [scenariosRes, sessionsRes, coinsRes] = await Promise.all([
+        // シナリオ一覧、セッション一覧、コイン情報、ハイスコアを並列取得
+        const [scenariosRes, sessionsRes, coinsRes, highScoresRes] = await Promise.all([
           fetch('/api/challenge/scenarios', {
             headers: { Authorization: `Bearer ${token}` },
           }),
@@ -70,14 +78,29 @@ export default function ChallengePage() {
           fetch('/api/coins', {
             headers: { Authorization: `Bearer ${token}` },
           }),
+          fetch('/api/challenge/high-scores', {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
         ]);
 
         const scenariosData = await scenariosRes.json();
         const sessionsData = await sessionsRes.json();
         const coinsData = await coinsRes.json();
+        const highScoresData = await highScoresRes.json();
 
         if (scenariosData.success) {
-          setScenarios(scenariosData.data);
+          const highScoreMap = new Map<string, { highScore: number; playCount: number }>();
+          if (highScoresData.success) {
+            for (const hs of highScoresData.data) {
+              highScoreMap.set(hs.scenarioId, { highScore: hs.highScore, playCount: hs.playCount });
+            }
+          }
+          const merged = scenariosData.data.map((s: ScenarioListItem) => ({
+            ...s,
+            highScore: highScoreMap.get(s.id)?.highScore ?? null,
+            playCount: highScoreMap.get(s.id)?.playCount ?? null,
+          }));
+          setScenarios(merged);
         }
 
         if (sessionsData.success && sessionsData.data.sessions.length > 0) {
@@ -235,6 +258,29 @@ export default function ChallengePage() {
               difficultyFilter === option.value
                 ? 'bg-blue-500 text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+            )}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+
+      {/* ソート */}
+      <div className="mb-6 flex justify-center gap-2">
+        {[
+          { value: 'default' as SortOption, label: '標準' },
+          { value: 'highScore' as SortOption, label: 'ハイスコア順' },
+          { value: 'playCount' as SortOption, label: 'プレイ回数順' },
+        ].map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            onClick={() => setSortOption(option.value)}
+            className={cn(
+              'rounded-full px-3 py-1.5 text-xs font-medium transition-colors',
+              sortOption === option.value
+                ? 'bg-purple-500 text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
             )}
           >
             {option.label}

@@ -2,10 +2,11 @@
 
 import { useState, useCallback, useMemo } from 'react';
 import Image from 'next/image';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Button, LoadingSpinner } from '@/components/ui';
 import { RarityBadge } from '@/components/card';
+import { CardDetailModal } from './card-detail-modal';
 import type { Card } from '@prisma/client';
 import type { Rarity } from '@/types/database';
 
@@ -35,6 +36,8 @@ export function DeckBuilder({
   const [selectedCardIds, setSelectedCardIds] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
   const [rarityFilter, setRarityFilter] = useState<Rarity | 'all'>('all');
+  const [detailCard, setDetailCard] = useState<Card | null>(null);
+  const shouldReduceMotion = useReducedMotion();
 
   // フィルタリングされたカード一覧
   const filteredCards = useMemo(() => {
@@ -115,7 +118,7 @@ export function DeckBuilder({
                 key={index}
                 layout
                 className={cn(
-                  'relative h-20 w-14 overflow-hidden rounded-lg border-2',
+                  'relative h-24 w-16 overflow-hidden rounded-lg border-2',
                   card
                     ? 'border-blue-500 dark:border-blue-400'
                     : 'border-dashed border-gray-300 dark:border-gray-600'
@@ -131,6 +134,7 @@ export function DeckBuilder({
                     />
                     <button
                       onClick={() => toggleCard(card.id)}
+                      aria-label="カードを外す"
                       className="absolute right-0 top-0 rounded-bl-lg bg-red-500 p-1 text-white hover:bg-red-600"
                     >
                       <svg
@@ -150,7 +154,9 @@ export function DeckBuilder({
                   </>
                 ) : (
                   <div className="flex h-full items-center justify-center text-gray-400">
-                    <span className="text-lg">?</span>
+                    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
                   </div>
                 )}
               </motion.div>
@@ -223,7 +229,7 @@ export function DeckBuilder({
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
+        <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6" role="group" aria-label="カード一覧">
           {filteredCards.map((card) => {
             const isSelected = selectedCardIds.has(card.id);
             const canSelect = isSelected || selectedCardIds.size < deckSize;
@@ -231,12 +237,12 @@ export function DeckBuilder({
             return (
               <motion.button
                 key={card.id}
-                whileHover={{ scale: canSelect ? 1.05 : 1 }}
-                whileTap={{ scale: canSelect ? 0.95 : 1 }}
+                whileHover={shouldReduceMotion ? undefined : { scale: canSelect ? 1.05 : 1 }}
+                whileTap={shouldReduceMotion ? undefined : { scale: canSelect ? 0.95 : 1 }}
                 onClick={() => canSelect && toggleCard(card.id)}
                 disabled={!canSelect}
                 className={cn(
-                  'relative overflow-hidden rounded-lg transition-all',
+                  'relative overflow-hidden rounded-lg transition-all focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none',
                   isSelected
                     ? 'ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-gray-900'
                     : canSelect
@@ -252,6 +258,20 @@ export function DeckBuilder({
                     className="object-cover"
                     sizes="120px"
                   />
+
+                  {/* 詳細ボタン */}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDetailCard(card);
+                    }}
+                    className="absolute right-1 top-1 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-black/50 text-xs text-white hover:bg-black/70"
+                    aria-label={`${card.keyword}の詳細を見る`}
+                  >
+                    i
+                  </button>
+
                   {/* 選択インジケーター */}
                   <AnimatePresence>
                     {isSelected && (
@@ -259,7 +279,7 @@ export function DeckBuilder({
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
                         exit={{ scale: 0 }}
-                        className="absolute right-1 top-1 rounded-full bg-blue-500 p-1"
+                        className="absolute left-1 top-1 rounded-full bg-blue-500 p-1"
                       >
                         <svg
                           className="h-3 w-3 text-white"
@@ -307,6 +327,21 @@ export function DeckBuilder({
           {isComplete ? 'チャレンジ開始' : `残り${deckSize - selectedCardIds.size}枚選択`}
         </Button>
       </div>
+
+      {/* カード詳細モーダル */}
+      <CardDetailModal
+        card={detailCard ? {
+          id: detailCard.id,
+          keyword: detailCard.keyword,
+          rarity: detailCard.rarity,
+          thumbnailUrl: detailCard.thumbnailUrl,
+          cardImageUrl: detailCard.cardImageUrl,
+          flavorText: detailCard.flavorText,
+          contextDescription: detailCard.contextDescription,
+        } : null}
+        isOpen={!!detailCard}
+        onClose={() => setDetailCard(null)}
+      />
     </div>
   );
 }

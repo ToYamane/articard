@@ -1,6 +1,6 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui';
 import { getScoreRank } from '@/lib/challenge';
@@ -44,20 +44,21 @@ export function ChallengeComplete({
 }: ChallengeCompleteProps) {
   const { rank, emoji, color } = getScoreRank(totalScore);
   const newAchievements = achievementRewards?.filter((a) => a.isNew) || [];
+  const shouldReduceMotion = useReducedMotion();
 
   return (
     <motion.div
-      initial={{ opacity: 0 }}
+      initial={shouldReduceMotion ? false : { opacity: 0 }}
       animate={{ opacity: 1 }}
       className={cn('space-y-8 py-8 text-center', className)}
     >
       {/* 完了表示 */}
       <motion.div
-        initial={{ scale: 0 }}
+        initial={shouldReduceMotion ? false : { scale: 0 }}
         animate={{ scale: 1 }}
-        transition={{ type: 'spring', stiffness: 200 }}
+        transition={shouldReduceMotion ? { duration: 0 } : { type: 'spring', stiffness: 200 }}
       >
-        <div className="mb-4 text-6xl">{emoji}</div>
+        <div className="mb-4 text-6xl" aria-hidden="true">{emoji}</div>
         <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
           チャレンジ完了!
         </h1>
@@ -66,9 +67,9 @@ export function ChallengeComplete({
 
       {/* スコアとランク */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={shouldReduceMotion ? false : { opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
+        transition={shouldReduceMotion ? { duration: 0 } : { delay: 0.3 }}
         className="space-y-2"
       >
         <div className={cn('text-6xl font-bold', color)}>{totalScore}</div>
@@ -95,12 +96,12 @@ export function ChallengeComplete({
       {/* 達成報酬 */}
       {newAchievements.length > 0 && (
         <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
+          initial={shouldReduceMotion ? false : { opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.4, type: 'spring' }}
+          transition={shouldReduceMotion ? { duration: 0 } : { delay: 0.4, type: 'spring' }}
           className="mx-auto max-w-md rounded-xl border-2 border-yellow-400 bg-gradient-to-br from-yellow-50 to-amber-50 p-6 dark:border-yellow-600 dark:from-yellow-900/30 dark:to-amber-900/30"
         >
-          <div className="mb-3 text-3xl">🎉</div>
+          <div className="mb-3 text-3xl" aria-hidden="true">🎉</div>
           <h3 className="mb-4 font-bold text-yellow-800 dark:text-yellow-300">
             達成報酬獲得!
           </h3>
@@ -108,7 +109,7 @@ export function ChallengeComplete({
             {newAchievements.map((achievement) => (
               <motion.div
                 key={achievement.rank}
-                initial={{ opacity: 0, x: -20 }}
+                initial={shouldReduceMotion ? false : { opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 className="flex items-center justify-between rounded-lg bg-white/50 px-4 py-2 dark:bg-black/20"
               >
@@ -133,9 +134,9 @@ export function ChallengeComplete({
 
       {/* フェーズ別結果 */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={shouldReduceMotion ? false : { opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: newAchievements.length > 0 ? 0.7 : 0.5 }}
+        transition={shouldReduceMotion ? { duration: 0 } : { delay: newAchievements.length > 0 ? 0.7 : 0.5 }}
         className="mx-auto max-w-md rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800"
       >
         <h3 className="mb-4 font-semibold text-gray-900 dark:text-gray-100">
@@ -145,9 +146,9 @@ export function ChallengeComplete({
           {phaseResults.map((result, index) => (
             <motion.div
               key={result.phaseNumber}
-              initial={{ opacity: 0, x: -20 }}
+              initial={shouldReduceMotion ? false : { opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.6 + index * 0.1 }}
+              transition={shouldReduceMotion ? { duration: 0 } : { delay: 0.6 + index * 0.1 }}
               className="flex items-center justify-between"
             >
               <span className="text-sm text-gray-600 dark:text-gray-400">
@@ -183,12 +184,12 @@ export function ChallengeComplete({
       {/* AIサマリー */}
       {summary && (
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={shouldReduceMotion ? false : { opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.8 }}
+          transition={shouldReduceMotion ? { duration: 0 } : { delay: 0.8 }}
           className="mx-auto max-w-md rounded-xl border border-purple-200 bg-gradient-to-br from-purple-50 to-indigo-50 p-6 dark:border-purple-800 dark:from-purple-900/20 dark:to-indigo-900/20"
         >
-          <div className="mb-3 text-2xl">🎙️</div>
+          <div className="mb-3 text-2xl" aria-hidden="true">🎙️</div>
           <p className="whitespace-pre-line text-gray-700 dark:text-gray-300">
             {summary}
           </p>
@@ -199,7 +200,7 @@ export function ChallengeComplete({
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 1 }}
+        transition={{ delay: 0.3 }}
         className="flex flex-col items-center gap-3 pt-4"
       >
         <Button type="button" onClick={onPlayAgain} size="lg" disabled={isStarting} isLoading={isStarting}>

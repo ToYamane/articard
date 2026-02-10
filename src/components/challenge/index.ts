@@ -5,3 +5,4 @@ export { ChallengeCard } from './challenge-card';
 export { CardSelector } from './card-selector';
 export { ResultDisplay } from './result-display';
 export { ChallengeComplete } from './challenge-complete';
+export { CardDetailModal } from './card-detail-modal';

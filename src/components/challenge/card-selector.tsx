@@ -2,10 +2,11 @@
 
 import { useState, useCallback } from 'react';
 import Image from 'next/image';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui';
 import { RarityBadge } from '@/components/card';
+import { CardDetailModal } from './card-detail-modal';
 import type { Rarity } from '@/types/database';
 
 interface CardData {
@@ -34,7 +35,8 @@ export function CardSelector({
   className,
 }: CardSelectorProps) {
   const [selectedCardIds, setSelectedCardIds] = useState<string[]>([]);
-  const [hoveredCardId, setHoveredCardId] = useState<string | null>(null);
+  const [detailCard, setDetailCard] = useState<CardData | null>(null);
+  const shouldReduceMotion = useReducedMotion();
 
   const toggleCard = useCallback(
     (cardId: string) => {
@@ -57,9 +59,6 @@ export function CardSelector({
   }, [selectedCardIds, requiredCount, onSubmit]);
 
   const isComplete = selectedCardIds.length === requiredCount;
-  const hoveredCard = hoveredCardId
-    ? availableCards.find((c) => c.id === hoveredCardId)
-    : null;
 
   return (
     <div className={cn('flex flex-col', className)}>
@@ -88,7 +87,7 @@ export function CardSelector({
 
       {/* カード一覧 - スクロール可能 */}
       <div className="min-h-0 flex-1 overflow-y-auto pb-2">
-        <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5">
+        <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5" role="group" aria-label="カード選択">
         {availableCards.map((card) => {
           const isSelected = selectedCardIds.includes(card.id);
           const canSelect = isSelected || selectedCardIds.length < requiredCount;
@@ -97,14 +96,12 @@ export function CardSelector({
           return (
             <motion.button
               key={card.id}
-              whileHover={{ scale: canSelect ? 1.05 : 1 }}
-              whileTap={{ scale: canSelect ? 0.95 : 1 }}
+              whileHover={shouldReduceMotion ? undefined : { scale: canSelect ? 1.05 : 1 }}
+              whileTap={shouldReduceMotion ? undefined : { scale: canSelect ? 0.95 : 1 }}
               onClick={() => canSelect && toggleCard(card.id)}
-              onMouseEnter={() => setHoveredCardId(card.id)}
-              onMouseLeave={() => setHoveredCardId(null)}
               disabled={!canSelect}
               className={cn(
-                'relative overflow-hidden rounded-lg transition-all',
+                'relative overflow-hidden rounded-lg transition-all focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none',
                 isSelected
                   ? 'ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-gray-900'
                   : canSelect
@@ -120,6 +117,19 @@ export function CardSelector({
                   className="object-cover"
                   sizes="120px"
                 />
+
+                {/* 詳細ボタン */}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setDetailCard(card);
+                  }}
+                  className="absolute right-1 top-1 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-black/50 text-xs text-white hover:bg-black/70"
+                  aria-label={`${card.keyword}の詳細を見る`}
+                >
+                  i
+                </button>
 
                 {/* 選択番号 */}
                 <AnimatePresence>
@@ -164,6 +174,9 @@ export function CardSelector({
           {isComplete ? 'このカードで挑戦!' : `残り${requiredCount - selectedCardIds.length}枚`}
         </Button>
       </div>
+
+      {/* カード詳細モーダル */}
+      <CardDetailModal card={detailCard} isOpen={!!detailCard} onClose={() => setDetailCard(null)} />
     </div>
   );
 }
