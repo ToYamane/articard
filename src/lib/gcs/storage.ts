@@ -5,7 +5,7 @@ import { tmpdir } from 'os';
 import { StorageError } from '@/lib/errors';
 
 // 環境に応じてストレージ方式を切り替え
-const USE_GCS = process.env.GCS_BUCKET_NAME && process.env.GOOGLE_APPLICATION_CREDENTIALS;
+const USE_GCS = !!(process.env.GCS_BUCKET_NAME && (process.env.GOOGLE_APPLICATION_CREDENTIALS || process.env.K_SERVICE));
 
 // ローカルストレージのベースパス
 const LOCAL_STORAGE_PATH = join(process.cwd(), 'public', 'uploads');
