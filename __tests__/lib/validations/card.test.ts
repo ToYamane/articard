@@ -84,8 +84,8 @@ describe('getCardsQuerySchema', () => {
       expect(result.success).toBe(false);
     });
 
-    it('limitの範囲外（51）を拒否する', () => {
-      const result = getCardsQuerySchema.safeParse({ limit: '51' });
+    it('limitの範囲外（201）を拒否する', () => {
+      const result = getCardsQuerySchema.safeParse({ limit: '201' });
       expect(result.success).toBe(false);
     });
 
@@ -94,8 +94,8 @@ describe('getCardsQuerySchema', () => {
       expect(result.success).toBe(true);
     });
 
-    it('limitの最大値（50）を許可する', () => {
-      const result = getCardsQuerySchema.safeParse({ limit: '50' });
+    it('limitの最大値（200）を許可する', () => {
+      const result = getCardsQuerySchema.safeParse({ limit: '200' });
       expect(result.success).toBe(true);
     });
   });
