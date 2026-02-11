@@ -21,6 +21,12 @@ interface SubmitResult {
   };
   sessionTotalScore: number;
   isComplete: boolean;
+  phases?: Array<{
+    phaseNumber: number;
+    fitScore: number;
+    bonusScore: number;
+    totalScore: number;
+  }>;
   summary?: string;
 }
 

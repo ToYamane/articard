@@ -67,8 +67,8 @@ export default function ChallengePage() {
           throw new Error('認証トークンの取得に失敗しました');
         }
 
-        // シナリオ一覧、セッション一覧、コイン情報、ハイスコアを並列取得
-        const [scenariosRes, sessionsRes, coinsRes, highScoresRes] = await Promise.all([
+        // シナリオ一覧、セッション一覧、コイン情報を並列取得
+        const [scenariosRes, sessionsRes, coinsRes] = await Promise.all([
           fetch('/api/challenge/scenarios', {
             headers: { Authorization: `Bearer ${token}` },
           }),
@@ -78,29 +78,14 @@ export default function ChallengePage() {
           fetch('/api/coins', {
             headers: { Authorization: `Bearer ${token}` },
           }),
-          fetch('/api/challenge/high-scores', {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
         ]);
 
         const scenariosData = await scenariosRes.json();
         const sessionsData = await sessionsRes.json();
         const coinsData = await coinsRes.json();
-        const highScoresData = await highScoresRes.json();
 
         if (scenariosData.success) {
-          const highScoreMap = new Map<string, { highScore: number; playCount: number }>();
-          if (highScoresData.success) {
-            for (const hs of highScoresData.data) {
-              highScoreMap.set(hs.scenarioId, { highScore: hs.highScore, playCount: hs.playCount });
-            }
-          }
-          const merged = scenariosData.data.map((s: ScenarioListItem) => ({
-            ...s,
-            highScore: highScoreMap.get(s.id)?.highScore ?? null,
-            playCount: highScoreMap.get(s.id)?.playCount ?? null,
-          }));
-          setScenarios(merged);
+          setScenarios(scenariosData.data);
         }
 
         if (sessionsData.success && sessionsData.data.sessions.length > 0) {
@@ -229,18 +214,26 @@ export default function ChallengePage() {
             <span className="text-sm text-gray-600 dark:text-gray-400">
               本日の無料回数:
             </span>
-            <span className={cn(
-              'font-medium',
-              challengeInfo.remainingFree > 0
-                ? 'text-green-600 dark:text-green-400'
-                : 'text-orange-600 dark:text-orange-400'
-            )}>
-              {challengeInfo.remainingFree}/10
-            </span>
-            {!challengeInfo.isFree && (
-              <span className="text-xs text-gray-500 dark:text-gray-500">
-                (次回 {challengeInfo.nextCost}コイン)
+            {challengeInfo.remainingFree === -1 ? (
+              <span className="font-medium text-green-600 dark:text-green-400">
+                無制限
               </span>
+            ) : (
+              <>
+                <span className={cn(
+                  'font-medium',
+                  challengeInfo.remainingFree > 0
+                    ? 'text-green-600 dark:text-green-400'
+                    : 'text-orange-600 dark:text-orange-400'
+                )}>
+                  {challengeInfo.remainingFree}/{challengeInfo.remainingFree + challengeInfo.count}
+                </span>
+                {!challengeInfo.isFree && (
+                  <span className="text-xs text-gray-500 dark:text-gray-500">
+                    (次回 {challengeInfo.nextCost}コイン)
+                  </span>
+                )}
+              </>
             )}
           </div>
         )}

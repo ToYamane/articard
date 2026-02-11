@@ -47,6 +47,12 @@ interface SubmitResult {
   };
   sessionTotalScore: number;
   isComplete: boolean;
+  phases?: Array<{
+    phaseNumber: number;
+    fitScore: number;
+    bonusScore: number;
+    totalScore: number;
+  }>;
   summary?: string;
   achievementRewards?: Array<{ rank: string; coins: number; isNew: boolean }>;
   totalCoinsAwarded?: number;
@@ -182,6 +188,12 @@ export default function ChallengeGamePage() {
         }
       } catch (err) {
         console.error('Init error:', err);
+        // セッションが見つからない場合（削除済み非ハイスコアセッション等）
+        // → シナリオ一覧にリダイレクト
+        if (err instanceof Error && err.message.includes('セッションが見つかりません')) {
+          router.push('/challenge');
+          return;
+        }
         setError(err instanceof Error ? err.message : 'エラーが発生しました');
         setGameState('error');
       }
@@ -257,7 +269,20 @@ export default function ChallengeGamePage() {
         }
 
         setLastResult(data.data);
-        await fetchSession(); // セッション情報を更新
+
+        if (data.data.isComplete) {
+          // 完了時: セッションが削除される可能性があるためfetchしない
+          // submit レスポンスのデータでsession stateを更新
+          setSession((prev) => prev ? {
+            ...prev,
+            status: 'completed' as const,
+            totalScore: data.data.sessionTotalScore,
+            phases: data.data.phases ?? prev.phases,
+            completedAt: new Date(),
+          } : prev);
+        } else {
+          await fetchSession();
+        }
 
         // 常に結果画面を表示（5フェーズ目も個別結果を見せてから最終結果へ）
         setGameState('result');

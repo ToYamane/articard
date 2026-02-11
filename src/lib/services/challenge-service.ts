@@ -273,11 +273,13 @@ async function processSessionCompletion(
     phaseResults
   );
 
-  // セッション完了状態を更新
-  await prisma.challengeSession.update({
-    where: { id: sessionId },
-    data: { status: 'completed' },
-  });
+  // 非ハイスコア → セッション削除（データ肥大化防止）
+  // ハイスコア → submitPhaseCardsで既にstatus:'completed'に更新済みのため不要
+  if (!isHighScore) {
+    await prisma.challengeSession.delete({
+      where: { id: sessionId },
+    });
+  }
 
   return {
     summary,
@@ -717,6 +719,13 @@ export async function submitPhaseCards(
     },
     sessionTotalScore: newTotalScore,
     isComplete,
+    // 完了時のみ全フェーズ結果を含める（フロントエンドがfetchSession不要になる）
+    phases: isComplete ? updatedGameState.phases.map((p) => ({
+      phaseNumber: p.phaseNumber,
+      fitScore: p.fitScore,
+      bonusScore: p.bonusScore,
+      totalScore: p.totalScore,
+    })) : undefined,
     isHighScore: completionRewards?.isHighScore ?? false,
     summary: completionRewards?.summary,
     achievementRewards: completionRewards?.achievementRewards,
