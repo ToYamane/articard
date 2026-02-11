@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { stripe } from '@/lib/stripe';
 import { handleApiError } from '@/lib/errors';
 import {
   activateSubscription,
@@ -72,6 +73,20 @@ export async function DELETE(
         { success: false, error: { code: 'UNAUTHORIZED', message: '認証が必要です' } },
         { status: 401 }
       );
+    }
+
+    // Stripe サブスクリプションがあればキャンセル
+    const user = await prisma.user.findUnique({
+      where: { id: authUser.uid },
+      select: { stripeSubscriptionId: true },
+    });
+
+    if (user?.stripeSubscriptionId) {
+      await stripe.subscriptions.cancel(user.stripeSubscriptionId);
+      await prisma.user.update({
+        where: { id: authUser.uid },
+        data: { stripeSubscriptionId: null },
+      });
     }
 
     await cancelSubscription(authUser.uid);

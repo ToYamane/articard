@@ -139,7 +139,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
       await activateSubscription(user.id, tier);
       console.log(`Subscription updated for user ${user.id}: ${tier}`);
     }
-  } else if (subscription.status === 'canceled' || subscription.status === 'unpaid') {
+  } else if (['canceled', 'unpaid', 'past_due'].includes(subscription.status)) {
     // サブスクが無効になった場合
     await cancelSubscription(user.id);
     console.log(`Subscription canceled for user ${user.id}`);
@@ -186,6 +186,8 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
     return;
   }
 
-  // TODO: ユーザーに通知を送る（メール等）
-  console.log(`Payment failed for user ${user.id}`);
+  console.warn(
+    `Payment failed for user ${user.id} (tier: ${user.subscriptionTier}). ` +
+    `Invoice: ${invoice.id}, Amount: ${invoice.amount_due}`
+  );
 }
