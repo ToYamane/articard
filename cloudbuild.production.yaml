@@ -124,7 +124,7 @@ steps:
 # Substitutions
 substitutions:
   _REGION: 'asia-northeast1'
-  _APP_URL: 'https://articard.example.com'
+  _APP_URL: 'https://articard.app'
   _CLOUD_SQL_INSTANCE: 'articard-ff673:asia-northeast1:articard-db'
   _GCS_BUCKET: 'articard-ff673.appspot.com'
 
