@@ -15,7 +15,7 @@ RUN npm ci
 
 # Stage 2: Builder
 FROM node:20-alpine AS builder
-RUN apk add --no-cache libc6-compat
+RUN apk add --no-cache libc6-compat openssl
 
 WORKDIR /app
 
@@ -40,11 +40,19 @@ RUN npx prisma generate
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
+# Dummy env vars for next build page data collection (overridden at runtime by Cloud Run secrets)
+ENV STRIPE_SECRET_KEY=build-placeholder
+ENV DATABASE_URL=postgresql://placeholder:placeholder@localhost:5432/placeholder
+
 RUN npm run build
+
+# Clear dummy env vars
+ENV STRIPE_SECRET_KEY=""
+ENV DATABASE_URL=""
 
 # Stage 3: Runner
 FROM node:20-alpine AS runner
-RUN apk add --no-cache libc6-compat
+RUN apk add --no-cache libc6-compat openssl
 
 WORKDIR /app
 
