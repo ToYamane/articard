@@ -13,6 +13,16 @@ import {
   ERROR_CODES,
 } from '@/__tests__/helpers';
 
+// Stripeモック（モジュールレベルのenv checkを回避）
+const mockStripeSubscriptionsCancel = jest.fn();
+jest.mock('@/lib/stripe', () => ({
+  stripe: {
+    subscriptions: {
+      cancel: (...args: unknown[]) => mockStripeSubscriptionsCancel(...args),
+    },
+  },
+}));
+
 // 認証モック
 const mockVerifyAuth = jest.fn();
 jest.mock('@/lib/auth', () => ({

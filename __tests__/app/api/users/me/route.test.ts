@@ -121,7 +121,7 @@ describe('/api/users/me', () => {
         const req = createAuthenticatedRequest('/api/users/me');
         const response = await GET(req);
 
-        await expectErrorResponse(response, 404, ERROR_CODES.USER_NOT_FOUND);
+        await expectErrorResponse(response, 404, ERROR_CODES.NOT_FOUND);
       });
     });
   });
@@ -281,7 +281,7 @@ describe('/api/users/me', () => {
         });
         const response = await DELETE(req);
 
-        await expectErrorResponse(response, 404, ERROR_CODES.USER_NOT_FOUND);
+        await expectErrorResponse(response, 404, ERROR_CODES.NOT_FOUND);
       });
     });
 
