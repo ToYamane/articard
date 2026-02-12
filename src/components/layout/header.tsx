@@ -137,14 +137,14 @@ export function Header() {
           className="flex items-center gap-1.5 transition-opacity hover:opacity-80"
         >
           <Image
-            src="/logo/icon.png"
+            src="/logo/icon.webp"
             alt="ArtiCard"
             width={32}
             height={32}
             className="h-8 w-8"
           />
           <Image
-            src="/logo/text.png"
+            src="/logo/text.webp"
             alt="ArtiCard"
             width={120}
             height={32}

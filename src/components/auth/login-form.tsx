@@ -81,7 +81,7 @@ export function LoginForm() {
     <div className="w-full max-w-md space-y-6">
       <div className="flex flex-col items-center gap-3">
         <Image
-          src="/logo/icon.png"
+          src="/logo/icon.webp"
           alt="ArtiCard"
           width={80}
           height={80}

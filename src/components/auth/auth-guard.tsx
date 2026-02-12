@@ -12,7 +12,7 @@ interface AuthGuardProps {
 }
 
 // Public routes that don't require authentication
-const publicRoutes = ['/', '/login', '/register', '/share'];
+const publicRoutes = ['/', '/login', '/register', '/share', '/terms', '/privacy', '/commerce', '/contact'];
 
 // Routes that require authentication but NOT setup
 const authOnlyRoutes = ['/setup'];
@@ -37,7 +37,7 @@ export function AuthGuard({ children, requireAuth = true, requireSetup = true }:
     }
 
     // If user is authenticated but on a public route (login/register)
-    if (isAuthenticated && (pathname === '/login' || pathname === '/register')) {
+    if (isAuthenticated && (pathname === '/login' || pathname === '/register' || pathname === '/')) {
       if (isRegistered) {
         router.push('/home');
       } else {

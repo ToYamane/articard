@@ -9,14 +9,14 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
         <div className="mx-auto flex h-14 max-w-4xl items-center justify-between px-4">
           <a href="/home" className="flex items-center gap-1.5 transition-opacity hover:opacity-80">
             <Image
-              src="/logo/icon.png"
+              src="/logo/icon.webp"
               alt="ArtiCard"
               width={32}
               height={32}
               className="h-8 w-8"
             />
             <Image
-              src="/logo/text.png"
+              src="/logo/text.webp"
               alt="ArtiCard"
               width={120}
               height={32}
@@ -35,6 +35,12 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
           <p className="text-sm text-gray-600 dark:text-gray-400">
             Articard - 学習記事からAI生成カードを作成するサービス
           </p>
+          <div className="mt-4 flex flex-wrap justify-center gap-x-6 gap-y-2">
+            <a href="/terms" className="text-sm text-gray-500 underline-offset-4 hover:text-gray-700 hover:underline dark:text-gray-400 dark:hover:text-gray-200">利用規約</a>
+            <a href="/privacy" className="text-sm text-gray-500 underline-offset-4 hover:text-gray-700 hover:underline dark:text-gray-400 dark:hover:text-gray-200">プライバシーポリシー</a>
+            <a href="/commerce" className="text-sm text-gray-500 underline-offset-4 hover:text-gray-700 hover:underline dark:text-gray-400 dark:hover:text-gray-200">特定商取引法に基づく表記</a>
+            <a href="/contact" className="text-sm text-gray-500 underline-offset-4 hover:text-gray-700 hover:underline dark:text-gray-400 dark:hover:text-gray-200">お問い合わせ</a>
+          </div>
           <p className="mt-2 text-xs text-gray-500 dark:text-gray-500">
             &copy; {new Date().getFullYear()} Articard. All rights reserved.
           </p>
