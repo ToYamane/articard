@@ -8,6 +8,29 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '@/stores/auth-store';
 import { cn } from '@/lib/utils';
 
+/**
+ * 次のJST 0:00までの残り時間を計算
+ */
+function getTimeUntilReset(): string {
+  const now = new Date();
+  const jstOffset = 9 * 60 * 60 * 1000;
+  const jstNow = new Date(now.getTime() + jstOffset);
+
+  // JSTでの翌日0:00
+  const jstTomorrow = new Date(
+    Date.UTC(jstNow.getUTCFullYear(), jstNow.getUTCMonth(), jstNow.getUTCDate() + 1)
+  );
+  // UTCに戻す
+  const nextResetUTC = new Date(jstTomorrow.getTime() - jstOffset);
+
+  const diffMs = nextResetUTC.getTime() - now.getTime();
+  if (diffMs <= 0) return '間もなく';
+
+  const hours = Math.floor(diffMs / (1000 * 60 * 60));
+  const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+  return `${hours}時間${minutes}分`;
+}
+
 interface CoinData {
   freeCoins: number;
   permanentCoins: number;
@@ -74,6 +97,7 @@ export function Header() {
   const { profile } = useAuthStore();
   const [coinData, setCoinData] = useState<CoinData | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [timeUntilReset, setTimeUntilReset] = useState(() => getTimeUntilReset());
 
   // パスがアクティブかどうかを判定
   const isActive = (href: string) => {
@@ -116,6 +140,14 @@ export function Header() {
     return () => clearInterval(interval);
   }, [profile]);
 
+  // リセットまでのカウントダウン更新（1分ごと）
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTimeUntilReset(getTimeUntilReset());
+    }, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
   // モバイルメニューが開いている時はスクロールを無効化
   useEffect(() => {
     if (isMobileMenuOpen) {
@@ -156,11 +188,10 @@ export function Header() {
         <div className="flex items-center gap-3">
           {/* コイン残高表示 */}
           {profile && (
-            <div className="flex items-center gap-2">
+            <div className="group relative flex items-center gap-2">
               {/* 無料コイン */}
               <div
                 className="flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-1 transition-colors hover:bg-green-100 dark:bg-green-900/20 dark:hover:bg-green-900/30"
-                title="本日の無料コイン（毎日リセット）"
               >
                 <svg
                   className="h-3.5 w-3.5 text-green-500"
@@ -176,7 +207,6 @@ export function Header() {
               {/* 永続コイン */}
               <div
                 className="flex items-center gap-1 rounded-full bg-yellow-50 px-2.5 py-1 transition-colors hover:bg-yellow-100 dark:bg-yellow-900/20 dark:hover:bg-yellow-900/30"
-                title="永続コイン（報酬・購入）"
               >
                 <svg
                   className="h-3.5 w-3.5 text-yellow-500"
@@ -188,6 +218,53 @@ export function Header() {
                 <span className="text-xs font-medium text-yellow-700 dark:text-yellow-400">
                   {coinData?.permanentCoins ?? '-'}
                 </span>
+              </div>
+
+              {/* ホバーポップアップ */}
+              <div className="pointer-events-none absolute left-1/2 top-full z-50 mt-2 -translate-x-1/2 opacity-0 transition-opacity duration-200 group-hover:pointer-events-auto group-hover:opacity-100">
+                <div className="w-56 rounded-xl border border-gray-200 bg-white p-3 shadow-lg dark:border-gray-700 dark:bg-gray-800">
+                  {/* 矢印 */}
+                  <div className="absolute -top-1.5 left-1/2 h-3 w-3 -translate-x-1/2 rotate-45 border-l border-t border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800" />
+
+                  <div className="space-y-2.5">
+                    {/* 無料コイン行 */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <svg className="h-3.5 w-3.5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                          <circle cx="10" cy="10" r="8" />
+                        </svg>
+                        <span className="text-xs text-gray-600 dark:text-gray-300">デイリーコイン</span>
+                      </div>
+                      <span className="text-sm font-bold text-green-700 dark:text-green-400">
+                        {coinData?.freeCoins ?? '-'}
+                      </span>
+                    </div>
+
+                    {/* 永続コイン行 */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        <svg className="h-3.5 w-3.5 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
+                          <circle cx="10" cy="10" r="8" />
+                        </svg>
+                        <span className="text-xs text-gray-600 dark:text-gray-300">永続コイン</span>
+                      </div>
+                      <span className="text-sm font-bold text-yellow-700 dark:text-yellow-400">
+                        {coinData?.permanentCoins ?? '-'}
+                      </span>
+                    </div>
+
+                    {/* 区切り線 */}
+                    <div className="border-t border-gray-100 dark:border-gray-700" />
+
+                    {/* リセットまでの時間 */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-500 dark:text-gray-400">デイリーコイン補充</span>
+                      <span className="text-xs font-medium text-purple-600 dark:text-purple-400">
+                        あと {timeUntilReset}
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           )}

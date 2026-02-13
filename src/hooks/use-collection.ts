@@ -12,7 +12,6 @@ interface UseCollectionOptions {
 
 const DEFAULT_FILTER: FilterState = {
   rarity: [],
-  contextCategory: [],
   sortBy: 'createdAt',
   sortOrder: 'desc',
 };
@@ -35,9 +34,6 @@ export function useCollection(options: UseCollectionOptions = {}) {
       if (cursor) params.append('cursor', cursor);
       if (filter.rarity.length > 0) {
         params.append('rarity', filter.rarity.join(','));
-      }
-      if (filter.contextCategory.length > 0) {
-        params.append('contextCategory', filter.contextCategory.join(','));
       }
       if (searchQuery) {
         params.append('keyword', searchQuery);
@@ -108,7 +104,6 @@ export function useCollection(options: UseCollectionOptions = {}) {
   // フィルターがアクティブかどうか
   const hasActiveFilter =
     filter.rarity.length > 0 ||
-    filter.contextCategory.length > 0 ||
     searchQuery.length > 0;
 
   // フィルタークリア

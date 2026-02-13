@@ -67,6 +67,31 @@ body {
   .text-balance {
     text-wrap: balance;
   }
+
+  .animate-gradient-x {
+    background-size: 200% 100%;
+    animation: gradient-x 3s ease infinite;
+  }
+
+  .animate-gold-button {
+    background-size: 200% 100%;
+    animation: gradient-x 3s ease infinite, gold-glow 2s ease-in-out infinite, gold-pulse 2s ease-in-out infinite;
+  }
+}
+
+@keyframes gradient-x {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+@keyframes gold-glow {
+  0%, 100% { box-shadow: 0 4px 20px rgba(234, 179, 8, 0.3); }
+  50% { box-shadow: 0 4px 30px rgba(234, 179, 8, 0.6); }
+}
+
+@keyframes gold-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.04); }
 }
 
 /* シマーアニメーション（スケルトンUI用） */

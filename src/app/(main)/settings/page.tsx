@@ -109,7 +109,7 @@ export default function SettingsPage() {
     try {
       const result = await activateSubscription(tier);
       if (result.bonusCoins > 0) {
-        success(`${tier === 'plus' ? 'プラス' : 'プレミアム'}プランに加入しました！初回ボーナス ${result.bonusCoins} コインを獲得！`);
+        success(`${tier === 'plus' ? 'プラス' : 'プレミアム'}プランに加入しました！加入ボーナス ${result.bonusCoins} コインを獲得！`);
       } else {
         success(`${tier === 'plus' ? 'プラス' : 'プレミアム'}プランに加入しました！`);
       }
@@ -209,7 +209,7 @@ export default function SettingsPage() {
       <SectionContainer variant="default" title="アカウント情報" delay={0.2}>
         <div className="space-y-3 text-sm">
           <div className="flex justify-between">
-            <span className="text-gray-600 dark:text-gray-400">無料コイン（本日）</span>
+            <span className="text-gray-600 dark:text-gray-400">デイリーコイン（本日）</span>
             <span className="font-medium text-green-600 dark:text-green-400">
               {freeCoins.toLocaleString()}
             </span>
@@ -260,7 +260,7 @@ export default function SettingsPage() {
               </thead>
               <tbody className="text-gray-700 dark:text-gray-300">
                 <tr className="border-b border-blue-100 dark:border-blue-900">
-                  <td className="py-2">毎日コイン</td>
+                  <td className="py-2">デイリーコイン</td>
                   <td className="py-2 text-center">90</td>
                   <td className="py-2 text-center font-medium text-blue-600">150</td>
                   <td className="py-2 text-center font-medium text-purple-600">300</td>
@@ -272,7 +272,7 @@ export default function SettingsPage() {
                   <td className="py-2 text-center font-medium text-purple-600">無制限</td>
                 </tr>
                 <tr>
-                  <td className="py-2">初回ボーナス</td>
+                  <td className="py-2">加入ボーナス</td>
                   <td className="py-2 text-center">-</td>
                   <td className="py-2 text-center font-medium text-blue-600">300コイン</td>
                   <td className="py-2 text-center font-medium text-purple-600">900コイン</td>

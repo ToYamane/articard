@@ -14,6 +14,8 @@ export const COIN_COSTS = {
 export const COIN_REWARDS = {
   /** 毎日の無料コイン（無料ユーザー） */
   DAILY_FREE: 90,
+  /** 新規登録ボーナス（永続コイン） */
+  WELCOME_BONUS: 300,
   /** チャレンジBランク達成報酬 */
   CHALLENGE_RANK_B: 30,
   /** チャレンジAランク達成報酬 */
@@ -66,7 +68,7 @@ export const SUBSCRIPTION_PLANS = {
     monthlyPrice: 980,
     dailyFreeCoins: 150,
     freeChallenges: 10,
-    signupBonus: 300,
+    bonus: 300,
   },
   premium: {
     id: 'premium',
@@ -74,7 +76,7 @@ export const SUBSCRIPTION_PLANS = {
     monthlyPrice: 2980,
     dailyFreeCoins: 300,
     freeChallenges: Infinity,
-    signupBonus: 900,
+    bonus: 900,
   },
 } as const;
 
@@ -96,9 +98,9 @@ export const COIN_PACKAGES = {
     coins: 2100,
     price: 2980,
   },
-  premium: {
-    id: 'premium',
-    name: 'プレミアム',
+  mega: {
+    id: 'mega',
+    name: 'メガ',
     coins: 6000,
     price: 6980,
   },

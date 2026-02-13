@@ -158,7 +158,7 @@ describe('/api/coins/purchase', () => {
         expect(data.newBalance).toBe(2100);
       });
 
-      it('premiumパッケージを購入できる', async () => {
+      it('megaパッケージを購入できる', async () => {
         mockUserFindUnique.mockResolvedValue({
           isDeveloper: true,
           knowledgeBalance: 1000,
@@ -168,7 +168,7 @@ describe('/api/coins/purchase', () => {
 
         const req = createAuthenticatedRequest('/api/coins/purchase', {
           method: 'POST',
-          body: { packageId: 'premium' },
+          body: { packageId: 'mega' },
         });
         const response = await POST(req);
         const data = await expectSuccessResponse(response);

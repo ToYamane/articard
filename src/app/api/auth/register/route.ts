@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyIdToken } from '@/lib/firebase/admin';
 import { registerUserSchema } from '@/lib/validations/user';
+import { COIN_REWARDS } from '@/lib/constants/coins';
 import type { ApiResponse } from '@/types/api';
 import type { User } from '@prisma/client';
 
@@ -82,12 +83,27 @@ export async function POST(
       );
     }
 
-    // ユーザー作成 (idにFirebase UIDを使用)
-    const user = await prisma.user.create({
-      data: {
-        id: decodedToken.uid,
-        nickname,
-      },
+    // ユーザー作成 + ウェルカムボーナス付与（トランザクション）
+    const user = await prisma.$transaction(async (tx) => {
+      const newUser = await tx.user.create({
+        data: {
+          id: decodedToken.uid,
+          nickname,
+          knowledgeBalance: COIN_REWARDS.WELCOME_BONUS,
+        },
+      });
+
+      await tx.knowledgeTransaction.create({
+        data: {
+          userId: newUser.id,
+          amount: COIN_REWARDS.WELCOME_BONUS,
+          transactionType: 'bonus',
+          description: '新規登録ボーナス',
+          balanceAfter: COIN_REWARDS.WELCOME_BONUS,
+        },
+      });
+
+      return newUser;
     });
 
     return NextResponse.json({

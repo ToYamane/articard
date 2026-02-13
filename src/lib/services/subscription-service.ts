@@ -50,8 +50,8 @@ export async function activateSubscription(
       throw new Error('ユーザーが見つかりません');
     }
 
-    // ボーナス付与（初回のみ）
-    const bonusCoins = user.subscriptionBonusReceived ? 0 : plan.signupBonus;
+    // ボーナス付与（毎回）
+    const bonusCoins = plan.bonus;
     const newBalance = user.knowledgeBalance + bonusCoins;
 
     // ユーザー情報更新
@@ -75,7 +75,7 @@ export async function activateSubscription(
           userId,
           amount: bonusCoins,
           transactionType: 'bonus',
-          description: `${plan.name}プラン初回特典`,
+          description: `${plan.name}プラン加入特典`,
           balanceAfter: newBalance,
         },
       });

@@ -2,12 +2,11 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui';
-import type { Rarity, ContextCategory } from '@/types/database';
-import { RARITY_DISPLAY_NAMES, CONTEXT_CATEGORY_DISPLAY_NAMES } from '@/types/database';
+import type { Rarity } from '@/types/database';
+import { RARITY_DISPLAY_NAMES } from '@/types/database';
 
 export interface FilterState {
   rarity: Rarity[];
-  contextCategory: ContextCategory[];
   sortBy: 'createdAt' | 'rarity' | 'keyword';
   sortOrder: 'asc' | 'desc';
 }
@@ -20,15 +19,6 @@ interface CollectionFilterProps {
 }
 
 const RARITY_OPTIONS: Rarity[] = ['common', 'rare', 'super_rare', 'legend'];
-const CONTEXT_OPTIONS: ContextCategory[] = [
-  'historical_event',
-  'mythology',
-  'scientific',
-  'cultural',
-  'biographical',
-  'general',
-  'metaphorical',
-];
 
 export function CollectionFilter({
   isOpen,
@@ -49,19 +39,9 @@ export function CollectionFilter({
     }));
   };
 
-  const toggleCategory = (category: ContextCategory) => {
-    setFilter((prev) => ({
-      ...prev,
-      contextCategory: prev.contextCategory.includes(category)
-        ? prev.contextCategory.filter((c) => c !== category)
-        : [...prev.contextCategory, category],
-    }));
-  };
-
   const handleReset = () => {
     setFilter({
       rarity: [],
-      contextCategory: [],
       sortBy: 'createdAt',
       sortOrder: 'desc',
     });
@@ -112,28 +92,6 @@ export function CollectionFilter({
                   }`}
                 >
                   {RARITY_DISPLAY_NAMES[rarity]}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* 文脈カテゴリ */}
-          <div>
-            <h3 className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-              文脈カテゴリ
-            </h3>
-            <div className="flex flex-wrap gap-2">
-              {CONTEXT_OPTIONS.map((category) => (
-                <button
-                  key={category}
-                  onClick={() => toggleCategory(category)}
-                  className={`rounded-full px-3 py-1 text-sm ${
-                    filter.contextCategory.includes(category)
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
-                  }`}
-                >
-                  {CONTEXT_CATEGORY_DISPLAY_NAMES[category]}
                 </button>
               ))}
             </div>

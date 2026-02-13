@@ -59,16 +59,14 @@ export function ThemeSuggestions({ onSelectTheme, disabled }: ThemeSuggestionsPr
 
   return (
     <div className="w-full">
-      <Button
+      <button
         type="button"
-        variant="ghost"
-        size="sm"
         onClick={handleToggle}
         disabled={disabled || isLoading}
-        className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+        className="w-full rounded-xl bg-gradient-to-r from-purple-500 to-fuchsia-500 px-4 py-3 text-sm font-bold text-white shadow-md shadow-purple-500/20 transition hover:from-purple-400 hover:to-fuchsia-400 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 dark:from-purple-600/80 dark:to-fuchsia-600/80"
       >
-        {isExpanded ? '閉じる' : 'おすすめを見る'}
-      </Button>
+        {isExpanded ? '閉じる' : 'おすすめテーマから選ぶ'}
+      </button>
 
       <AnimatePresence>
         {isExpanded && (
@@ -79,7 +77,7 @@ export function ThemeSuggestions({ onSelectTheme, disabled }: ThemeSuggestionsPr
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
-            <div className="mt-3 rounded-lg bg-gray-50 p-4 dark:bg-gray-800/50">
+            <div className="mt-3 rounded-lg bg-gradient-to-br from-purple-100/80 to-blue-100/80 p-4 dark:from-purple-900/20 dark:to-blue-900/20">
               {isLoading ? (
                 <div className="flex items-center justify-center py-4">
                   <LoadingSpinner size="sm" />
@@ -99,7 +97,7 @@ export function ThemeSuggestions({ onSelectTheme, disabled }: ThemeSuggestionsPr
                         type="button"
                         onClick={() => handleSelectTheme(theme.theme)}
                         disabled={disabled}
-                        className="rounded-full bg-white px-3 py-1.5 text-sm text-gray-700 shadow-sm transition-colors hover:bg-blue-50 hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-blue-900/30 dark:hover:text-blue-400"
+                        className="rounded-full border-2 border-purple-200 bg-white px-3 py-1.5 text-sm text-gray-700 shadow-md transition-all hover:scale-105 hover:bg-purple-100 hover:text-purple-700 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 dark:border-purple-700 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-purple-900/40 dark:hover:text-purple-400"
                       >
                         {theme.theme}
                       </button>
@@ -112,6 +110,7 @@ export function ThemeSuggestions({ onSelectTheme, disabled }: ThemeSuggestionsPr
                       size="sm"
                       onClick={handleShuffle}
                       disabled={disabled || isLoading}
+                      className="text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300"
                     >
                       シャッフル
                     </Button>

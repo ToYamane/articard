@@ -112,7 +112,7 @@ describe('subscription-service', () => {
       );
     });
 
-    it('2回目以降はボーナスが付与されない', async () => {
+    it('2回目以降もボーナスが毎回付与される', async () => {
       mockTx.user.findUnique.mockResolvedValue({
         subscriptionBonusReceived: true,
         knowledgeBalance: 100,
@@ -122,18 +122,27 @@ describe('subscription-service', () => {
       const result = await activateSubscription('user-1', 'plus');
 
       expect(result.success).toBe(true);
-      expect(result.bonusCoins).toBe(0);
+      expect(result.bonusCoins).toBe(300); // 毎回付与
 
       expect(mockTx.user.update).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
-            knowledgeBalance: 100, // unchanged
+            knowledgeBalance: 400, // 100 + 300
           }),
         })
       );
 
-      // ボーナストランザクションは作成されない
-      expect(mockTx.knowledgeTransaction.create).not.toHaveBeenCalled();
+      // ボーナストランザクションが作成される
+      expect(mockTx.knowledgeTransaction.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            userId: 'user-1',
+            amount: 300,
+            transactionType: 'bonus',
+            balanceAfter: 400,
+          }),
+        })
+      );
     });
 
     it('既存のdailyFreeCoinsがプランより多い場合は維持される', async () => {
@@ -148,6 +157,7 @@ describe('subscription-service', () => {
       expect(mockTx.user.update).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
+            knowledgeBalance: 400, // 100 + 300（毎回ボーナス付与）
             dailyFreeCoins: 200, // Math.max(200, 150) = 200
           }),
         })
@@ -172,7 +182,6 @@ describe('subscription-service', () => {
 
     it('有効期限が約1ヶ月後に設定される', async () => {
       mockTx.user.findUnique.mockResolvedValue({
-        subscriptionBonusReceived: true,
         knowledgeBalance: 100,
         dailyFreeCoins: 90,
       });

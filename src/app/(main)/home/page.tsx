@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ThemeInput, ArticleLoading, ArticleResult } from '@/components/article';
 import { CardGrid, RaritySelector } from '@/components/card';
@@ -22,6 +24,12 @@ import type { ContentType } from '@/types/article';
 
 type PageState = 'input' | 'loading' | 'result';
 
+interface UserStats {
+  totalCards: number;
+  totalArticles: number;
+  totalKnowledgePoints: number;
+}
+
 export default function HomePage() {
   const router = useRouter();
   const { user, profile } = useAuthStore();
@@ -37,6 +45,9 @@ export default function HomePage() {
     cancelGeneration,
     reset: resetBatch,
   } = useBatchCardGeneration();
+
+  // ユーザー統計
+  const [stats, setStats] = useState<UserStats>({ totalCards: 0, totalArticles: 0, totalKnowledgePoints: 0 });
 
   // 最近のカード
   const [recentCards, setRecentCards] = useState<Card[]>([]);
@@ -66,9 +77,9 @@ export default function HomePage() {
     }
   }, [user, checkEligibility]);
 
-  // 最近のカードを取得
+  // ユーザー統計と最近のカードを取得
   useEffect(() => {
-    async function fetchRecentCards() {
+    async function fetchData() {
       if (!user) return;
 
       try {
@@ -77,23 +88,36 @@ export default function HomePage() {
           throw new Error('認証トークンの取得に失敗しました');
         }
 
-        const cardsResponse = await fetch('/api/cards?limit=6&sortBy=createdAt&sortOrder=desc', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const [cardsResponse, statsResponse] = await Promise.all([
+          fetch('/api/cards?limit=6&sortBy=createdAt&sortOrder=desc', {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          fetch('/api/stats', {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+        ]);
 
         const cardsData = await cardsResponse.json();
-
         if (cardsData.success) {
           setRecentCards(cardsData.data.cards);
         }
+
+        const statsData = await statsResponse.json();
+        if (statsData.success) {
+          setStats({
+            totalCards: statsData.data.totalCards,
+            totalArticles: statsData.data.totalArticles,
+            totalKnowledgePoints: statsData.data.totalKnowledgePoints,
+          });
+        }
       } catch (err) {
-        console.error('Fetch cards error:', err);
+        console.error('Fetch data error:', err);
       } finally {
         setIsLoadingCards(false);
       }
     }
 
-    fetchRecentCards();
+    fetchData();
   }, [user]);
 
   // バッチ生成完了時にリビールモーダルを開く
@@ -151,9 +175,9 @@ export default function HomePage() {
     [user, addToast]
   );
 
-  // 記事生成
+  // 記事生成（withCard 廃止: 常にカード生成を実行）
   const handleSubmit = useCallback(
-    async (theme: string, withCard: boolean, contentType: ContentType, requestedCardCount: number) => {
+    async (theme: string, contentType: ContentType, requestedCardCount: number) => {
       if (!user) {
         addToast('ログインが必要です', 'error');
         return;
@@ -196,15 +220,11 @@ export default function HomePage() {
         // 常に記事を先に表示
         setState('result');
 
-        // カード同時生成が選択された場合
-        if (withCard && requestedCardCount > 0) {
-          if (requestedCardCount === 1) {
-            // 1枚の場合は従来のフロー
-            generateSingleCard(createdArticle.id, selectedRarity);
-          } else {
-            // 複数枚の場合はバッチ生成（並行処理）
-            startGeneration(createdArticle.id, requestedCardCount);
-          }
+        // 常にカード生成を実行
+        if (requestedCardCount === 1) {
+          generateSingleCard(createdArticle.id, selectedRarity);
+        } else {
+          startGeneration(createdArticle.id, requestedCardCount);
         }
       } catch (error) {
         if (error instanceof Error && error.name === 'AbortError') {
@@ -317,27 +337,26 @@ export default function HomePage() {
         transition={{ duration: 0.4 }}
         className="py-6"
       >
-        {/* ウェルカムメッセージ */}
+        {/* ウェルカムヘッダー */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.1, duration: 0.3 }}
-          className="mb-8 text-center"
+          className="mb-6"
         >
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            ようこそ、{user?.displayName || 'ゲスト'}さん
+          <h1 className="text-center text-3xl font-black">
+            <span className="bg-gradient-to-r from-purple-600 via-pink-500 to-blue-600 bg-clip-text text-transparent dark:from-purple-400 dark:via-pink-400 dark:to-blue-400">
+              ようこそ、{profile?.nickname || user?.displayName || 'ゲスト'}さん
+            </span>
           </h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            学びたいテーマを入力すると、AIが学習記事を生成します
-          </p>
         </motion.div>
 
-        {/* 記事作成フォーム */}
+        {/* Step 2: 装飾付き生成フォーム */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2, duration: 0.3 }}
-          className="mb-12"
+          className="mb-8"
         >
           <div className="mx-auto max-w-xl">
             <AnimatePresence mode="wait">
@@ -348,21 +367,30 @@ export default function HomePage() {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 20 }}
                   transition={{ duration: 0.3 }}
-                  className="space-y-4"
                 >
-                  <ThemeInput
-                    onSubmit={handleSubmit}
-                    isLoading={isLoadingEligibility}
-                    isBatchEligible={eligibility?.eligible ?? false}
-                    coinBalance={eligibility?.coinBalance ?? 0}
-                  />
-                  {/* 開発者モード: レアリティ指定 */}
-                  {profile?.isDeveloper && (
-                    <RaritySelector
-                      value={selectedRarity}
-                      onChange={setSelectedRarity}
-                    />
-                  )}
+                  <div className="overflow-hidden rounded-2xl border-2 border-purple-200/60 bg-gradient-to-br from-fuchsia-50 via-purple-50 to-cyan-50 shadow-xl shadow-purple-500/10 dark:border-purple-700/40 dark:from-fuchsia-950/40 dark:via-purple-950/40 dark:to-cyan-950/40">
+                    <div className="h-2 animate-gradient-x bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500" />
+                    <div className="space-y-4 p-6">
+                      <p className="text-center text-lg font-black">
+                        <span className="bg-gradient-to-r from-purple-600 via-pink-500 to-cyan-500 bg-clip-text text-transparent dark:from-purple-400 dark:via-pink-400 dark:to-cyan-400">
+                          テーマを入力してカードを生み出そう
+                        </span>
+                      </p>
+                      <ThemeInput
+                        onSubmit={handleSubmit}
+                        isLoading={isLoadingEligibility}
+                        isBatchEligible={eligibility?.eligible ?? false}
+                        coinBalance={eligibility?.coinBalance ?? 0}
+                      />
+                      {/* 開発者モード: レアリティ指定 */}
+                      {profile?.isDeveloper && (
+                        <RaritySelector
+                          value={selectedRarity}
+                          onChange={setSelectedRarity}
+                        />
+                      )}
+                    </div>
+                  </div>
                 </motion.div>
               )}
 
@@ -401,15 +429,59 @@ export default function HomePage() {
           </div>
         </motion.div>
 
-        {/* 最近のカード */}
+        {/* Step 3: クイックアクション */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25, duration: 0.3 }}
+          className="mb-8 grid grid-cols-2 gap-3"
+        >
+          <Link
+            href="/challenge"
+            className="group flex items-center gap-3 rounded-xl bg-gradient-to-r from-red-500 to-orange-500 p-4 shadow-lg shadow-red-500/30 transition hover:scale-105 hover:shadow-xl hover:shadow-red-500/40 dark:from-red-600/80 dark:to-orange-600/80"
+          >
+            <span className="text-3xl drop-shadow-lg">&#x2694;&#xFE0F;</span>
+            <div>
+              <div className="text-sm font-bold text-white">
+                チャレンジ
+              </div>
+              <div className="text-xs text-white/80">
+                カードで物語に挑む
+              </div>
+            </div>
+          </Link>
+          <Link
+            href="/collection"
+            className="group flex items-center gap-3 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 p-4 shadow-lg shadow-blue-500/30 transition hover:scale-105 hover:shadow-xl hover:shadow-blue-500/40 dark:from-blue-600/80 dark:to-indigo-600/80"
+          >
+            <span className="text-3xl drop-shadow-lg">&#x1F4DA;</span>
+            <div>
+              <div className="text-sm font-bold text-white">
+                コレクション
+              </div>
+              <div className="text-xs text-white/80">
+                全カードを閲覧
+              </div>
+            </div>
+          </Link>
+        </motion.div>
+
+        {/* Step 4 & 5: 最近のカード */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3, duration: 0.3 }}
         >
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">
-              最近のカード
+            <h2 className="text-xl font-black text-gray-900 dark:text-gray-100">
+              <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent dark:from-purple-400 dark:to-blue-400">
+                最近のカード
+              </span>
+              {stats.totalCards > 0 && (
+                <span className="ml-2 text-sm font-normal text-gray-400">
+                  ({stats.totalCards})
+                </span>
+              )}
             </h2>
             {recentCards.length > 0 && (
               <Button
@@ -417,7 +489,7 @@ export default function HomePage() {
                 variant="ghost"
                 size="sm"
               >
-                すべて見る →
+                すべて見る
               </Button>
             )}
           </div>
@@ -427,16 +499,51 @@ export default function HomePage() {
               <LoadingSpinner size="lg" />
             </div>
           ) : recentCards.length > 0 ? (
-            <CardGrid cards={recentCards} onCardClick={handleCardClick} />
+            <CardGrid
+              cards={recentCards}
+              variant="home"
+              onCardClick={handleCardClick}
+            />
           ) : (
-            <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-gray-300 py-12 dark:border-gray-700">
-              <div className="mb-4 text-4xl">🎴</div>
-              <p className="text-gray-500 dark:text-gray-400">
-                まだカードがありません
-              </p>
-              <p className="mt-2 text-sm text-gray-400 dark:text-gray-500">
-                上のフォームからテーマを入力して、最初のカードを作成しましょう
-              </p>
+            /* Step 5: 改善された空の状態 */
+            <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-purple-200 via-pink-100 to-blue-200 py-12 dark:from-purple-900/40 dark:via-pink-900/40 dark:to-blue-900/40">
+              {/* 装飾的なプロモカード画像 */}
+              <div className="pointer-events-none absolute -left-4 -top-4 opacity-30">
+                <Image
+                  src="/promo/card-common.webp"
+                  alt=""
+                  width={120}
+                  height={180}
+                  className="rotate-[-15deg] rounded-lg"
+                />
+              </div>
+              <div className="pointer-events-none absolute -bottom-4 -right-4 opacity-30">
+                <Image
+                  src="/promo/card-rare.webp"
+                  alt=""
+                  width={120}
+                  height={180}
+                  className="rotate-[15deg] rounded-lg"
+                />
+              </div>
+
+              <div className="relative flex flex-col items-center justify-center">
+                <p className="text-xl font-bold text-purple-800 dark:text-purple-300">
+                  最初のカードを作ってみよう
+                </p>
+                <p className="mt-2 text-sm text-purple-600/70 dark:text-purple-400/70">
+                  テーマを入力すると、AIが記事とカードを生成します
+                </p>
+                <Button
+                  onClick={() => {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className="mt-4"
+                  size="sm"
+                >
+                  カードを生成する
+                </Button>
+              </div>
             </div>
           )}
         </motion.div>

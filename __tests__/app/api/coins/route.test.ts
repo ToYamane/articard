@@ -182,9 +182,9 @@ describe('/api/coins', () => {
         expect(valuePkg).toBeDefined();
         expect(valuePkg.coins).toBe(2100);
 
-        const premiumPkg = data.packages.find((p: { id: string }) => p.id === 'premium');
-        expect(premiumPkg).toBeDefined();
-        expect(premiumPkg.coins).toBe(6000);
+        const megaPkg = data.packages.find((p: { id: string }) => p.id === 'mega');
+        expect(megaPkg).toBeDefined();
+        expect(megaPkg.coins).toBe(6000);
       });
     });
 

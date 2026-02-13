@@ -1,18 +1,21 @@
-import { NextRequest } from 'next/server';
 import { withAuth } from '@/lib/api';
 import { prisma } from '@/lib/prisma';
 import type { Rarity } from '@/types/database';
 
 interface StatsResponse {
   totalCards: number;
+  totalArticles: number;
   rarityBreakdown: Record<Rarity, number>;
   totalKnowledgePoints: number;
 }
 
 // GET /api/stats - ユーザーの統計情報を取得
 export const GET = withAuth<StatsResponse>(async (authUser) => {
-  const [totalCards, rarityGroups, knowledgePoints] = await Promise.all([
+  const [totalCards, totalArticles, rarityGroups, knowledgePoints] = await Promise.all([
     prisma.card.count({
+      where: { userId: authUser.uid },
+    }),
+    prisma.article.count({
       where: { userId: authUser.uid },
     }),
     prisma.card.groupBy({
@@ -44,6 +47,7 @@ export const GET = withAuth<StatsResponse>(async (authUser) => {
 
   return {
     totalCards,
+    totalArticles,
     rarityBreakdown,
     totalKnowledgePoints: knowledgePoints._sum.amount || 0,
   };

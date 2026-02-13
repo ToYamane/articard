@@ -66,6 +66,12 @@ export async function POST(req: NextRequest) {
         break;
       }
 
+      case 'invoice.paid': {
+        const invoice = event.data.object as Stripe.Invoice;
+        await handleInvoicePaid(invoice);
+        break;
+      }
+
       case 'invoice.payment_failed': {
         const invoice = event.data.object as Stripe.Invoice;
         await handlePaymentFailed(invoice);
@@ -169,6 +175,45 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
   });
 
   console.log(`Subscription deleted for user ${user.id}`);
+}
+
+/**
+ * 月次更新（renewal）時のボーナス付与
+ */
+async function handleInvoicePaid(invoice: Stripe.Invoice) {
+  // renewalのみ処理（初回・プラン変更は別ハンドラで処理済み）
+  if (invoice.billing_reason !== 'subscription_cycle') {
+    console.log(`Skipping invoice.paid (billing_reason: ${invoice.billing_reason})`);
+    return;
+  }
+
+  const customerId = invoice.customer as string;
+
+  const user = await prisma.user.findFirst({
+    where: { stripeCustomerId: customerId },
+  });
+
+  if (!user) {
+    console.error('User not found for customer:', customerId);
+    return;
+  }
+
+  // invoice.lines からtierを特定
+  const priceRef = invoice.lines.data[0]?.pricing?.price_details?.price;
+  const priceId = typeof priceRef === 'string' ? priceRef : priceRef?.id;
+  if (!priceId) {
+    console.error('No price found in invoice lines:', invoice.id);
+    return;
+  }
+
+  const tier = STRIPE_PRICE_TO_TIER[priceId];
+  if (!tier) {
+    console.error('Unknown price ID in invoice:', priceId);
+    return;
+  }
+
+  await activateSubscription(user.id, tier);
+  console.log(`Subscription renewed for user ${user.id}: ${tier} (invoice: ${invoice.id})`);
 }
 
 /**

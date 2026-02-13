@@ -10,7 +10,8 @@ import type { Rarity } from '@/types/database';
 
 interface CardDisplayProps {
   card: Card;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg' | 'home';
+  showInfo?: boolean;
   onClick?: () => void;
   className?: string;
 }
@@ -19,55 +20,77 @@ const SIZE_CLASSES = {
   sm: 'w-32 h-48',
   md: 'w-48 h-72',
   lg: 'w-64 h-96',
+  home: 'w-36 h-[216px]',
 };
 
 const RARITY_GLOW: Record<Rarity, string> = {
   common: '',
-  rare: 'shadow-blue-500/30 hover:shadow-blue-500/50',
-  super_rare: 'shadow-purple-500/40 hover:shadow-purple-500/60',
-  legend: 'shadow-yellow-500/50 hover:shadow-yellow-500/70',
+  rare: 'shadow-blue-500/40 hover:shadow-blue-500/60',
+  super_rare: 'shadow-purple-500/50 hover:shadow-purple-500/70',
+  legend: 'shadow-yellow-500/60 hover:shadow-yellow-500/80',
 };
 
-export function CardDisplay({ card, size = 'md', onClick, className }: CardDisplayProps) {
+export function CardDisplay({ card, size = 'md', showInfo = false, onClick, className }: CardDisplayProps) {
   const rarity = card.rarity as Rarity;
   const hasGlow = rarity !== 'common';
 
-  return (
-    <motion.div
-      whileHover={{ scale: 1.02, y: -4 }}
-      whileTap={{ scale: 0.98 }}
-      onClick={onClick}
-      className={cn(
-        'relative cursor-pointer overflow-hidden rounded-lg transition-shadow duration-300',
-        SIZE_CLASSES[size],
-        hasGlow ? `shadow-lg ${RARITY_GLOW[rarity]}` : 'shadow-md hover:shadow-xl',
-        className
-      )}
-    >
-      {/* カード画像 */}
-      <Image
-        src={card.cardImageUrl}
-        alt={card.keyword}
-        fill
-        className="object-cover"
-        sizes={size === 'lg' ? '256px' : size === 'md' ? '192px' : '128px'}
-      />
+  const sizeMap: Record<string, string> = {
+    lg: '256px',
+    md: '192px',
+    home: '144px',
+    sm: '128px',
+  };
 
-      {/* オーバーレイ情報（ホバー時） */}
+  return (
+    <div className={showInfo ? 'flex flex-col items-center gap-1.5' : ''}>
       <motion.div
-        initial={{ opacity: 0 }}
-        whileHover={{ opacity: 1 }}
-        className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/80 via-black/40 to-transparent p-3"
+        whileHover={{ scale: 1.05, y: -8 }}
+        whileTap={{ scale: 0.98 }}
+        onClick={onClick}
+        className={cn(
+          'relative cursor-pointer overflow-hidden rounded-lg transition-shadow duration-300',
+          SIZE_CLASSES[size],
+          hasGlow ? `shadow-xl ${RARITY_GLOW[rarity]}` : 'shadow-lg hover:shadow-2xl',
+          className
+        )}
       >
-        <h3 className="text-sm font-bold text-white">
-          {card.keyword}
-          {card.cardNumber && (
-            <span className="ml-1 text-xs font-normal text-gray-400">#{card.cardNumber}</span>
-          )}
-        </h3>
-        <RarityBadge rarity={rarity} size="sm" className="mt-1 w-fit" />
+        {/* カード画像 */}
+        <Image
+          src={card.cardImageUrl}
+          alt={card.keyword}
+          fill
+          className="object-cover"
+          sizes={sizeMap[size] || '192px'}
+        />
+
+        {/* オーバーレイ情報（ホバー時、showInfo=false の場合のみ） */}
+        {!showInfo && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            whileHover={{ opacity: 1 }}
+            className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/80 via-black/40 to-transparent p-3"
+          >
+            <h3 className="text-sm font-bold text-white">
+              {card.keyword}
+              {card.cardNumber && (
+                <span className="ml-1 text-xs font-normal text-gray-400">#{card.cardNumber}</span>
+              )}
+            </h3>
+            <RarityBadge rarity={rarity} size="sm" className="mt-1 w-fit" />
+          </motion.div>
+        )}
       </motion.div>
-    </motion.div>
+
+      {/* カード下の常時表示情報 */}
+      {showInfo && (
+        <div className="w-full text-center">
+          <p className="truncate text-xs font-medium text-gray-700 dark:text-gray-300">
+            {card.keyword}
+          </p>
+          <RarityBadge rarity={rarity} size="sm" className="mt-0.5" />
+        </div>
+      )}
+    </div>
   );
 }
 

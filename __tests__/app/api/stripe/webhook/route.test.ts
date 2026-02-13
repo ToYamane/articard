@@ -323,6 +323,81 @@ describe('/api/stripe/webhook', () => {
     });
   });
 
+  describe('invoice.paid', () => {
+    it('renewal（subscription_cycle）の場合にactivateSubscriptionが呼ばれる', async () => {
+      mockConstructEvent.mockReturnValue({
+        type: 'invoice.paid',
+        data: {
+          object: {
+            id: 'inv_renewal',
+            billing_reason: 'subscription_cycle',
+            customer: 'cus_test',
+            lines: {
+              data: [{ pricing: { price_details: { price: { id: 'price_plus' } } } }],
+            },
+          },
+        },
+      });
+      mockUserFindFirst.mockResolvedValue({
+        id: 'user-1',
+        subscriptionTier: 'plus',
+      });
+      mockActivateSubscription.mockResolvedValue({ success: true });
+
+      const req = createWebhookRequest();
+      const response = await POST(req);
+
+      expect(response.status).toBe(200);
+      expect(mockActivateSubscription).toHaveBeenCalledWith('user-1', 'plus');
+    });
+
+    it('初回支払い（subscription_create）の場合はスキップされる', async () => {
+      mockConstructEvent.mockReturnValue({
+        type: 'invoice.paid',
+        data: {
+          object: {
+            id: 'inv_initial',
+            billing_reason: 'subscription_create',
+            customer: 'cus_test',
+            lines: {
+              data: [{ pricing: { price_details: { price: { id: 'price_plus' } } } }],
+            },
+          },
+        },
+      });
+
+      const req = createWebhookRequest();
+      const response = await POST(req);
+
+      expect(response.status).toBe(200);
+      expect(mockActivateSubscription).not.toHaveBeenCalled();
+      expect(mockUserFindFirst).not.toHaveBeenCalled();
+    });
+
+    it('ユーザーが見つからない場合はスキップする', async () => {
+      mockConstructEvent.mockReturnValue({
+        type: 'invoice.paid',
+        data: {
+          object: {
+            id: 'inv_renewal',
+            billing_reason: 'subscription_cycle',
+            customer: 'cus_unknown',
+            lines: {
+              data: [{ pricing: { price_details: { price: { id: 'price_plus' } } } }],
+            },
+          },
+        },
+      });
+      mockUserFindFirst.mockResolvedValue(null);
+
+      const req = createWebhookRequest();
+      const response = await POST(req);
+
+      expect(response.status).toBe(200);
+      expect(mockActivateSubscription).not.toHaveBeenCalled();
+    });
+  });
+
   describe('invoice.payment_failed', () => {
     it('支払い失敗イベントを処理する', async () => {
       mockConstructEvent.mockReturnValue({
