@@ -120,11 +120,51 @@ const mockScenario = {
   deckSize: 6,
   totalPhases: 5,
   phases: [
-    { phaseNumber: 1, title: '発射準備', description: 'テスト', type: 'single', cardCount: 1, consumesCard: false, baseScore: 100 },
-    { phaseNumber: 2, title: '太陽フレア', description: 'テスト', type: 'single', cardCount: 1, consumesCard: true, baseScore: 100 },
-    { phaseNumber: 3, title: 'エイリアン遭遇', description: 'テスト', type: 'combo', cardCount: 2, consumesCard: false, baseScore: 100 },
-    { phaseNumber: 4, title: '資源不足', description: 'テスト', type: 'single', cardCount: 1, consumesCard: true, baseScore: 100 },
-    { phaseNumber: 5, title: '帰還', description: 'テスト', type: 'single', cardCount: 1, consumesCard: false, baseScore: 100 },
+    {
+      phaseNumber: 1,
+      title: '発射準備',
+      description: 'テスト',
+      type: 'single',
+      cardCount: 1,
+      consumesCard: false,
+      baseScore: 100,
+    },
+    {
+      phaseNumber: 2,
+      title: '太陽フレア',
+      description: 'テスト',
+      type: 'single',
+      cardCount: 1,
+      consumesCard: true,
+      baseScore: 100,
+    },
+    {
+      phaseNumber: 3,
+      title: 'エイリアン遭遇',
+      description: 'テスト',
+      type: 'combo',
+      cardCount: 2,
+      consumesCard: false,
+      baseScore: 100,
+    },
+    {
+      phaseNumber: 4,
+      title: '資源不足',
+      description: 'テスト',
+      type: 'single',
+      cardCount: 1,
+      consumesCard: true,
+      baseScore: 100,
+    },
+    {
+      phaseNumber: 5,
+      title: '帰還',
+      description: 'テスト',
+      type: 'single',
+      cardCount: 1,
+      consumesCard: false,
+      baseScore: 100,
+    },
   ],
 };
 
@@ -164,7 +204,9 @@ const mockSession = {
   scenarioId: TEST_SCENARIO_ID,
   status: 'in_progress',
   currentPhase: 1,
-  gameState: { /* serialized */ },
+  gameState: {
+    /* serialized */
+  },
   startedAt: new Date(), // 現在時刻（期限切れしていないセッション）
   completedAt: null,
 };
@@ -186,7 +228,6 @@ describe('challenge-service', () => {
         cost: 0,
         remainingFree: 3,
       });
-      mockIncrementChallengeCount.mockResolvedValue(1);
       mockSessionCreate.mockResolvedValue({
         id: TEST_SESSION_ID,
         scenarioId: TEST_SCENARIO_ID,
@@ -200,15 +241,17 @@ describe('challenge-service', () => {
       expect(result.status).toBe('in_progress');
       expect(result.challengeInfo.isFree).toBe(true);
       expect(result.challengeInfo.count).toBe(1);
+      // createSessionではコイン消費・回数カウントしない（setSessionDeckに移動済み）
       expect(mockConsumeCoins).not.toHaveBeenCalled();
+      expect(mockIncrementChallengeCount).not.toHaveBeenCalled();
     });
 
     it('シナリオが存在しない場合エラーを投げる', async () => {
       mockGetScenarioById.mockReturnValue(undefined);
 
-      await expect(
-        createSession(TEST_USER_ID, 'nonexistent')
-      ).rejects.toThrow('シナリオが見つかりません');
+      await expect(createSession(TEST_USER_ID, 'nonexistent')).rejects.toThrow(
+        'シナリオが見つかりません'
+      );
     });
 
     it('進行中のセッションがある場合エラーを投げる', async () => {
@@ -218,12 +261,12 @@ describe('challenge-service', () => {
         startedAt: new Date(), // 期限内
       });
 
-      await expect(
-        createSession(TEST_USER_ID, TEST_SCENARIO_ID)
-      ).rejects.toThrow('進行中のセッションがあります');
+      await expect(createSession(TEST_USER_ID, TEST_SCENARIO_ID)).rejects.toThrow(
+        '進行中のセッションがあります'
+      );
     });
 
-    it('無料回数を超えた場合はコインを消費する', async () => {
+    it('無料回数を超えた場合はchallengeInfoにコスト情報を返す', async () => {
       mockGetScenarioById.mockReturnValue(mockScenario);
       mockSessionFindFirst.mockResolvedValue(null);
       mockCheckChallengeLimit.mockResolvedValue({
@@ -232,9 +275,6 @@ describe('challenge-service', () => {
         cost: 10,
         remainingFree: 0,
       });
-      mockHasEnoughCoins.mockResolvedValue(true);
-      mockConsumeCoins.mockResolvedValue({});
-      mockIncrementChallengeCount.mockResolvedValue(4);
       mockSessionCreate.mockResolvedValue({
         id: TEST_SESSION_ID,
         scenarioId: TEST_SCENARIO_ID,
@@ -243,33 +283,10 @@ describe('challenge-service', () => {
 
       const result = await createSession(TEST_USER_ID, TEST_SCENARIO_ID);
 
-      expect(mockConsumeCoins).toHaveBeenCalledWith(
-        TEST_USER_ID,
-        10,
-        expect.stringContaining('チャレンジモード参加')
-      );
+      // createSessionではコイン消費しない（setSessionDeckで消費）
+      expect(mockConsumeCoins).not.toHaveBeenCalled();
       expect(result.challengeInfo.isFree).toBe(false);
       expect(result.challengeInfo.cost).toBe(10);
-    });
-
-    it('コインが足りない場合ApiErrorを投げる', async () => {
-      mockGetScenarioById.mockReturnValue(mockScenario);
-      mockSessionFindFirst.mockResolvedValue(null);
-      mockCheckChallengeLimit.mockResolvedValue({
-        count: 3,
-        isFree: false,
-        cost: 10,
-        remainingFree: 0,
-      });
-      mockHasEnoughCoins.mockResolvedValue(false);
-
-      try {
-        await createSession(TEST_USER_ID, TEST_SCENARIO_ID);
-        fail('Should have thrown');
-      } catch (error) {
-        expect(error).toBeInstanceOf(ApiError);
-        expect((error as ApiError).code).toBe('INSUFFICIENT_COINS');
-      }
     });
   });
 
@@ -400,6 +417,13 @@ describe('challenge-service', () => {
       }));
       mockCardFindMany.mockResolvedValue(mockCards);
       mockSessionUpdate.mockResolvedValue({});
+      mockCheckChallengeLimit.mockResolvedValue({
+        count: 0,
+        isFree: true,
+        cost: 0,
+        remainingFree: 3,
+      });
+      mockIncrementChallengeCount.mockResolvedValue(1);
 
       await setSessionDeck(TEST_SESSION_ID, TEST_USER_ID, cardIds);
 
@@ -411,6 +435,78 @@ describe('challenge-service', () => {
           }),
         })
       );
+      expect(mockIncrementChallengeCount).toHaveBeenCalledWith(TEST_USER_ID);
+    });
+
+    it('デッキ確定時にコインを消費する（無料回数超過）', async () => {
+      const session = { ...mockSession, currentPhase: 0 };
+      mockSessionFindUnique.mockResolvedValue(session);
+      mockGetScenarioById.mockReturnValue(mockScenario);
+
+      const cardIds = ['card-1', 'card-2', 'card-3', 'card-4', 'card-5', 'card-6'];
+      const mockCards = cardIds.map((id) => ({
+        id,
+        keyword: `keyword-${id}`,
+        rarity: 'common',
+        flavorText: `flavor-${id}`,
+        contextDescription: `context-${id}`,
+        thumbnailUrl: `https://example.com/thumb/${id}.jpg`,
+        cardImageUrl: `https://example.com/card/${id}.jpg`,
+      }));
+      mockCardFindMany.mockResolvedValue(mockCards);
+      mockSessionUpdate.mockResolvedValue({});
+      mockCheckChallengeLimit.mockResolvedValue({
+        count: 3,
+        isFree: false,
+        cost: 10,
+        remainingFree: 0,
+      });
+      mockHasEnoughCoins.mockResolvedValue(true);
+      mockConsumeCoins.mockResolvedValue({});
+      mockIncrementChallengeCount.mockResolvedValue(4);
+
+      await setSessionDeck(TEST_SESSION_ID, TEST_USER_ID, cardIds);
+
+      expect(mockConsumeCoins).toHaveBeenCalledWith(
+        TEST_USER_ID,
+        10,
+        expect.stringContaining('チャレンジモード参加')
+      );
+      expect(mockIncrementChallengeCount).toHaveBeenCalledWith(TEST_USER_ID);
+    });
+
+    it('デッキ確定時にコインが足りない場合ApiErrorを投げる', async () => {
+      const session = { ...mockSession, currentPhase: 0 };
+      mockSessionFindUnique.mockResolvedValue(session);
+      mockGetScenarioById.mockReturnValue(mockScenario);
+
+      const cardIds = ['card-1', 'card-2', 'card-3', 'card-4', 'card-5', 'card-6'];
+      const mockCards = cardIds.map((id) => ({
+        id,
+        keyword: `keyword-${id}`,
+        rarity: 'common',
+        flavorText: `flavor-${id}`,
+        contextDescription: `context-${id}`,
+        thumbnailUrl: `https://example.com/thumb/${id}.jpg`,
+        cardImageUrl: `https://example.com/card/${id}.jpg`,
+      }));
+      mockCardFindMany.mockResolvedValue(mockCards);
+      mockSessionUpdate.mockResolvedValue({});
+      mockCheckChallengeLimit.mockResolvedValue({
+        count: 3,
+        isFree: false,
+        cost: 10,
+        remainingFree: 0,
+      });
+      mockHasEnoughCoins.mockResolvedValue(false);
+
+      try {
+        await setSessionDeck(TEST_SESSION_ID, TEST_USER_ID, cardIds);
+        fail('Should have thrown');
+      } catch (error) {
+        expect(error).toBeInstanceOf(ApiError);
+        expect((error as ApiError).code).toBe('INSUFFICIENT_COINS');
+      }
     });
 
     it('他のユーザーのセッションにはデッキを設定できない', async () => {
@@ -420,25 +516,25 @@ describe('challenge-service', () => {
         currentPhase: 0,
       });
 
-      await expect(
-        setSessionDeck(TEST_SESSION_ID, TEST_USER_ID, ['card-1'])
-      ).rejects.toThrow('セッションが見つかりません');
+      await expect(setSessionDeck(TEST_SESSION_ID, TEST_USER_ID, ['card-1'])).rejects.toThrow(
+        'セッションが見つかりません'
+      );
     });
 
     it('存在しないセッションにはデッキを設定できない', async () => {
       mockSessionFindUnique.mockResolvedValue(null);
 
-      await expect(
-        setSessionDeck('nonexistent', TEST_USER_ID, ['card-1'])
-      ).rejects.toThrow('セッションが見つかりません');
+      await expect(setSessionDeck('nonexistent', TEST_USER_ID, ['card-1'])).rejects.toThrow(
+        'セッションが見つかりません'
+      );
     });
 
     it('currentPhaseが0以外の場合エラーを投げる', async () => {
       mockSessionFindUnique.mockResolvedValue({ ...mockSession, currentPhase: 1 });
 
-      await expect(
-        setSessionDeck(TEST_SESSION_ID, TEST_USER_ID, ['card-1'])
-      ).rejects.toThrow('デッキ編成は開始前のみ可能です');
+      await expect(setSessionDeck(TEST_SESSION_ID, TEST_USER_ID, ['card-1'])).rejects.toThrow(
+        'デッキ編成は開始前のみ可能です'
+      );
     });
 
     it('進行中でないセッションにはデッキを設定できない', async () => {
@@ -448,9 +544,9 @@ describe('challenge-service', () => {
         currentPhase: 0,
       });
 
-      await expect(
-        setSessionDeck(TEST_SESSION_ID, TEST_USER_ID, ['card-1'])
-      ).rejects.toThrow('デッキ編成は開始前のみ可能です');
+      await expect(setSessionDeck(TEST_SESSION_ID, TEST_USER_ID, ['card-1'])).rejects.toThrow(
+        'デッキ編成は開始前のみ可能です'
+      );
     });
 
     it('デッキサイズが合わない場合エラーを投げる', async () => {
@@ -480,9 +576,9 @@ describe('challenge-service', () => {
         }))
       );
 
-      await expect(
-        setSessionDeck(TEST_SESSION_ID, TEST_USER_ID, cardIds)
-      ).rejects.toThrow('無効なカードが含まれています');
+      await expect(setSessionDeck(TEST_SESSION_ID, TEST_USER_ID, cardIds)).rejects.toThrow(
+        '無効なカードが含まれています'
+      );
     });
 
     it('重複するカードIDがある場合エラーを投げる', async () => {
@@ -505,9 +601,9 @@ describe('challenge-service', () => {
       }));
       mockCardFindMany.mockResolvedValue(mockCards);
 
-      await expect(
-        setSessionDeck(TEST_SESSION_ID, TEST_USER_ID, cardIds)
-      ).rejects.toThrow('無効なカードが含まれています');
+      await expect(setSessionDeck(TEST_SESSION_ID, TEST_USER_ID, cardIds)).rejects.toThrow(
+        '無効なカードが含まれています'
+      );
     });
   });
 
@@ -538,9 +634,9 @@ describe('challenge-service', () => {
         userId: OTHER_USER_ID,
       });
 
-      await expect(
-        getCurrentPhaseChallenge(TEST_SESSION_ID, TEST_USER_ID)
-      ).rejects.toThrow('セッションが見つかりません');
+      await expect(getCurrentPhaseChallenge(TEST_SESSION_ID, TEST_USER_ID)).rejects.toThrow(
+        'セッションが見つかりません'
+      );
     });
 
     it('進行中でないセッションにはアクセスできない', async () => {
@@ -549,9 +645,9 @@ describe('challenge-service', () => {
         status: 'completed',
       });
 
-      await expect(
-        getCurrentPhaseChallenge(TEST_SESSION_ID, TEST_USER_ID)
-      ).rejects.toThrow('ゲームが進行中ではありません');
+      await expect(getCurrentPhaseChallenge(TEST_SESSION_ID, TEST_USER_ID)).rejects.toThrow(
+        'ゲームが進行中ではありません'
+      );
     });
 
     it('デッキ未設定の場合エラーを投げる', async () => {
@@ -560,9 +656,9 @@ describe('challenge-service', () => {
         currentPhase: 0,
       });
 
-      await expect(
-        getCurrentPhaseChallenge(TEST_SESSION_ID, TEST_USER_ID)
-      ).rejects.toThrow('デッキを設定してください');
+      await expect(getCurrentPhaseChallenge(TEST_SESSION_ID, TEST_USER_ID)).rejects.toThrow(
+        'デッキを設定してください'
+      );
     });
 
     it('使用済みカードはavailableCardsに含まれない', async () => {
@@ -647,9 +743,9 @@ describe('challenge-service', () => {
         userId: OTHER_USER_ID,
       });
 
-      await expect(
-        submitPhaseCards(TEST_SESSION_ID, TEST_USER_ID, ['card-1'])
-      ).rejects.toThrow('セッションが見つかりません');
+      await expect(submitPhaseCards(TEST_SESSION_ID, TEST_USER_ID, ['card-1'])).rejects.toThrow(
+        'セッションが見つかりません'
+      );
     });
 
     it('進行中でないセッションにはカードを提出できない', async () => {
@@ -658,9 +754,9 @@ describe('challenge-service', () => {
         status: 'completed',
       });
 
-      await expect(
-        submitPhaseCards(TEST_SESSION_ID, TEST_USER_ID, ['card-1'])
-      ).rejects.toThrow('ゲームが進行中ではありません');
+      await expect(submitPhaseCards(TEST_SESSION_ID, TEST_USER_ID, ['card-1'])).rejects.toThrow(
+        'ゲームが進行中ではありません'
+      );
     });
 
     it('デッキ未設定の場合エラーを投げる', async () => {
@@ -669,9 +765,9 @@ describe('challenge-service', () => {
         currentPhase: 0,
       });
 
-      await expect(
-        submitPhaseCards(TEST_SESSION_ID, TEST_USER_ID, ['card-1'])
-      ).rejects.toThrow('デッキを設定してください');
+      await expect(submitPhaseCards(TEST_SESSION_ID, TEST_USER_ID, ['card-1'])).rejects.toThrow(
+        'デッキを設定してください'
+      );
     });
 
     it('カード数が合わない場合エラーを投げる', async () => {
@@ -688,16 +784,13 @@ describe('challenge-service', () => {
       // Card is already used
       const gameStateWithUsedCard = {
         ...mockGameState,
-        deck: [
-          makeDeckCard('card-1', { isUsed: true, usedInPhase: 1 }),
-          ...mockDeck.slice(1),
-        ],
+        deck: [makeDeckCard('card-1', { isUsed: true, usedInPhase: 1 }), ...mockDeck.slice(1)],
       };
       mockDeserializeGameState.mockReturnValue(gameStateWithUsedCard);
 
-      await expect(
-        submitPhaseCards(TEST_SESSION_ID, TEST_USER_ID, ['card-1'])
-      ).rejects.toThrow('選択されたカードは利用できません');
+      await expect(submitPhaseCards(TEST_SESSION_ID, TEST_USER_ID, ['card-1'])).rejects.toThrow(
+        '選択されたカードは利用できません'
+      );
     });
 
     it('シナリオが完了した場合、完了処理が実行される', async () => {
@@ -821,17 +914,17 @@ describe('challenge-service', () => {
         userId: OTHER_USER_ID,
       });
 
-      await expect(
-        abandonSession(TEST_SESSION_ID, TEST_USER_ID)
-      ).rejects.toThrow('セッションが見つかりません');
+      await expect(abandonSession(TEST_SESSION_ID, TEST_USER_ID)).rejects.toThrow(
+        'セッションが見つかりません'
+      );
     });
 
     it('存在しないセッションは中断できない', async () => {
       mockSessionFindUnique.mockResolvedValue(null);
 
-      await expect(
-        abandonSession('nonexistent', TEST_USER_ID)
-      ).rejects.toThrow('セッションが見つかりません');
+      await expect(abandonSession('nonexistent', TEST_USER_ID)).rejects.toThrow(
+        'セッションが見つかりません'
+      );
     });
 
     it('完了済みセッションは中断できない', async () => {
@@ -840,9 +933,9 @@ describe('challenge-service', () => {
         status: 'completed',
       });
 
-      await expect(
-        abandonSession(TEST_SESSION_ID, TEST_USER_ID)
-      ).rejects.toThrow('このセッションは既に終了しています');
+      await expect(abandonSession(TEST_SESSION_ID, TEST_USER_ID)).rejects.toThrow(
+        'このセッションは既に終了しています'
+      );
     });
 
     it('中断済みセッションは再度中断できない', async () => {
@@ -851,9 +944,9 @@ describe('challenge-service', () => {
         status: 'abandoned',
       });
 
-      await expect(
-        abandonSession(TEST_SESSION_ID, TEST_USER_ID)
-      ).rejects.toThrow('このセッションは既に終了しています');
+      await expect(abandonSession(TEST_SESSION_ID, TEST_USER_ID)).rejects.toThrow(
+        'このセッションは既に終了しています'
+      );
     });
   });
 });
