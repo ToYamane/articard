@@ -25,13 +25,16 @@ npm run db:studio           # Open Prisma Studio GUI
 ## Testing
 
 ### Test Structure
+
 テストは `__tests__/` ディレクトリに配置（src外）:
+
 - `__tests__/__mocks__/` - 外部サービスモック（Firebase, OpenAI, FLUX, Stripe, next/server）
 - `__tests__/helpers/` - テストヘルパー・データファクトリ
 - `__tests__/lib/` - ライブラリ・サービスのユニットテスト
 - `__tests__/app/api/` - APIルートテスト
 
 ### Test Patterns
+
 - サービステスト: `jest.mock('@/lib/prisma')` で個別メソッドをモック
 - APIルートテスト: `jest.mock('@/lib/auth')` + helpers の `createAuthenticatedRequest`
 - withAuthParams ルート: `handler(req, { params: Promise.resolve({ id }) })`
@@ -42,6 +45,7 @@ npm run db:studio           # Open Prisma Studio GUI
 ## Architecture
 
 ### Tech Stack
+
 - **Frontend**: Next.js 14 (App Router), React 18, TypeScript, Tailwind CSS, Framer Motion
 - **State**: Zustand (auth) + TanStack Query (server state)
 - **Backend**: Next.js API Routes with Bearer token auth
@@ -51,6 +55,7 @@ npm run db:studio           # Open Prisma Studio GUI
 - **AI**: OpenAI (articles), FLUX/Gemini/DALL-E (images based on rarity)
 
 ### Directory Structure
+
 ```
 src/
 ├── app/
@@ -83,20 +88,27 @@ docs/
 ```
 
 ### API Pattern
+
 All API routes use Bearer token auth and return consistent responses:
+
 ```typescript
 // Success: { success: true, data: T }
 // Error: { success: false, error: { code: string, message: string } }
 ```
 
 ### Database Models
+
 - **User**: Firebase UID, nickname, premium status, isDeveloper flag
 - **Article**: Theme, content, OpenAI model/token usage
-- **Card**: Keyword, rarity (common/rare/super_rare/legend), images, flavor text
+- **Card**: Keyword, rarity (common/rare/super_rare/legend), images, flavor text. articleId is nullable (SetNull on article deletion)
 - **KnowledgeTransaction**: In-app currency tracking
+- **FavoriteCard / FavoriteArticle**: User bookmark (many-to-many)
+- **StripeWebhookEvent**: Webhook idempotency check
 
 ### Card Rarity System
+
 Cards use probability-based rarity with different image generation models:
+
 - Common (60%): FLUX 1.1 Pro
 - Rare (25%): Google Gemini
 - Super Rare (10%): FLUX 2 Pro
@@ -107,34 +119,42 @@ Developer users can specify rarity directly via `isDeveloper` flag.
 ## Key Patterns
 
 ### Validation
+
 Use Zod schemas in `src/lib/validations/` for all API input validation.
 
 ### Error Handling
+
 Use `ApiError` class from `src/lib/errors/` for consistent error responses.
 
 ### Services
+
 Business logic lives in `src/lib/services/`. Services handle database operations and external API calls.
 
 ### State Management
+
 - `useAuthStore` (Zustand): Firebase user and profile state
 - TanStack Query: Server state for cards, articles, etc.
 
 ## Documentation
 
 ### Structure
+
 - `docs/specs/` - Feature specifications and design documents
 - `docs/logs/` - Work logs and implementation records
 - `docs/ideas/` - Future ideas and proposals
 - `docs/guides/` - Setup and operation guides
 
 ### Recording Implementations
+
 When completing significant features or refactoring:
+
 1. Create a log entry in `docs/logs/` with date prefix (e.g., `2025-02-04-batch-generation.md`)
 2. Include: overview, key changes, files modified, and any architectural decisions
 
 ## Environment Variables
 
 Required in `.env`:
+
 - `DATABASE_URL`: PostgreSQL connection (Cloud SQL or local Docker)
 - `NEXT_PUBLIC_FIREBASE_*`: Firebase client config
 - `FIREBASE_ADMIN_*`: Firebase Admin SDK credentials
@@ -147,17 +167,18 @@ Required in `.env`:
 
 See [Production Setup Guide](docs/guides/production-setup.md) for full details.
 
-| Resource | Value |
-|----------|-------|
-| GCP Project | articard-ff673 (asia-northeast1) |
-| Database | Cloud SQL PostgreSQL (articard-db) |
-| Storage | GCS: illustrations/, cards/, thumbnails/ |
-| Auth | Firebase (Email/Password, Google OAuth) |
-| AI APIs | OpenAI, FLUX (BFL), Gemini |
+| Resource    | Value                                    |
+| ----------- | ---------------------------------------- |
+| GCP Project | articard-ff673 (asia-northeast1)         |
+| Database    | Cloud SQL PostgreSQL (articard-db)       |
+| Storage     | GCS: illustrations/, cards/, thumbnails/ |
+| Auth        | Firebase (Email/Password, Google OAuth)  |
+| AI APIs     | OpenAI, FLUX (BFL), Gemini               |
 
 ## Compact Instructions
 
 When context is compacted, preserve:
+
 - API patterns: `{ success, data }` / `{ success, error }` format
 - Card rarity system: Common(60%)/Rare(25%)/SuperRare(10%)/Legend(5%)
 - Key locations: `src/lib/services/`, `src/lib/validations/`, `src/lib/errors/`

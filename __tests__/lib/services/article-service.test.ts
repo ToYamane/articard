@@ -36,29 +36,12 @@ const mockOtherArticle = {
   userId: 'other-user-id-456',
 };
 
-const mockCard = {
-  id: 'test-card-id-123',
-  userId: 'test-user-id-123',
-  articleId: 'test-article-id-123',
-  keyword: 'テストキーワード',
-  rarity: 'rare',
-  flavorText: 'このカードは知識の結晶です。',
-};
-
 // モック関数
 const mockFindUnique = jest.fn();
 const mockFindMany = jest.fn();
 const mockCreate = jest.fn();
 const mockDelete = jest.fn();
-const mockDeleteMany = jest.fn();
 const mockCount = jest.fn();
-const mockTransaction = jest.fn((callback) =>
-  callback({
-    card: { deleteMany: mockDeleteMany },
-    article: { delete: mockDelete },
-  })
-);
-const mockCardFindMany = jest.fn();
 
 // Prismaモジュールをモック
 jest.mock('@/lib/prisma', () => ({
@@ -68,13 +51,8 @@ jest.mock('@/lib/prisma', () => ({
       findMany: (...args: unknown[]) => mockFindMany(...args),
       create: (...args: unknown[]) => mockCreate(...args),
       delete: (...args: unknown[]) => mockDelete(...args),
-      deleteMany: (...args: unknown[]) => mockDeleteMany(...args),
       count: (...args: unknown[]) => mockCount(...args),
     },
-    card: {
-      findMany: (...args: unknown[]) => mockCardFindMany(...args),
-    },
-    $transaction: (callback: (tx: unknown) => Promise<unknown>) => mockTransaction(callback),
   },
 }));
 
@@ -84,12 +62,6 @@ const mockGenerateArticle = jest.fn();
 jest.mock('@/lib/openai', () => ({
   isThemeSafe: (...args: unknown[]) => mockIsThemeSafe(...args),
   generateArticle: (...args: unknown[]) => mockGenerateArticle(...args),
-}));
-
-// GCS storage
-const mockBatchDeleteCardImages = jest.fn();
-jest.mock('@/lib/gcs/storage', () => ({
-  batchDeleteCardImages: (...args: unknown[]) => mockBatchDeleteCardImages(...args),
 }));
 
 describe('article-service', () => {
@@ -313,16 +285,14 @@ describe('article-service', () => {
 
   // ==================== deleteArticle ====================
   describe('deleteArticle', () => {
-    it('記事を削除できる', async () => {
+    it('記事を削除できる（カードは削除されない）', async () => {
       mockFindUnique.mockResolvedValue(mockArticle);
-      mockCardFindMany.mockResolvedValue([mockCard]);
-      mockBatchDeleteCardImages.mockResolvedValue(undefined);
+      mockDelete.mockResolvedValue(mockArticle);
 
       const result = await deleteArticle(mockArticle.id, mockUser.id);
 
       expect(result).toBe(true);
-      expect(mockTransaction).toHaveBeenCalled();
-      expect(mockBatchDeleteCardImages).toHaveBeenCalledWith([mockCard.id]);
+      expect(mockDelete).toHaveBeenCalledWith({ where: { id: mockArticle.id } });
     });
 
     it('他のユーザーの記事は削除できない', async () => {
@@ -331,7 +301,7 @@ describe('article-service', () => {
       const result = await deleteArticle(mockOtherArticle.id, mockUser.id);
 
       expect(result).toBe(false);
-      expect(mockTransaction).not.toHaveBeenCalled();
+      expect(mockDelete).not.toHaveBeenCalled();
     });
 
     it('記事が見つからない場合はfalseを返す', async () => {
@@ -340,17 +310,7 @@ describe('article-service', () => {
       const result = await deleteArticle('non-existent-id', mockUser.id);
 
       expect(result).toBe(false);
-    });
-
-    it('画像削除に失敗しても記事は削除される', async () => {
-      mockFindUnique.mockResolvedValue(mockArticle);
-      mockCardFindMany.mockResolvedValue([mockCard]);
-      mockBatchDeleteCardImages.mockRejectedValue(new Error('Storage error'));
-
-      const result = await deleteArticle(mockArticle.id, mockUser.id);
-
-      // 画像削除に失敗しても記事削除は成功
-      expect(result).toBe(true);
+      expect(mockDelete).not.toHaveBeenCalled();
     });
   });
 

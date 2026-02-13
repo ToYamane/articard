@@ -12,13 +12,7 @@ export type ContextCategory =
   | 'general'
   | 'metaphorical';
 
-export type EmotionalTone =
-  | 'epic'
-  | 'mysterious'
-  | 'scientific'
-  | 'warm'
-  | 'dramatic'
-  | 'neutral';
+export type EmotionalTone = 'epic' | 'mysterious' | 'scientific' | 'warm' | 'dramatic' | 'neutral';
 
 // Rarity display names in Japanese
 export const RARITY_DISPLAY_NAMES: Record<Rarity, string> = {
@@ -26,14 +20,6 @@ export const RARITY_DISPLAY_NAMES: Record<Rarity, string> = {
   rare: 'レア',
   super_rare: 'スーパーレア',
   legend: 'レジェンド',
-};
-
-// Rarity star counts
-export const RARITY_STARS: Record<Rarity, number> = {
-  common: 1,
-  rare: 2,
-  super_rare: 3,
-  legend: 4,
 };
 
 // Context category display names in Japanese

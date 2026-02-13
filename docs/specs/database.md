@@ -17,6 +17,10 @@ erDiagram
     users ||--o{ challenge_sessions : "plays"
     users ||--o{ challenge_high_scores : "records"
     users ||--o{ challenge_achievements : "earns"
+    users ||--o{ favorite_cards : "favorites"
+    users ||--o{ favorite_articles : "favorites"
+    cards ||--o{ favorite_cards : "has"
+    articles ||--o{ favorite_articles : "has"
 
     users {
         varchar(128) id PK "Firebase UID"
@@ -115,6 +119,20 @@ erDiagram
         int coins_awarded "付与コイン"
         timestamp created_at
     }
+
+    favorite_cards {
+        uuid id PK
+        varchar(128) user_id FK
+        uuid card_id FK
+        timestamp created_at
+    }
+
+    favorite_articles {
+        uuid id PK
+        varchar(128) user_id FK
+        uuid article_id FK
+        timestamp created_at
+    }
 ```
 
 ## 6.3 テーブル定義
@@ -179,7 +197,7 @@ CREATE INDEX idx_articles_user_created ON articles(user_id, created_at DESC);
 CREATE TABLE cards (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id VARCHAR(128) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    article_id UUID NOT NULL REFERENCES articles(id) ON DELETE CASCADE,
+    article_id UUID REFERENCES articles(id) ON DELETE SET NULL,
     keyword VARCHAR(50) NOT NULL,
     card_number INT,                                   -- 同一キーワードの通し番号
     rarity VARCHAR(20) NOT NULL,                      -- common, rare, super_rare, legend
@@ -310,18 +328,95 @@ CREATE TABLE challenge_high_scores (
 CREATE INDEX idx_chs_user_id ON challenge_high_scores(user_id);
 ```
 
+### favorite_cards テーブル
+
+ユーザーのお気に入りカードを管理。
+
+```sql
+CREATE TABLE favorite_cards (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id VARCHAR(128) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    card_id UUID NOT NULL REFERENCES cards(id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, card_id)
+);
+
+-- インデックス
+CREATE INDEX idx_fc_user_id ON favorite_cards(user_id);
+```
+
+### favorite_articles テーブル
+
+ユーザーのお気に入り記事を管理。
+
+```sql
+CREATE TABLE favorite_articles (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id VARCHAR(128) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    article_id UUID NOT NULL REFERENCES articles(id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, article_id)
+);
+
+-- インデックス
+CREATE INDEX idx_fa_user_id ON favorite_articles(user_id);
+```
+
+### stripe_webhook_events テーブル
+
+Stripe Webhook の冪等性チェック用。
+
+```sql
+CREATE TABLE stripe_webhook_events (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    event_id VARCHAR(255) NOT NULL UNIQUE,
+    event_type VARCHAR(100) NOT NULL,
+    processed_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- インデックス
+CREATE INDEX idx_swe_processed_at ON stripe_webhook_events(processed_at);
+```
+
 ## 6.4 Prisma スキーマ
 
 ```prisma
 // prisma/schema.prisma
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+enum Rarity {
+  common
+  rare
+  super_rare
+  legend
+}
+
+enum SessionStatus {
+  in_progress
+  completed
+  abandoned
+}
+
+enum TransactionType {
+  purchase
+  bonus
+  consume
+  refund
+  daily
+}
+
+enum SubscriptionTier {
+  plus
+  premium
 }
 
 model User {
@@ -335,7 +430,7 @@ model User {
   isPremium                 Boolean   @default(false) @map("is_premium")
   isDeveloper               Boolean   @default(false) @map("is_developer")
   premiumExpiresAt          DateTime? @map("premium_expires_at") @db.Timestamptz
-  subscriptionTier          String?   @map("subscription_tier") @db.VarChar(20)
+  subscriptionTier          SubscriptionTier? @map("subscription_tier")
   subscriptionBonusReceived Boolean   @default(false) @map("subscription_bonus_received")
   stripeCustomerId          String?   @unique @map("stripe_customer_id") @db.VarChar(255)
   stripeSubscriptionId      String?   @unique @map("stripe_subscription_id") @db.VarChar(255)
@@ -349,9 +444,10 @@ model User {
   challengeSessions     ChallengeSession[]
   challengeHighScores   ChallengeHighScore[]
   challengeAchievements ChallengeAchievement[]
+  favoriteCards         FavoriteCard[]
+  favoriteArticles      FavoriteArticle[]
 
   @@index([createdAt])
-  @@index([isPremium])
   @@map("users")
 }
 
@@ -365,8 +461,9 @@ model Article {
   tokenUsage  Int      @default(0) @map("token_usage")
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
 
-  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  cards Card[]
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cards     Card[]
+  favorites FavoriteArticle[]
 
   @@index([userId])
   @@index([createdAt])
@@ -377,10 +474,10 @@ model Article {
 model Card {
   id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId             String   @map("user_id") @db.VarChar(128)
-  articleId          String   @map("article_id") @db.Uuid
+  articleId          String?  @map("article_id") @db.Uuid
   keyword            String   @db.VarChar(50)
-  cardNumber         Int?     @map("card_number")
-  rarity             String   @db.VarChar(20)
+  cardNumber         Int      @map("card_number")
+  rarity             Rarity
   flavorText         String   @map("flavor_text") @db.VarChar(100)
   contextCategory    String   @map("context_category") @db.VarChar(30)
   contextDescription String   @map("context_description") @db.Text
@@ -391,8 +488,9 @@ model Card {
   fluxPrompt         String   @map("flux_prompt") @db.Text
   createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz
 
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  article   Article?       @relation(fields: [articleId], references: [id], onDelete: SetNull)
+  favorites FavoriteCard[]
 
   @@unique([keyword, cardNumber], name: "keyword_cardNumber_unique")
   @@index([userId])
@@ -406,19 +504,19 @@ model Card {
 }
 
 model KnowledgeTransaction {
-  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId          String   @map("user_id") @db.VarChar(128)
+  id              String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId          String          @map("user_id") @db.VarChar(128)
   amount          Int
-  transactionType String   @map("transaction_type") @db.VarChar(20)
-  description     String?  @db.VarChar(100)
-  balanceAfter    Int      @map("balance_after")
-  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
+  transactionType TransactionType @map("transaction_type")
+  description     String?         @db.VarChar(100)
+  balanceAfter    Int             @map("balance_after")
+  createdAt       DateTime        @default(now()) @map("created_at") @db.Timestamptz
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([createdAt])
-  @@index([transactionType])
+  @@index([userId, createdAt(sort: Desc)])
   @@map("knowledge_transactions")
 }
 
@@ -436,20 +534,21 @@ model SuggestedTheme {
 }
 
 model ChallengeSession {
-  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId       String    @map("user_id") @db.VarChar(128)
-  scenarioId   String    @map("scenario_id") @db.VarChar(50)
-  status       String    @db.VarChar(20)
-  currentPhase Int       @default(0) @map("current_phase")
-  gameState    Json?     @map("game_state")
-  startedAt    DateTime  @default(now()) @map("started_at") @db.Timestamptz
-  completedAt  DateTime? @map("completed_at") @db.Timestamptz
+  id           String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId       String        @map("user_id") @db.VarChar(128)
+  scenarioId   String        @map("scenario_id") @db.VarChar(50)
+  status       SessionStatus
+  currentPhase Int           @default(0) @map("current_phase")
+  gameState    Json?         @map("game_state")
+  startedAt    DateTime      @default(now()) @map("started_at") @db.Timestamptz
+  completedAt  DateTime?     @map("completed_at") @db.Timestamptz
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([status])
   @@index([userId, status])
+  @@index([userId, startedAt(sort: Desc)])
   @@map("challenge_sessions")
 }
 
@@ -484,6 +583,44 @@ model ChallengeAchievement {
   @@index([userId, scenarioId])
   @@map("challenge_achievements")
 }
+
+model FavoriteCard {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @map("user_id") @db.VarChar(128)
+  cardId    String   @map("card_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  card Card @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, cardId])
+  @@index([userId])
+  @@map("favorite_cards")
+}
+
+model FavoriteArticle {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @map("user_id") @db.VarChar(128)
+  articleId String   @map("article_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, articleId])
+  @@index([userId])
+  @@map("favorite_articles")
+}
+
+model StripeWebhookEvent {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  eventId     String   @unique @map("event_id") @db.VarChar(255)
+  eventType   String   @map("event_type") @db.VarChar(100)
+  processedAt DateTime @default(now()) @map("processed_at") @db.Timestamptz
+
+  @@index([processedAt])
+  @@map("stripe_webhook_events")
+}
 ```
 
 ## 6.5 Enum定義
@@ -491,26 +628,27 @@ model ChallengeAchievement {
 ```typescript
 // types/database.ts
 
-export type Rarity =
-  | "common"
-  | "rare"
-  | "super_rare"
-  | "legend";
+export type Rarity = 'common' | 'rare' | 'super_rare' | 'legend';
 
-export type ContextCategory =
-  | "historical_event"
-  | "mythology"
-  | "scientific"
-  | "cultural"
-  | "biographical"
-  | "general"
-  | "metaphorical";
+export type SessionStatus = 'in_progress' | 'completed' | 'abandoned';
 
 export type TransactionType =
-  | "purchase"      // 課金購入
-  | "bonus"         // ボーナス付与
-  | "consume"       // 消費
-  | "refund";       // 返金
+  | 'purchase' // 課金購入
+  | 'bonus' // ボーナス付与
+  | 'consume' // 消費
+  | 'refund' // 返金
+  | 'daily'; // 日次付与
+
+export type SubscriptionTier = 'plus' | 'premium';
+
+export type ContextCategory =
+  | 'historical_event'
+  | 'mythology'
+  | 'scientific'
+  | 'cultural'
+  | 'biographical'
+  | 'general'
+  | 'metaphorical';
 ```
 
 ## 6.6 マイグレーション戦略
@@ -527,13 +665,13 @@ npx prisma migrate deploy
 
 ### インスタンス仕様（初期）
 
-| 項目 | 設定 |
-|------|------|
+| 項目               | 設定                                     |
+| ------------------ | ---------------------------------------- |
 | インスタンスタイプ | db-f1-micro（開発）/ db-g1-small（本番） |
-| ストレージ | 10GB SSD |
-| リージョン | asia-northeast1（東京） |
-| バックアップ | 自動バックアップ有効（7日保持） |
-| 高可用性 | 本番のみ有効 |
+| ストレージ         | 10GB SSD                                 |
+| リージョン         | asia-northeast1（東京）                  |
+| バックアップ       | 自動バックアップ有効（7日保持）          |
+| 高可用性           | 本番のみ有効                             |
 
 ### 接続設定
 
@@ -563,13 +701,13 @@ gcloud sql backups create --instance=INSTANCE_NAME
 
 ### 想定データ量（1年後）
 
-| テーブル | レコード数 | サイズ |
-|----------|-----------|--------|
-| users | 10,000 | ~5MB |
-| articles | 50,000 | ~100MB |
-| cards | 50,000 | ~50MB |
-| knowledge_transactions | 100,000 | ~20MB |
-| **合計** | - | **~200MB** |
+| テーブル               | レコード数 | サイズ     |
+| ---------------------- | ---------- | ---------- |
+| users                  | 10,000     | ~5MB       |
+| articles               | 50,000     | ~100MB     |
+| cards                  | 50,000     | ~50MB      |
+| knowledge_transactions | 100,000    | ~20MB      |
+| **合計**               | -          | **~200MB** |
 
 ### スケーリング計画
 

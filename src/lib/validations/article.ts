@@ -29,6 +29,7 @@ export const getArticlesQuerySchema = z.object({
   search: z.string().max(100).optional(),
   sortBy: z.enum(['createdAt', 'cardCount']).default('createdAt'),
   sortOrder: z.enum(['asc', 'desc']).default('desc'),
+  onlyFavorites: z.coerce.boolean().default(false),
 });
 
 // 記事IDパラメータスキーマ

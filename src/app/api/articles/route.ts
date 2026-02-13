@@ -11,16 +11,19 @@ interface ArticleListResponse {
 }
 
 // 記事生成
-export const POST = withAuth<Article>(async (authUser, req) => {
-  const body = await req.json();
-  const { theme, contentType } = createArticleSchema.parse(body);
+export const POST = withAuth<Article>(
+  async (authUser, req) => {
+    const body = await req.json();
+    const { theme, contentType } = createArticleSchema.parse(body);
 
-  return createArticle({
-    userId: authUser.uid,
-    theme,
-    contentType,
-  });
-}, { rateLimit: 'expensive' });
+    return createArticle({
+      userId: authUser.uid,
+      theme,
+      contentType,
+    });
+  },
+  { rateLimit: 'expensive' }
+);
 
 // 記事一覧取得
 export const GET = withAuth<ArticleListResponse>(async (authUser, req) => {
@@ -31,9 +34,11 @@ export const GET = withAuth<ArticleListResponse>(async (authUser, req) => {
     search: searchParams.get('search') || undefined,
     sortBy: searchParams.get('sortBy') || undefined,
     sortOrder: searchParams.get('sortOrder') || undefined,
+    onlyFavorites: searchParams.get('onlyFavorites') || undefined,
   };
 
-  const { cursor, limit, search, sortBy, sortOrder } = getArticlesQuerySchema.parse(queryParams);
+  const { cursor, limit, search, sortBy, sortOrder, onlyFavorites } =
+    getArticlesQuerySchema.parse(queryParams);
 
   return getArticlesByUser({
     userId: authUser.uid,
@@ -42,5 +47,6 @@ export const GET = withAuth<ArticleListResponse>(async (authUser, req) => {
     search,
     sortBy,
     sortOrder,
+    onlyFavorites,
   });
 });

@@ -26,7 +26,8 @@ export const ERROR_MESSAGES = {
   ARTICLE: {
     NOT_FOUND: '記事が見つかりません',
     GENERATION_FAILED: '記事の生成に失敗しました',
-    DELETE_CONFIRM: 'この記事を削除すると、関連するすべてのカードも削除されます。本当に削除しますか？',
+    DELETE_CONFIRM:
+      'この記事を削除しますか？この操作は取り消せません。（関連するカードは削除されません）',
     DELETE_SUCCESS: '記事を削除しました',
     DELETE_FAILED: '記事の削除に失敗しました',
     THEME_BLOCKED: 'このテーマでは記事を生成できません',

@@ -122,7 +122,9 @@ describe('/api/cards', () => {
 
     describe('エラーハンドリング', () => {
       it('記事が見つからない場合、404を返す', async () => {
-        const { ApiError } = jest.requireActual('@/lib/errors') as { ApiError: { notFound: (msg: string) => Error } };
+        const { ApiError } = jest.requireActual('@/lib/errors') as {
+          ApiError: { notFound: (msg: string) => Error };
+        };
         mockCreateCard.mockRejectedValue(ApiError.notFound('記事が見つかりません'));
 
         const req = createAuthenticatedRequest('/api/cards', {
@@ -135,7 +137,9 @@ describe('/api/cards', () => {
       });
 
       it('キーワードが枯渇した場合、400を返す', async () => {
-        const { ApiError } = jest.requireActual('@/lib/errors') as { ApiError: { noAvailableKeyword: (msg: string) => Error } };
+        const { ApiError } = jest.requireActual('@/lib/errors') as {
+          ApiError: { noAvailableKeyword: (msg: string) => Error };
+        };
         mockCreateCard.mockRejectedValue(
           ApiError.noAvailableKeyword('キーワードが枯渇したため生成できません')
         );
@@ -233,6 +237,10 @@ describe('/api/cards', () => {
           cursor: prevCardId,
           limit: 10,
           rarity: undefined,
+          keyword: undefined,
+          sortBy: 'createdAt',
+          sortOrder: 'desc',
+          onlyFavorites: false,
         });
       });
 

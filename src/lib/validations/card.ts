@@ -10,9 +10,11 @@ export const createCardSchema = z.object({
 export const getCardsQuerySchema = z.object({
   cursor: z.string().uuid().optional(),
   limit: z.coerce.number().int().min(1).max(200).default(20),
-  rarity: z
-    .enum(['common', 'rare', 'super_rare', 'legend'])
-    .optional(),
+  rarity: z.enum(['common', 'rare', 'super_rare', 'legend']).optional(),
+  keyword: z.string().max(50).optional(),
+  sortBy: z.enum(['createdAt', 'rarity', 'keyword']).default('createdAt'),
+  sortOrder: z.enum(['asc', 'desc']).default('desc'),
+  onlyFavorites: z.coerce.boolean().default(false),
 });
 
 // カードIDパラメータスキーマ

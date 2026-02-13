@@ -13,28 +13,31 @@ interface CardListResponse {
 }
 
 // カード生成
-export const POST = withAuth<Card>(async (authUser, req) => {
-  const body = await req.json();
-  const { articleId, rarity } = createCardSchema.parse(body);
+export const POST = withAuth<Card>(
+  async (authUser, req) => {
+    const body = await req.json();
+    const { articleId, rarity } = createCardSchema.parse(body);
 
-  // レアリティ指定がある場合、開発者権限をチェック
-  if (rarity) {
-    const user = await prisma.user.findUnique({
-      where: { id: authUser.uid },
-      select: { isDeveloper: true },
-    });
+    // レアリティ指定がある場合、開発者権限をチェック
+    if (rarity) {
+      const user = await prisma.user.findUnique({
+        where: { id: authUser.uid },
+        select: { isDeveloper: true },
+      });
 
-    if (!user?.isDeveloper) {
-      throw new ApiError('FORBIDDEN', 'レアリティ指定は開発者のみ利用可能です', 403);
+      if (!user?.isDeveloper) {
+        throw new ApiError('FORBIDDEN', 'レアリティ指定は開発者のみ利用可能です', 403);
+      }
     }
-  }
 
-  return createCard({
-    userId: authUser.uid,
-    articleId,
-    specifiedRarity: rarity,
-  });
-}, { rateLimit: 'expensive' });
+    return createCard({
+      userId: authUser.uid,
+      articleId,
+      specifiedRarity: rarity,
+    });
+  },
+  { rateLimit: 'expensive' }
+);
 
 // カード一覧取得
 export const GET = withAuth<CardListResponse>(async (authUser, req) => {
@@ -43,14 +46,23 @@ export const GET = withAuth<CardListResponse>(async (authUser, req) => {
     cursor: searchParams.get('cursor') || undefined,
     limit: searchParams.get('limit') || undefined,
     rarity: searchParams.get('rarity') || undefined,
+    keyword: searchParams.get('keyword') || undefined,
+    sortBy: searchParams.get('sortBy') || undefined,
+    sortOrder: searchParams.get('sortOrder') || undefined,
+    onlyFavorites: searchParams.get('onlyFavorites') || undefined,
   };
 
-  const { cursor, limit, rarity } = getCardsQuerySchema.parse(queryParams);
+  const { cursor, limit, rarity, keyword, sortBy, sortOrder, onlyFavorites } =
+    getCardsQuerySchema.parse(queryParams);
 
   return getCardsByUser({
     userId: authUser.uid,
     cursor,
     limit,
     rarity,
+    keyword,
+    sortBy,
+    sortOrder,
+    onlyFavorites,
   });
 });

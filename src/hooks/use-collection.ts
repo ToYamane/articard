@@ -14,12 +14,11 @@ const DEFAULT_FILTER: FilterState = {
   rarity: [],
   sortBy: 'createdAt',
   sortOrder: 'desc',
+  onlyFavorites: false,
 };
 
 export function useCollection(options: UseCollectionOptions = {}) {
-  const [filter, setFilter] = useState<FilterState>(
-    options.initialFilter || DEFAULT_FILTER
-  );
+  const [filter, setFilter] = useState<FilterState>(options.initialFilter || DEFAULT_FILTER);
   const [searchQuery, setSearchQuery] = useState('');
 
   // APIからカードを取得する関数
@@ -40,6 +39,9 @@ export function useCollection(options: UseCollectionOptions = {}) {
       }
       params.append('sortBy', filter.sortBy);
       params.append('sortOrder', filter.sortOrder);
+      if (filter.onlyFavorites) {
+        params.append('onlyFavorites', 'true');
+      }
       params.append('limit', '20');
 
       const response = await fetch(`/api/cards?${params.toString()}`, {
@@ -89,12 +91,9 @@ export function useCollection(options: UseCollectionOptions = {}) {
   );
 
   // 検索クエリ変更時にリフレッシュ
-  const handleSearchChange = useCallback(
-    (query: string) => {
-      setSearchQuery(query);
-    },
-    []
-  );
+  const handleSearchChange = useCallback((query: string) => {
+    setSearchQuery(query);
+  }, []);
 
   // 検索実行
   const executeSearch = useCallback(() => {
@@ -103,8 +102,7 @@ export function useCollection(options: UseCollectionOptions = {}) {
 
   // フィルターがアクティブかどうか
   const hasActiveFilter =
-    filter.rarity.length > 0 ||
-    searchQuery.length > 0;
+    filter.rarity.length > 0 || searchQuery.length > 0 || filter.onlyFavorites;
 
   // フィルタークリア
   const clearFilter = useCallback(() => {

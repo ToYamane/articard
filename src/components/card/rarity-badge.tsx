@@ -2,11 +2,10 @@
 
 import { cn } from '@/lib/utils';
 import type { Rarity } from '@/types/database';
-import { RARITY_DISPLAY_NAMES, RARITY_STARS } from '@/types/database';
+import { RARITY_DISPLAY_NAMES } from '@/types/database';
 
 interface RarityBadgeProps {
   rarity: Rarity;
-  showStars?: boolean;
   size?: 'sm' | 'md' | 'lg';
   className?: string;
 }
@@ -24,33 +23,18 @@ const SIZE_CLASSES = {
   lg: 'text-base px-3 py-1.5',
 };
 
-export function RarityBadge({
-  rarity,
-  showStars = true,
-  size = 'md',
-  className,
-}: RarityBadgeProps) {
-  const stars = RARITY_STARS[rarity];
+export function RarityBadge({ rarity, size = 'md', className }: RarityBadgeProps) {
   const displayName = RARITY_DISPLAY_NAMES[rarity];
 
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1 rounded-full font-medium',
+        'inline-flex items-center rounded-full font-medium',
         RARITY_COLORS[rarity],
         SIZE_CLASSES[size],
         className
       )}
     >
-      {showStars && (
-        <span className="flex">
-          {Array.from({ length: stars }).map((_, i) => (
-            <span key={i} className="text-yellow-500">
-              ★
-            </span>
-          ))}
-        </span>
-      )}
       <span>{displayName}</span>
     </span>
   );

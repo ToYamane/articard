@@ -8,6 +8,8 @@ interface CardGridProps {
   cards: Card[];
   variant?: 'default' | 'home';
   onCardClick?: (card: Card) => void;
+  favoriteIds?: Set<string>;
+  onFavoriteToggle?: (cardId: string) => void;
   className?: string;
 }
 
@@ -16,13 +18,18 @@ const GRID_CLASSES = {
   home: 'grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6',
 };
 
-export function CardGrid({ cards, variant = 'default', onCardClick, className }: CardGridProps) {
+export function CardGrid({
+  cards,
+  variant = 'default',
+  onCardClick,
+  favoriteIds,
+  onFavoriteToggle,
+  className,
+}: CardGridProps) {
   if (cards.length === 0) {
     return (
       <div className="py-12 text-center">
-        <p className="text-gray-500 dark:text-gray-400">
-          カードがありません
-        </p>
+        <p className="text-gray-500 dark:text-gray-400">カードがありません</p>
       </div>
     );
   }
@@ -38,6 +45,8 @@ export function CardGrid({ cards, variant = 'default', onCardClick, className }:
             size={isHome ? 'home' : 'sm'}
             showInfo={isHome}
             onClick={() => onCardClick?.(card)}
+            isFavorite={favoriteIds?.has(card.id)}
+            onFavoriteToggle={onFavoriteToggle ? () => onFavoriteToggle(card.id) : undefined}
           />
         </div>
       ))}

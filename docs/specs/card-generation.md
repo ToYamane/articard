@@ -97,18 +97,14 @@ const selectAvailableKeyword = async (
     where: { articleId },
     select: { keyword: true },
   });
-  const usedKeywords = existingCards.map(c => c.keyword);
+  const usedKeywords = existingCards.map((c) => c.keyword);
 
   // 未使用のキーワードのみをフィルター
-  const availableKeywords = extractedKeywords.filter(
-    k => !usedKeywords.includes(k)
-  );
+  const availableKeywords = extractedKeywords.filter((k) => !usedKeywords.includes(k));
 
   // 利用可能なキーワードがない場合はエラー
   if (availableKeywords.length === 0) {
-    throw new NoAvailableKeywordError(
-      "この記事から生成できるカードはもうありません"
-    );
+    throw new NoAvailableKeywordError('この記事から生成できるカードはもうありません');
   }
 
   // ランダムに1つ選択
@@ -119,8 +115,8 @@ const selectAvailableKeyword = async (
 
 ### エラーハンドリング（キーワード枯渇）
 
-| エラー種別 | ユーザー表示 | 対応 |
-|-----------|-------------|------|
+| エラー種別     | ユーザー表示                                                               | 対応               |
+| -------------- | -------------------------------------------------------------------------- | ------------------ |
 | キーワード枯渇 | 「この記事から生成できるカードはもうありません。別の記事でお試しください」 | 新規記事生成を促す |
 
 ## 3.4 文脈分析
@@ -130,14 +126,14 @@ const selectAvailableKeyword = async (
 キーワードが記事内でどのような文脈で使われているかを分析。
 
 ```typescript
-type ContextCategory = 
-  | "historical_event"    // 歴史的出来事（ニュートンのりんご）
-  | "mythology"           // 神話・伝説（黄金のリンゴ）
-  | "scientific"          // 科学的事象
-  | "cultural"            // 文化的象徴
-  | "biographical"        // 人物関連
-  | "general"             // 一般的な用法
-  | "metaphorical";       // 比喩的用法
+type ContextCategory =
+  | 'historical_event' // 歴史的出来事（ニュートンのりんご）
+  | 'mythology' // 神話・伝説（黄金のリンゴ）
+  | 'scientific' // 科学的事象
+  | 'cultural' // 文化的象徴
+  | 'biographical' // 人物関連
+  | 'general' // 一般的な用法
+  | 'metaphorical'; // 比喩的用法
 ```
 
 ### 文脈分析プロンプト
@@ -163,23 +159,23 @@ ${article_content}
 
 ### レア度定義
 
-| レア度 | 名称 | 出現確率 | 条件 |
-|--------|------|---------|------|
-| ★☆☆☆☆ | コモン | 60% | 一般的な文脈 + 頻出キーワード |
-| ★★★☆☆ | レア | 25% | 特殊な文脈 + 珍しいキーワード |
-| ★★★★☆ | スーパーレア | 10% | 非常に特殊な文脈 |
-| ★★★★★ | レジェンド | 5% | 神話・歴史的重要イベント等の極めて特殊な文脈 |
+| レア度 | 名称         | 出現確率 | 条件                                         |
+| ------ | ------------ | -------- | -------------------------------------------- |
+| ★☆☆☆☆  | コモン       | 60%      | 一般的な文脈 + 頻出キーワード                |
+| ★★★☆☆  | レア         | 25%      | 特殊な文脈 + 珍しいキーワード                |
+| ★★★★☆  | スーパーレア | 10%      | 非常に特殊な文脈                             |
+| ★★★★★  | レジェンド   | 5%       | 神話・歴史的重要イベント等の極めて特殊な文脈 |
 
 ### 判定ロジック
 
 ```typescript
 interface RarityInput {
   contextCategory: ContextCategory;
-  uniquenessScore: number;  // 1-10
+  uniquenessScore: number; // 1-10
   keywordFrequency: number; // 一般的な出現頻度（低いほどレア）
 }
 
-type Rarity = "common" | "rare" | "super_rare" | "legend";
+type Rarity = 'common' | 'rare' | 'super_rare' | 'legend';
 
 /**
  * 確率に基づいてレア度を決定
@@ -196,10 +192,10 @@ const calculateRarity = (specifiedRarity?: Rarity): Rarity => {
 
   const roll = Math.random() * 100;
 
-  if (roll < 5) return "legend";
-  if (roll < 15) return "super_rare";
-  if (roll < 40) return "rare";
-  return "common";
+  if (roll < 5) return 'legend';
+  if (roll < 15) return 'super_rare';
+  if (roll < 40) return 'rare';
+  return 'common';
 };
 ```
 
@@ -225,11 +221,11 @@ const calculateRarity = (specifiedRarity?: Rarity): Rarity => {
 
 ### テキスト仕様
 
-| 項目 | 仕様 |
-|------|------|
-| 最大文字数 | 100文字 |
-| トーン | レア度と文脈に応じて変化 |
-| 内容 | キーワードの文脈を表現するフレーバーテキスト |
+| 項目       | 仕様                                         |
+| ---------- | -------------------------------------------- |
+| 最大文字数 | 100文字                                      |
+| トーン     | レア度と文脈に応じて変化                     |
+| 内容       | キーワードの文脈を表現するフレーバーテキスト |
 
 ### 生成プロンプト
 
@@ -270,10 +266,10 @@ const cardTextPrompt = `
 
 ```typescript
 interface FluxGenerationParams {
-  model: "flux-1.1-pro";
+  model: 'flux-1.1-pro';
   prompt: string;
   width: 512;
-  height: 768;  // トレカ比率
+  height: 768; // トレカ比率
   steps: 30;
   cfg_scale: 7.5;
 }
@@ -282,29 +278,25 @@ interface FluxGenerationParams {
 ### プロンプト生成
 
 ```typescript
-const generateImagePrompt = (
-  keyword: string,
-  context: ContextAnalysis,
-  rarity: Rarity
-): string => {
+const generateImagePrompt = (keyword: string, context: ContextAnalysis, rarity: Rarity): string => {
   // スタイル修飾子（レア度による）
   const styleModifiers: Record<Rarity, string> = {
-    common: "clean illustration, bright colors",
-    rare: "detailed art, dramatic lighting",
-    super_rare: "epic fantasy art, cinematic lighting, masterpiece",
-    legend: "legendary masterpiece, divine lighting, ultra detailed, golden accents",
+    common: 'clean illustration, bright colors',
+    rare: 'detailed art, dramatic lighting',
+    super_rare: 'epic fantasy art, cinematic lighting, masterpiece',
+    legend: 'legendary masterpiece, divine lighting, ultra detailed, golden accents',
   };
-  
+
   // トーン修飾子
   const toneModifiers: Record<string, string> = {
-    epic: "epic scale, heroic atmosphere",
-    mysterious: "mysterious atmosphere, ethereal glow",
-    scientific: "technical precision, educational style",
-    warm: "warm colors, friendly atmosphere",
-    dramatic: "dramatic lighting, intense mood",
-    neutral: "balanced composition, clear presentation",
+    epic: 'epic scale, heroic atmosphere',
+    mysterious: 'mysterious atmosphere, ethereal glow',
+    scientific: 'technical precision, educational style',
+    warm: 'warm colors, friendly atmosphere',
+    dramatic: 'dramatic lighting, intense mood',
+    neutral: 'balanced composition, clear presentation',
   };
-  
+
   return `
     ${keyword}, ${context.contextDescription},
     ${styleModifiers[rarity]},
@@ -361,12 +353,12 @@ const generateImagePrompt = (
 
 ### レア度別デザイン
 
-| レア度 | 枠色 | 背景効果 |
-|--------|------|---------|
-| コモン | グレー | なし |
-| レア | 青 | グロー効果 |
-| スーパーレア | 紫 | 強いグロー |
-| レジェンド | 金 | 虹色グラデーション + パーティクル |
+| レア度       | 枠色   | 背景効果                          |
+| ------------ | ------ | --------------------------------- |
+| コモン       | グレー | なし                              |
+| レア         | 青     | グロー効果                        |
+| スーパーレア | 紫     | 強いグロー                        |
+| レジェンド   | 金     | 虹色グラデーション + パーティクル |
 
 ### カード名フォントのランダム化
 
@@ -376,23 +368,23 @@ const generateImagePrompt = (
 
 **高出現率フォント（各 2/14 ≈ 14.3%）**
 
-| フォント名 | スタイル | 特徴 |
-|-----------|---------|------|
-| Noto Sans JP | ゴシック | 標準的で読みやすい |
-| Noto Serif JP | 明朝 | 上品で伝統的 |
-| Dela Gothic One | ゴシック | 太字で力強い |
-| Kaisei Tokumin | 明朝 | 毛筆風で雅やか |
+| フォント名      | スタイル | 特徴               |
+| --------------- | -------- | ------------------ |
+| Noto Sans JP    | ゴシック | 標準的で読みやすい |
+| Noto Serif JP   | 明朝     | 上品で伝統的       |
+| Dela Gothic One | ゴシック | 太字で力強い       |
+| Kaisei Tokumin  | 明朝     | 毛筆風で雅やか     |
 
 **低出現率フォント（各 1/14 ≈ 7.1%）**
 
-| フォント名 | スタイル | 特徴 |
-|-----------|---------|------|
-| Reggae One | デザイン | ポップで楽しい |
-| Yuji Syuku | 毛筆 | 繊細な筆文字 |
-| Kiwi Maru | 丸ゴシック | 柔らかく親しみやすい |
-| Hachi Maru Pop | 手書き風 | カジュアルで可愛い |
-| DotGothic16 | ドット | レトロゲーム風 |
-| Stick | 棒体 | シンプルで直線的 |
+| フォント名     | スタイル   | 特徴                 |
+| -------------- | ---------- | -------------------- |
+| Reggae One     | デザイン   | ポップで楽しい       |
+| Yuji Syuku     | 毛筆       | 繊細な筆文字         |
+| Kiwi Maru      | 丸ゴシック | 柔らかく親しみやすい |
+| Hachi Maru Pop | 手書き風   | カジュアルで可愛い   |
+| DotGothic16    | ドット     | レトロゲーム風       |
+| Stick          | 棒体       | シンプルで直線的     |
 
 #### 実装
 
@@ -444,10 +436,7 @@ function selectRandomFont(): FontConfig {
 // Sharp または Canvas APIを使用
 import sharp from 'sharp';
 
-const composeCard = async (
-  illustrationBuffer: Buffer,
-  cardData: CardData
-): Promise<Buffer> => {
+const composeCard = async (illustrationBuffer: Buffer, cardData: CardData): Promise<Buffer> => {
   // 1. ベースカード画像（テンプレート）読み込み
   // 2. イラストを配置
   // 3. テキストを描画
@@ -460,28 +449,28 @@ const composeCard = async (
 
 ```typescript
 interface Card {
-  id: string;              // UUID
-  
+  id: string; // UUID
+
   // 関連
-  userId: string;          // 所有ユーザー
-  articleId: string;       // 元記事
-  
+  userId: string; // 所有ユーザー
+  articleId: string | null; // 元記事（記事削除時は null）
+
   // カード情報
-  keyword: string;         // キーワード
-  rarity: Rarity;          // レア度
-  flavorText: string;      // フレーバーテキスト（100文字以内）
-  
+  keyword: string; // キーワード
+  rarity: Rarity; // レア度
+  flavorText: string; // フレーバーテキスト（100文字以内）
+
   // 文脈情報
   contextCategory: ContextCategory;
   contextDescription: string;
-  
+
   // 画像
   illustrationUrl: string; // 生成イラストURL（Cloud Storage）
-  cardImageUrl: string;    // 完成カード画像URL（Cloud Storage）
-  
+  cardImageUrl: string; // 完成カード画像URL（Cloud Storage）
+
   // メタデータ
   createdAt: Date;
-  fluxPrompt: string;      // 使用したプロンプト（デバッグ用）
+  fluxPrompt: string; // 使用したプロンプト（デバッグ用）
 }
 ```
 

@@ -70,6 +70,8 @@ model User {
   challengeSessions     ChallengeSession[]
   challengeHighScores   ChallengeHighScore[]
   challengeAchievements ChallengeAchievement[]
+  favoriteCards         FavoriteCard[]
+  favoriteArticles      FavoriteArticle[]
 
   @@index([createdAt])
   @@map("users")
@@ -85,8 +87,9 @@ model Article {
   tokenUsage  Int      @default(0) @map("token_usage")
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
 
-  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  cards Card[]
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cards     Card[]
+  favorites FavoriteArticle[]
 
   @@index([userId])
   @@index([createdAt])
@@ -97,7 +100,7 @@ model Article {
 model Card {
   id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId             String   @map("user_id") @db.VarChar(128)
-  articleId          String   @map("article_id") @db.Uuid
+  articleId          String?  @map("article_id") @db.Uuid
   keyword            String   @db.VarChar(50)
   cardNumber         Int      @map("card_number")
   rarity             Rarity
@@ -111,8 +114,9 @@ model Card {
   fluxPrompt         String   @map("flux_prompt") @db.Text
   createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz
 
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  article   Article?       @relation(fields: [articleId], references: [id], onDelete: SetNull)
+  favorites FavoriteCard[]
 
   @@unique([keyword, cardNumber], name: "keyword_cardNumber_unique")
   @@index([userId])
@@ -207,6 +211,36 @@ model ChallengeAchievement {
   @@index([userId])
   @@index([userId, scenarioId])
   @@map("challenge_achievements")
+}
+
+// お気に入りカード
+model FavoriteCard {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @map("user_id") @db.VarChar(128)
+  cardId    String   @map("card_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  card Card @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, cardId])
+  @@index([userId])
+  @@map("favorite_cards")
+}
+
+// お気に入り記事
+model FavoriteArticle {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @map("user_id") @db.VarChar(128)
+  articleId String   @map("article_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  article Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, articleId])
+  @@index([userId])
+  @@map("favorite_articles")
 }
 
 // Stripe Webhook 冪等性チェック用

@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { isThemeSafe, generateArticle } from '@/lib/openai';
-import { batchDeleteCardImages } from '@/lib/gcs/storage';
 import { ApiError } from '@/lib/errors';
+import { getFavoriteArticleIds } from '@/lib/services/favorite-service';
 import {
   processPaginationResult,
   buildCursorOptions,
@@ -23,6 +23,7 @@ export interface ArticleListParams {
   search?: string;
   sortBy?: 'createdAt' | 'cardCount';
   sortOrder?: 'asc' | 'desc';
+  onlyFavorites?: boolean;
 }
 
 export interface ArticleListResult {
@@ -73,6 +74,7 @@ export async function getArticlesByUser({
   search,
   sortBy = 'createdAt',
   sortOrder = 'desc',
+  onlyFavorites,
 }: ArticleListParams): Promise<ArticleListResult> {
   const where: Prisma.ArticleWhereInput = {
     userId,
@@ -81,10 +83,14 @@ export async function getArticlesByUser({
     }),
   };
 
+  // お気に入りのみフィルタ
+  if (onlyFavorites) {
+    const favoriteIds = await getFavoriteArticleIds(userId);
+    where.id = { in: favoriteIds };
+  }
+
   const orderBy: Prisma.ArticleOrderByWithRelationInput =
-    sortBy === 'cardCount'
-      ? { cards: { _count: sortOrder } }
-      : { createdAt: sortOrder };
+    sortBy === 'cardCount' ? { cards: { _count: sortOrder } } : { createdAt: sortOrder };
 
   const articles = await prisma.article.findMany({
     where,
@@ -110,10 +116,7 @@ export async function getArticlesByUser({
 /**
  * 記事を取得
  */
-export async function getArticleById(
-  articleId: string,
-  userId?: string
-): Promise<Article | null> {
+export async function getArticleById(articleId: string, userId?: string): Promise<Article | null> {
   const article = await prisma.article.findUnique({
     where: { id: articleId },
   });
@@ -127,12 +130,9 @@ export async function getArticleById(
 }
 
 /**
- * 記事を削除（関連カードも含む）
+ * 記事を削除（関連カードの articleId は SetNull で自動的に null になる）
  */
-export async function deleteArticle(
-  articleId: string,
-  userId: string
-): Promise<boolean> {
+export async function deleteArticle(articleId: string, userId: string): Promise<boolean> {
   // 所有者チェック
   const article = await prisma.article.findUnique({
     where: { id: articleId },
@@ -142,34 +142,7 @@ export async function deleteArticle(
     return false;
   }
 
-  // 関連カードのIDを取得（画像削除用）
-  const relatedCards = await prisma.card.findMany({
-    where: { articleId },
-    select: { id: true },
-  });
-  const cardIds = relatedCards.map((card) => card.id);
-
-  // トランザクションで削除
-  await prisma.$transaction(async (tx) => {
-    // 関連カードを削除
-    await tx.card.deleteMany({
-      where: { articleId },
-    });
-
-    // 記事を削除
-    await tx.article.delete({
-      where: { id: articleId },
-    });
-  });
-
-  // 関連カードの画像を一括削除
-  if (cardIds.length > 0) {
-    try {
-      await batchDeleteCardImages(cardIds);
-    } catch {
-      // 画像削除に失敗してもDBは削除済みなので無視
-    }
-  }
+  await prisma.article.delete({ where: { id: articleId } });
 
   return true;
 }

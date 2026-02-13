@@ -24,7 +24,8 @@ import {
   buildCursorOptions,
   DEFAULT_PAGE_SIZE,
 } from '@/lib/utils/pagination';
-import type { Card, Article } from '@prisma/client';
+import { getFavoriteCardIds } from '@/lib/services/favorite-service';
+import type { Card, Article, Prisma } from '@prisma/client';
 import type { Rarity } from '@/types/database';
 
 export interface CreateCardParams {
@@ -38,6 +39,10 @@ export interface CardListParams {
   cursor?: string;
   limit?: number;
   rarity?: Rarity;
+  keyword?: string;
+  sortBy?: 'createdAt' | 'rarity' | 'keyword';
+  sortOrder?: 'asc' | 'desc';
+  onlyFavorites?: boolean;
 }
 
 export interface CardListResult {
@@ -74,11 +79,7 @@ async function validateCardCreation(
   const hasCoins = await hasEnoughCoins(userId, cost);
 
   if (!hasCoins) {
-    throw new ApiError(
-      'INSUFFICIENT_COINS',
-      `カード生成には${cost}コインが必要です`,
-      400
-    );
+    throw new ApiError('INSUFFICIENT_COINS', `カード生成には${cost}コインが必要です`, 400);
   }
 
   const article = await prisma.article.findUnique({
@@ -97,10 +98,7 @@ async function validateCardCreation(
  * - 既存カードで使用済みのキーワードを除外
  * - 利用可能なキーワードからランダム選択
  */
-async function selectKeywordForCard(
-  articleId: string,
-  content: string
-): Promise<string> {
+async function selectKeywordForCard(articleId: string, content: string): Promise<string> {
   const existingCards = await prisma.card.findMany({
     where: { articleId },
     select: { keyword: true },
@@ -168,7 +166,13 @@ async function generateAndUploadImages(
   flavorText: string,
   tempCardId: string,
   createdAt: Date
-): Promise<{ images: CardImageUrls; imagePrompt: string; imageModel: string; imageProvider: string; imageCost: number }> {
+): Promise<{
+  images: CardImageUrls;
+  imagePrompt: string;
+  imageModel: string;
+  imageProvider: string;
+  imageCost: number;
+}> {
   // イラスト生成
   const {
     imageBuffer: illustrationBuffer,
@@ -184,7 +188,9 @@ async function generateAndUploadImages(
     emotionalTone: contextAnalysis.emotionalTone,
   });
 
-  console.log(`Image generated with ${imageModel} (${imageProvider}), estimated cost: $${imageCost.toFixed(4)}`);
+  console.log(
+    `Image generated with ${imageModel} (${imageProvider}), estimated cost: $${imageCost.toFixed(4)}`
+  );
 
   // カード画像合成
   const { cardImageBuffer, cardBackImageBuffer, thumbnailBuffer } = await composeCardImage({
@@ -325,13 +331,33 @@ export async function getCardsByUser({
   cursor,
   limit = DEFAULT_PAGE_SIZE,
   rarity,
+  keyword,
+  sortBy = 'createdAt',
+  sortOrder = 'desc',
+  onlyFavorites,
 }: CardListParams): Promise<CardListResult> {
+  const where: Prisma.CardWhereInput = {
+    userId,
+    ...(rarity && { rarity }),
+    ...(keyword && { keyword: { contains: keyword, mode: 'insensitive' as const } }),
+  };
+
+  // お気に入りのみフィルタ
+  if (onlyFavorites) {
+    const favoriteIds = await getFavoriteCardIds(userId);
+    where.id = { in: favoriteIds };
+  }
+
+  const orderBy: Prisma.CardOrderByWithRelationInput =
+    sortBy === 'rarity'
+      ? { rarity: sortOrder }
+      : sortBy === 'keyword'
+        ? { keyword: sortOrder }
+        : { createdAt: sortOrder };
+
   const cards = await prisma.card.findMany({
-    where: {
-      userId,
-      ...(rarity && { rarity }),
-    },
-    orderBy: { createdAt: 'desc' },
+    where,
+    orderBy,
     take: limit + 1,
     ...buildCursorOptions(cursor),
   });
@@ -376,10 +402,7 @@ export async function getCardById(
 /**
  * カードを削除
  */
-export async function deleteCard(
-  cardId: string,
-  userId: string
-): Promise<boolean> {
+export async function deleteCard(cardId: string, userId: string): Promise<boolean> {
   const card = await prisma.card.findUnique({
     where: { id: cardId },
   });
@@ -463,9 +486,7 @@ export async function getAvailableKeywordCount(
   const usedKeywords = new Set(existingCards.map((c) => c.keyword));
 
   // 利用可能なキーワード数を計算
-  const availableKeywords = extractedKeywords.filter(
-    (kw) => !usedKeywords.has(kw)
-  );
+  const availableKeywords = extractedKeywords.filter((kw) => !usedKeywords.has(kw));
 
   return {
     available: availableKeywords.length,

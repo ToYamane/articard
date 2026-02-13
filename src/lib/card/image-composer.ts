@@ -10,8 +10,8 @@ const FONTS_DIR = path.join(process.cwd(), 'fonts');
 
 interface FontConfig {
   name: string;
-  file: string;       // TTFファイル名
-  weight: number;     // 出現重み
+  file: string; // TTFファイル名
+  weight: number; // 出現重み
   font?: opentype.Font; // 遅延ロード
 }
 
@@ -158,13 +158,6 @@ export interface CardCompositionResult {
   cardImageBuffer: Buffer;
   cardBackImageBuffer: Buffer;
   thumbnailBuffer: Buffer;
-}
-
-/**
- * レア度に応じた星を生成
- */
-function getRarityStars(rarity: Rarity): string {
-  return RARITY_CONFIG[rarity].stars;
 }
 
 /**
@@ -350,8 +343,10 @@ function generateFrameSvg(rarity: Rarity): Buffer {
     const off = bw + 10;
     const c = design.border.color;
     const corners = [
-      [off, off], [W - off, off],
-      [off, H - off], [W - off, H - off],
+      [off, off],
+      [W - off, off],
+      [off, H - off],
+      [W - off, H - off],
     ];
     for (const [cx, cy] of corners) {
       elements.push(`
@@ -675,7 +670,7 @@ async function createCardBack(
             font-family="'Noto Sans JP', 'Yu Gothic', 'Meiryo', sans-serif"
             font-size="20"
             fill="${color}"
-            text-anchor="middle">${getRarityStars(rarity)} ${getRarityName(rarity)}</text>
+            text-anchor="middle">${getRarityName(rarity)}</text>
 
       <!-- セクションタイトル: 解説 -->
       <text x="${CARD_WIDTH / 2}" y="180"
@@ -711,9 +706,7 @@ async function createCardBack(
   `;
 
   // SVGをJPEGに変換
-  const cardBack = await sharp(Buffer.from(backSvg))
-    .jpeg({ quality: 90 })
-    .toBuffer();
+  const cardBack = await sharp(Buffer.from(backSvg)).jpeg({ quality: 90 }).toBuffer();
 
   return cardBack;
 }

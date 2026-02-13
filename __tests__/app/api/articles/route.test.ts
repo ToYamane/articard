@@ -219,6 +219,7 @@ describe('/api/articles', () => {
           search: undefined,
           sortBy: 'createdAt',
           sortOrder: 'desc',
+          onlyFavorites: false,
         });
       });
 

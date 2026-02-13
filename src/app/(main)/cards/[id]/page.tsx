@@ -4,10 +4,11 @@ import { useEffect, useState, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { CardDetailDisplay } from '@/components/card';
-import { Button, LoadingSpinner, ConfirmModal } from '@/components/ui';
+import { Button, LoadingSpinner, ConfirmModal, FavoriteButton } from '@/components/ui';
 import { ShareModal } from '@/components/share';
 import { ERROR_MESSAGES } from '@/lib/errors';
 import { useToast } from '@/hooks/use-toast';
+import { useFavorites } from '@/hooks/use-favorites';
 import { useAuthStore } from '@/stores/auth-store';
 import { getIdToken } from '@/lib/firebase/client';
 import type { CardWithArticle } from '@/lib/services/card-service';
@@ -19,6 +20,8 @@ export default function CardPage() {
   const router = useRouter();
   const { addToast } = useToast();
   const { user } = useAuthStore();
+
+  const { isFavorite, toggleFavorite } = useFavorites('cards');
 
   const [card, setCard] = useState<CardWithArticle | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -52,10 +55,7 @@ export default function CardPage() {
         setCard(data.data);
       } catch (error) {
         console.error('Fetch card error:', error);
-        addToast(
-          error instanceof Error ? error.message : 'カードの取得に失敗しました',
-          'error'
-        );
+        addToast(error instanceof Error ? error.message : 'カードの取得に失敗しました', 'error');
         router.push('/collection');
       } finally {
         setIsLoading(false);
@@ -94,10 +94,7 @@ export default function CardPage() {
       router.push('/collection');
     } catch (error) {
       console.error('Delete card error:', error);
-      addToast(
-        error instanceof Error ? error.message : 'カードの削除に失敗しました',
-        'error'
-      );
+      addToast(error instanceof Error ? error.message : 'カードの削除に失敗しました', 'error');
     } finally {
       setIsDeleting(false);
       setShowDeleteModal(false);
@@ -163,14 +160,16 @@ export default function CardPage() {
             元の記事を見る
           </Button>
         )}
+        <Button onClick={() => toggleFavorite(id)} variant="secondary" className="flex-1">
+          <span className="flex items-center justify-center gap-1.5">
+            <FavoriteButton isFavorite={isFavorite(id)} onToggle={() => {}} size="sm" />
+            {isFavorite(id) ? 'お気に入り解除' : 'お気に入り'}
+          </span>
+        </Button>
         <Button onClick={() => setShowShareModal(true)} className="flex-1">
           共有する
         </Button>
-        <Button
-          onClick={() => setShowDeleteModal(true)}
-          variant="danger"
-          className="flex-1"
-        >
+        <Button onClick={() => setShowDeleteModal(true)} variant="danger" className="flex-1">
           削除
         </Button>
       </motion.div>

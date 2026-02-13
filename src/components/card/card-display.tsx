@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { formatRelativeTime } from '@/lib/utils';
 import { RarityBadge } from './rarity-badge';
+import { FavoriteButton } from '@/components/ui';
 import type { Card } from '@prisma/client';
 import type { Rarity } from '@/types/database';
 
@@ -13,6 +14,8 @@ interface CardDisplayProps {
   size?: 'sm' | 'md' | 'lg' | 'home';
   showInfo?: boolean;
   onClick?: () => void;
+  isFavorite?: boolean;
+  onFavoriteToggle?: () => void;
   className?: string;
 }
 
@@ -30,7 +33,15 @@ const RARITY_GLOW: Record<Rarity, string> = {
   legend: 'shadow-yellow-500/60 hover:shadow-yellow-500/80',
 };
 
-export function CardDisplay({ card, size = 'md', showInfo = false, onClick, className }: CardDisplayProps) {
+export function CardDisplay({
+  card,
+  size = 'md',
+  showInfo = false,
+  onClick,
+  isFavorite,
+  onFavoriteToggle,
+  className,
+}: CardDisplayProps) {
   const rarity = card.rarity as Rarity;
   const hasGlow = rarity !== 'common';
 
@@ -62,6 +73,13 @@ export function CardDisplay({ card, size = 'md', showInfo = false, onClick, clas
           className="object-cover"
           sizes={sizeMap[size] || '192px'}
         />
+
+        {/* お気に入りボタン（常時表示） */}
+        {onFavoriteToggle && (
+          <div className="absolute right-1 top-1 z-10">
+            <FavoriteButton isFavorite={!!isFavorite} onToggle={onFavoriteToggle} size="sm" />
+          </div>
+        )}
 
         {/* オーバーレイ情報（ホバー時、showInfo=false の場合のみ） */}
         {!showInfo && (
@@ -137,9 +155,7 @@ export function CardDetailDisplay({ card, className }: CardDetailDisplayProps) {
           transition={{ duration: 0.4, type: 'spring', stiffness: 200 }}
           className="flex flex-col items-center"
         >
-          <p className="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">
-            表面
-          </p>
+          <p className="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">表面</p>
           <div
             className={cn(
               'relative h-96 w-64 overflow-hidden rounded-xl shadow-xl',
@@ -164,9 +180,7 @@ export function CardDetailDisplay({ card, className }: CardDetailDisplayProps) {
             transition={{ duration: 0.4, delay: 0.1, type: 'spring', stiffness: 200 }}
             className="flex flex-col items-center"
           >
-            <p className="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">
-              裏面
-            </p>
+            <p className="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">裏面</p>
             <div
               className={cn(
                 'relative h-96 w-64 overflow-hidden rounded-xl shadow-xl',
@@ -193,9 +207,7 @@ export function CardDetailDisplay({ card, className }: CardDetailDisplayProps) {
           transition={{ delay: 0.2, duration: 0.3 }}
           className="w-full max-w-md space-y-4 text-center"
         >
-          <p className="text-sm italic text-gray-600 dark:text-gray-400">
-            「{card.flavorText}」
-          </p>
+          <p className="text-sm italic text-gray-600 dark:text-gray-400">「{card.flavorText}」</p>
 
           <div className="text-xs text-gray-500 dark:text-gray-500">
             {formatRelativeTime(card.createdAt)}

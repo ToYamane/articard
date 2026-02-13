@@ -8,9 +8,11 @@ import { ArticleEmpty } from '@/components/article/article-empty';
 import { CollectionSearch } from '@/components/collection';
 import { Button, LoadingSpinner, ArticleListSkeleton } from '@/components/ui';
 import { useArticles } from '@/hooks/use-articles';
+import { useFavorites } from '@/hooks/use-favorites';
 import type { ArticleFilterState } from '@/hooks/use-articles';
 
 export default function ArticlesPage() {
+  const { isFavorite, toggleFavorite } = useFavorites('articles');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
 
@@ -65,9 +67,7 @@ export default function ArticlesPage() {
     >
       {/* ヘッダー */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          記事履歴
-        </h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">記事履歴</h1>
         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
           これまでに生成した記事の一覧です
         </p>
@@ -90,17 +90,8 @@ export default function ArticlesPage() {
         >
           検索
         </Button>
-        <Button
-          onClick={() => setIsFilterOpen(true)}
-          variant="secondary"
-          className="shrink-0"
-        >
-          <svg
-            className="h-5 w-5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
+        <Button onClick={() => setIsFilterOpen(true)} variant="secondary" className="shrink-0">
+          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -114,9 +105,7 @@ export default function ArticlesPage() {
       {/* アクティブフィルター表示 */}
       {hasActiveFilter && (
         <div className="mb-4 flex items-center gap-2">
-          <span className="text-sm text-gray-500 dark:text-gray-400">
-            フィルター適用中
-          </span>
+          <span className="text-sm text-gray-500 dark:text-gray-400">フィルター適用中</span>
           <button
             onClick={clearFilter}
             className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400"
@@ -130,10 +119,7 @@ export default function ArticlesPage() {
       {isLoading ? (
         <ArticleListSkeleton count={5} />
       ) : articles.length === 0 ? (
-        <ArticleEmpty
-          hasFilter={hasActiveFilter}
-          onClearFilter={clearFilter}
-        />
+        <ArticleEmpty hasFilter={hasActiveFilter} onClearFilter={clearFilter} />
       ) : (
         <>
           {/* 記事一覧 */}
@@ -145,17 +131,18 @@ export default function ArticlesPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05, duration: 0.3 }}
               >
-                <ArticleCard article={article} />
+                <ArticleCard
+                  article={article}
+                  isFavorite={isFavorite(article.id)}
+                  onFavoriteToggle={() => toggleFavorite(article.id)}
+                />
               </motion.div>
             ))}
           </div>
 
           {/* 無限スクロールトリガー */}
           {hasMore && (
-            <div
-              ref={observerRef}
-              className="flex items-center justify-center py-8"
-            >
+            <div ref={observerRef} className="flex items-center justify-center py-8">
               {isLoadingMore && <LoadingSpinner size="md" />}
             </div>
           )}

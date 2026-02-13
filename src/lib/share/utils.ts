@@ -1,4 +1,4 @@
-import { RARITY_DISPLAY_NAMES, RARITY_STARS, type Rarity } from '@/types/database';
+import { RARITY_DISPLAY_NAMES, type Rarity } from '@/types/database';
 
 /**
  * Generate share URL for a card
@@ -6,14 +6,6 @@ import { RARITY_DISPLAY_NAMES, RARITY_STARS, type Rarity } from '@/types/databas
 export function getShareUrl(cardId: string): string {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
   return `${baseUrl}/share/${cardId}`;
-}
-
-/**
- * Generate star string based on rarity
- */
-export function getRarityStars(rarity: Rarity): string {
-  const count = RARITY_STARS[rarity];
-  return '★'.repeat(count);
 }
 
 /**
@@ -30,11 +22,10 @@ export function generateShareText({
   flavorText: string;
   shareUrl: string;
 }): string {
-  const stars = getRarityStars(rarity);
   const rarityName = RARITY_DISPLAY_NAMES[rarity];
 
   return `【${keyword}】のカードを手に入れた！
-${stars} ${rarityName}
+${rarityName}
 
 ${flavorText}
 

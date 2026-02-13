@@ -57,10 +57,3 @@ export function truncate(text: string, maxLength: number): string {
   if (text.length <= maxLength) return text;
   return text.slice(0, maxLength - 1) + '…';
 }
-
-/**
- * Generate star string for rarity
- */
-export function getRarityStars(count: number): string {
-  return '★'.repeat(count) + '☆'.repeat(5 - count);
-}

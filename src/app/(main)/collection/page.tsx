@@ -12,11 +12,13 @@ import {
 } from '@/components/collection';
 import { Button, LoadingSpinner, CardGridSkeleton } from '@/components/ui';
 import { useCollection } from '@/hooks/use-collection';
+import { useFavorites } from '@/hooks/use-favorites';
 import type { Card } from '@prisma/client';
 
 export default function CollectionPage() {
   const router = useRouter();
 
+  const { favoriteIds, toggleFavorite } = useFavorites('cards');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
 
@@ -81,9 +83,7 @@ export default function CollectionPage() {
     >
       {/* ヘッダー */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          コレクション
-        </h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">コレクション</h1>
         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
           あなたが生成したカードを一覧で確認できます
         </p>
@@ -91,11 +91,7 @@ export default function CollectionPage() {
 
       {/* 検索・フィルターバー */}
       <div className="mb-6 flex gap-3">
-        <CollectionSearch
-          value={searchQuery}
-          onChange={setSearchQuery}
-          className="flex-1"
-        />
+        <CollectionSearch value={searchQuery} onChange={setSearchQuery} className="flex-1" />
         <Button
           onClick={handleSearch}
           variant="secondary"
@@ -105,17 +101,8 @@ export default function CollectionPage() {
         >
           検索
         </Button>
-        <Button
-          onClick={() => setIsFilterOpen(true)}
-          variant="secondary"
-          className="shrink-0"
-        >
-          <svg
-            className="h-5 w-5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
+        <Button onClick={() => setIsFilterOpen(true)} variant="secondary" className="shrink-0">
+          <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -129,9 +116,7 @@ export default function CollectionPage() {
       {/* アクティブフィルター表示 */}
       {hasActiveFilter && (
         <div className="mb-4 flex items-center gap-2">
-          <span className="text-sm text-gray-500 dark:text-gray-400">
-            フィルター適用中
-          </span>
+          <span className="text-sm text-gray-500 dark:text-gray-400">フィルター適用中</span>
           <button
             onClick={clearFilter}
             className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400"
@@ -145,21 +130,20 @@ export default function CollectionPage() {
       {isLoading ? (
         <CardGridSkeleton count={10} />
       ) : cards.length === 0 ? (
-        <CollectionEmpty
-          hasFilter={hasActiveFilter}
-          onClearFilter={clearFilter}
-        />
+        <CollectionEmpty hasFilter={hasActiveFilter} onClearFilter={clearFilter} />
       ) : (
         <>
           {/* カードグリッド */}
-          <CardGrid cards={cards} onCardClick={handleCardClick} />
+          <CardGrid
+            cards={cards}
+            onCardClick={handleCardClick}
+            favoriteIds={favoriteIds}
+            onFavoriteToggle={toggleFavorite}
+          />
 
           {/* 無限スクロールトリガー */}
           {hasMore && (
-            <div
-              ref={observerRef}
-              className="flex items-center justify-center py-8"
-            >
+            <div ref={observerRef} className="flex items-center justify-center py-8">
               {isLoadingMore && <LoadingSpinner size="md" />}
             </div>
           )}

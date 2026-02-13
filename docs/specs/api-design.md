@@ -44,103 +44,103 @@ interface ErrorResponse {
 
 ### 共通エラーコード
 
-| コード | HTTPステータス | 説明 |
-|--------|---------------|------|
-| UNAUTHORIZED | 401 | 認証エラー |
-| FORBIDDEN | 403 | 権限エラー |
-| NOT_FOUND | 404 | リソース未発見 |
-| VALIDATION_ERROR | 400 | バリデーションエラー |
-| RATE_LIMIT_EXCEEDED | 429 | レート制限超過 |
-| INTERNAL_ERROR | 500 | サーバーエラー |
-| MODERATION_BLOCKED | 400 | コンテンツポリシー違反 |
-| INSUFFICIENT_COINS | 400 | コイン不足 |
-| INVALID_PACKAGE | 400 | 無効なコインパッケージ |
-| INVALID_TIER | 400 | 無効なサブスクリプションプラン |
-| ALREADY_SUBSCRIBED | 400 | 既にサブスクリプション中 |
-| NO_AVAILABLE_KEYWORD | 400 | 利用可能なキーワードなし |
-| USER_NOT_FOUND | 404 | ユーザーが見つからない |
-| PRICE_NOT_FOUND | 500 | Stripe価格情報エラー |
+| コード               | HTTPステータス | 説明                           |
+| -------------------- | -------------- | ------------------------------ |
+| UNAUTHORIZED         | 401            | 認証エラー                     |
+| FORBIDDEN            | 403            | 権限エラー                     |
+| NOT_FOUND            | 404            | リソース未発見                 |
+| VALIDATION_ERROR     | 400            | バリデーションエラー           |
+| RATE_LIMIT_EXCEEDED  | 429            | レート制限超過                 |
+| INTERNAL_ERROR       | 500            | サーバーエラー                 |
+| MODERATION_BLOCKED   | 400            | コンテンツポリシー違反         |
+| INSUFFICIENT_COINS   | 400            | コイン不足                     |
+| INVALID_PACKAGE      | 400            | 無効なコインパッケージ         |
+| INVALID_TIER         | 400            | 無効なサブスクリプションプラン |
+| ALREADY_SUBSCRIBED   | 400            | 既にサブスクリプション中       |
+| NO_AVAILABLE_KEYWORD | 400            | 利用可能なキーワードなし       |
+| USER_NOT_FOUND       | 404            | ユーザーが見つからない         |
+| PRICE_NOT_FOUND      | 500            | Stripe価格情報エラー           |
 
 ## 7.3 エンドポイント一覧
 
 ### 認証・ユーザー
 
-| Method | Endpoint | 説明 |
-|--------|----------|------|
-| POST | /api/auth/register | 新規ユーザー登録 |
-| GET | /api/users/me | 自分のプロフィール取得 |
-| PATCH | /api/users/me | プロフィール更新 |
-| DELETE | /api/users/me | アカウント削除 |
+| Method | Endpoint           | 説明                   |
+| ------ | ------------------ | ---------------------- |
+| POST   | /api/auth/register | 新規ユーザー登録       |
+| GET    | /api/users/me      | 自分のプロフィール取得 |
+| PATCH  | /api/users/me      | プロフィール更新       |
+| DELETE | /api/users/me      | アカウント削除         |
 
 ### 記事生成
 
-| Method | Endpoint | 説明 |
-|--------|----------|------|
-| POST | /api/articles | 記事生成 |
-| GET | /api/articles | 自分の記事一覧 |
-| GET | /api/articles/:id | 記事詳細 |
+| Method | Endpoint          | 説明                             |
+| ------ | ----------------- | -------------------------------- |
+| POST   | /api/articles     | 記事生成                         |
+| GET    | /api/articles     | 自分の記事一覧                   |
+| GET    | /api/articles/:id | 記事詳細                         |
 | DELETE | /api/articles/:id | 記事削除（関連カードも連動削除） |
 
 ### カード生成
 
-| Method | Endpoint | 説明 |
-|--------|----------|------|
-| POST | /api/cards | カード生成 |
-| GET | /api/cards | 自分のカード一覧 |
-| GET | /api/cards/:id | カード詳細 |
-| GET | /api/cards/:id/share | 共有用カード情報 |
-| DELETE | /api/cards/:id | カード削除 |
-| GET | /api/cards/batch/eligibility | バッチ生成資格確認 |
+| Method | Endpoint                     | 説明               |
+| ------ | ---------------------------- | ------------------ |
+| POST   | /api/cards                   | カード生成         |
+| GET    | /api/cards                   | 自分のカード一覧   |
+| GET    | /api/cards/:id               | カード詳細         |
+| GET    | /api/cards/:id/share         | 共有用カード情報   |
+| DELETE | /api/cards/:id               | カード削除         |
+| GET    | /api/cards/batch/eligibility | バッチ生成資格確認 |
 
 ### 統計
 
-| Method | Endpoint | 説明 |
-|--------|----------|------|
-| GET | /api/stats | コレクション統計 |
+| Method | Endpoint   | 説明             |
+| ------ | ---------- | ---------------- |
+| GET    | /api/stats | コレクション統計 |
 
 ### コイン
 
-| Method | Endpoint | 説明 |
-|--------|----------|------|
-| GET | /api/coins | コイン残高・チャレンジ回数・サブスク情報取得 |
-| GET | /api/coins/transactions | トランザクション履歴 |
-| POST | /api/coins/purchase | コイン購入（開発者のみ） |
+| Method | Endpoint                | 説明                                         |
+| ------ | ----------------------- | -------------------------------------------- |
+| GET    | /api/coins              | コイン残高・チャレンジ回数・サブスク情報取得 |
+| GET    | /api/coins/transactions | トランザクション履歴                         |
+| POST   | /api/coins/purchase     | コイン購入（開発者のみ）                     |
 
 ### サブスクリプション
 
-| Method | Endpoint | 説明 |
-|--------|----------|------|
-| POST | /api/subscription | サブスク有効化（開発者のみ） |
-| DELETE | /api/subscription | サブスク解約 |
-| GET | /api/subscription/status | サブスク状態取得 |
+| Method | Endpoint                 | 説明                         |
+| ------ | ------------------------ | ---------------------------- |
+| POST   | /api/subscription        | サブスク有効化（開発者のみ） |
+| DELETE | /api/subscription        | サブスク解約                 |
+| GET    | /api/subscription/status | サブスク状態取得             |
 
 ### チャレンジモード
 
-| Method | Endpoint | 説明 |
-|--------|----------|------|
-| GET | /api/challenge/scenarios | シナリオ一覧 |
-| GET | /api/challenge/highscores | ハイスコア一覧 |
-| POST | /api/challenge/sessions | セッション作成 |
-| GET | /api/challenge/sessions | セッション一覧 |
-| GET | /api/challenge/sessions/:id | セッション詳細 |
-| DELETE | /api/challenge/sessions/:id | セッション中断 |
-| POST | /api/challenge/sessions/:id/deck | デッキ設定 |
-| GET | /api/challenge/sessions/:id/challenge | 現在のチャレンジ取得 |
-| POST | /api/challenge/sessions/:id/submit | カード提出・評価 |
+| Method | Endpoint                              | 説明                 |
+| ------ | ------------------------------------- | -------------------- |
+| GET    | /api/challenge/scenarios              | シナリオ一覧         |
+| GET    | /api/challenge/highscores             | ハイスコア一覧       |
+| POST   | /api/challenge/sessions               | セッション作成       |
+| GET    | /api/challenge/sessions               | セッション一覧       |
+| GET    | /api/challenge/sessions/:id           | セッション詳細       |
+| DELETE | /api/challenge/sessions/:id           | セッション中断       |
+| POST   | /api/challenge/sessions/:id/deck      | デッキ設定           |
+| GET    | /api/challenge/sessions/:id/challenge | 現在のチャレンジ取得 |
+| POST   | /api/challenge/sessions/:id/submit    | カード提出・評価     |
 
 ### ユーティリティ
 
-| Method | Endpoint | 説明 |
-|--------|----------|------|
-| GET | /api/suggested-themes | おすすめテーマ取得 |
-| GET | /api/health | ヘルスチェック |
+| Method | Endpoint              | 説明               |
+| ------ | --------------------- | ------------------ |
+| GET    | /api/suggested-themes | おすすめテーマ取得 |
+| GET    | /api/health           | ヘルスチェック     |
 
 ### Stripe連携
 
-| Method | Endpoint | 説明 |
-|--------|----------|------|
-| POST | /api/stripe/checkout | Checkoutセッション作成 |
-| POST | /api/stripe/webhook | Stripe Webhook受信 |
+| Method | Endpoint             | 説明                   |
+| ------ | -------------------- | ---------------------- |
+| POST   | /api/stripe/checkout | Checkoutセッション作成 |
+| POST   | /api/stripe/webhook  | Stripe Webhook受信     |
 
 ---
 
@@ -151,13 +151,15 @@ interface ErrorResponse {
 Firebase認証後、アプリケーションDBにユーザーを登録。
 
 **Request:**
+
 ```typescript
 {
-  nickname: string;  // 2-20文字
+  nickname: string; // 2-20文字
 }
 ```
 
 **Response:**
+
 ```typescript
 {
   success: true,
@@ -176,6 +178,7 @@ Firebase認証後、アプリケーションDBにユーザーを登録。
 ### GET /api/users/me
 
 **Response:**
+
 ```typescript
 {
   success: true,
@@ -205,6 +208,7 @@ Firebase認証後、アプリケーションDBにユーザーを登録。
 ### PATCH /api/users/me
 
 **Request:**
+
 ```typescript
 {
   nickname?: string;  // 2-20文字
@@ -212,6 +216,7 @@ Firebase認証後、アプリケーションDBにユーザーを登録。
 ```
 
 **Response:**
+
 ```typescript
 {
   success: true,
@@ -230,6 +235,7 @@ Firebase認証後、アプリケーションDBにユーザーを登録。
 アカウントと関連データをすべて削除。
 
 **Response:**
+
 ```typescript
 {
   success: true,
@@ -246,13 +252,15 @@ Firebase認証後、アプリケーションDBにユーザーを登録。
 記事を生成。
 
 **Request:**
+
 ```typescript
 {
-  theme: string;  // 2-30文字
+  theme: string; // 2-30文字
 }
 ```
 
 **Response:**
+
 ```typescript
 {
   success: true,
@@ -266,6 +274,7 @@ Firebase認証後、アプリケーションDBにユーザーを登録。
 ```
 
 **エラー:**
+
 ```typescript
 // コンテンツポリシー違反
 {
@@ -288,6 +297,7 @@ Firebase認証後、アプリケーションDBにユーザーを登録。
 | limit | number | 20 | 取得件数（最大50） |
 
 **Response:**
+
 ```typescript
 {
   success: true,
@@ -313,6 +323,7 @@ Firebase認証後、アプリケーションDBにユーザーを登録。
 ### GET /api/articles/:id
 
 **Response:**
+
 ```typescript
 {
   success: true,
@@ -337,20 +348,21 @@ Firebase認証後、アプリケーションDBにユーザーを登録。
 
 ### DELETE /api/articles/:id
 
-記事と関連するすべてのカードを削除。
+記事を削除。関連するカードは削除されず、カードの articleId が null になる。
 
 **Response:**
+
 ```typescript
 {
   success: true,
   data: {
-    message: "Article deleted successfully",
-    deletedCardsCount: number  // 連動削除されたカード数
+    message: "記事が削除されました"
   }
 }
 ```
 
 **エラー:**
+
 ```typescript
 // 記事が見つからない or 所有者でない
 {
@@ -369,6 +381,7 @@ Firebase認証後、アプリケーションDBにユーザーを登録。
 記事からカードを生成。
 
 **Request:**
+
 ```typescript
 {
   articleId: string;
@@ -376,6 +389,7 @@ Firebase認証後、アプリケーションDBにユーザーを登録。
 ```
 
 **Response:**
+
 ```typescript
 {
   success: true,
@@ -411,6 +425,7 @@ Firebase認証後、アプリケーションDBにユーザーを登録。
 | sortOrder | string | desc | ソート順序 |
 
 **Response:**
+
 ```typescript
 {
   success: true,
@@ -437,6 +452,7 @@ Firebase認証後、アプリケーションDBにユーザーを登録。
 ### GET /api/cards/:id
 
 **Response:**
+
 ```typescript
 {
   success: true,
@@ -454,7 +470,7 @@ Firebase認証後、アプリケーションDBにユーザーを登録。
     article: {
       id: string;
       theme: string;
-    }
+    } | null  // 元記事が削除された場合 null
   }
 }
 ```
@@ -466,6 +482,7 @@ Firebase認証後、アプリケーションDBにユーザーを登録。
 カードを削除。関連する記事は削除されない。
 
 **Response:**
+
 ```typescript
 {
   success: true,
@@ -476,6 +493,7 @@ Firebase認証後、アプリケーションDBにユーザーを登録。
 ```
 
 **エラー:**
+
 ```typescript
 // カードが見つからない or 所有者でない
 {
@@ -494,6 +512,7 @@ Firebase認証後、アプリケーションDBにユーザーを登録。
 共有用のカード情報（認証不要）。
 
 **Response:**
+
 ```typescript
 {
   success: true,
@@ -522,6 +541,7 @@ Firebase認証後、アプリケーションDBにユーザーを登録。
 ### GET /api/stats
 
 **Response:**
+
 ```typescript
 {
   success: true,
@@ -551,11 +571,11 @@ Firebase認証後、アプリケーションDBにユーザーを登録。
 
 ## 7.5 レート制限
 
-| エンドポイント | 制限 | 備考 |
-|---------------|------|------|
-| POST /api/articles | 10回/時間 | 記事生成 |
-| POST /api/cards | 20回/時間 | カード生成 |
-| その他 GET | 100回/分 | 読み取り系 |
+| エンドポイント     | 制限      | 備考       |
+| ------------------ | --------- | ---------- |
+| POST /api/articles | 10回/時間 | 記事生成   |
+| POST /api/cards    | 20回/時間 | カード生成 |
+| その他 GET         | 100回/分  | 読み取り系 |
 
 ### レート制限レスポンス
 
@@ -581,19 +601,18 @@ import { z } from 'zod';
 
 // 記事生成リクエスト
 export const createArticleSchema = z.object({
-  theme: z.string()
+  theme: z
+    .string()
     .min(2, 'テーマは2文字以上で入力してください')
     .max(30, 'テーマは30文字以内で入力してください'),
 });
 
 // ニックネーム
-export const nicknameSchema = z.string()
+export const nicknameSchema = z
+  .string()
   .min(2, 'ニックネームは2文字以上で入力してください')
   .max(20, 'ニックネームは20文字以内で入力してください')
-  .regex(
-    /^[a-zA-Z0-9ぁ-んァ-ヶー一-龠々]+$/,
-    '使用できない文字が含まれています'
-  );
+  .regex(/^[a-zA-Z0-9ぁ-んァ-ヶー一-龠々]+$/, '使用できない文字が含まれています');
 
 // ページネーション
 export const paginationSchema = z.object({
@@ -651,7 +670,10 @@ export async function POST(req: NextRequest) {
     const moderationResult = await checkModeration(theme);
     if (moderationResult.flagged) {
       return NextResponse.json(
-        { success: false, error: { code: 'MODERATION_BLOCKED', message: 'このテーマでは記事を生成できません' } },
+        {
+          success: false,
+          error: { code: 'MODERATION_BLOCKED', message: 'このテーマでは記事を生成できません' },
+        },
         { status: 400 }
       );
     }
@@ -679,7 +701,6 @@ export async function POST(req: NextRequest) {
         createdAt: article.createdAt.toISOString(),
       },
     });
-
   } catch (error) {
     console.error('Article generation error:', error);
     return NextResponse.json(
@@ -699,6 +720,7 @@ export async function POST(req: NextRequest) {
 利用可能なシナリオ一覧を取得。
 
 **Response:**
+
 ```typescript
 {
   success: true,
@@ -724,6 +746,7 @@ export async function POST(req: NextRequest) {
 新しいチャレンジセッションを作成。
 
 **Request:**
+
 ```typescript
 {
   scenarioId: string;
@@ -731,6 +754,7 @@ export async function POST(req: NextRequest) {
 ```
 
 **Response:**
+
 ```typescript
 {
   success: true,
@@ -744,6 +768,7 @@ export async function POST(req: NextRequest) {
 ```
 
 **エラー:**
+
 ```typescript
 // 進行中セッションがある場合
 {
@@ -768,6 +793,7 @@ export async function POST(req: NextRequest) {
 | limit | number | 10 | 取得件数（最大50） |
 
 **Response:**
+
 ```typescript
 {
   success: true,
@@ -794,6 +820,7 @@ export async function POST(req: NextRequest) {
 セッション詳細を取得（デッキ、フェーズ結果含む）。
 
 **Response:**
+
 ```typescript
 {
   success: true,
@@ -847,6 +874,7 @@ export async function POST(req: NextRequest) {
 セッションを中断。
 
 **Response:**
+
 ```typescript
 {
   success: true,
@@ -863,6 +891,7 @@ export async function POST(req: NextRequest) {
 デッキを設定してゲームを開始。
 
 **Request:**
+
 ```typescript
 {
   cardIds: string[];  // 6枚
@@ -870,6 +899,7 @@ export async function POST(req: NextRequest) {
 ```
 
 **Response:**
+
 ```typescript
 {
   success: true,
@@ -880,6 +910,7 @@ export async function POST(req: NextRequest) {
 ```
 
 **エラー:**
+
 ```typescript
 // カード数が不正
 {
@@ -898,6 +929,7 @@ export async function POST(req: NextRequest) {
 現在のフェーズのチャレンジを取得（AI生成）。
 
 **Response:**
+
 ```typescript
 {
   success: true,
@@ -941,6 +973,7 @@ export async function POST(req: NextRequest) {
 カードを提出して評価を受ける。
 
 **Request:**
+
 ```typescript
 {
   cardIds: string[];  // 1-2枚（フェーズによる）
@@ -948,6 +981,7 @@ export async function POST(req: NextRequest) {
 ```
 
 **Response:**
+
 ```typescript
 {
   success: true,
@@ -993,6 +1027,7 @@ export async function POST(req: NextRequest) {
 コイン残高、チャレンジ回数、サブスク情報を取得。日次リセットも自動実行。
 
 **Response:**
+
 ```typescript
 {
   success: true,
@@ -1034,13 +1069,15 @@ export async function POST(req: NextRequest) {
 コインパッケージを購入。**開発者のみ利用可能**。
 
 **Request:**
+
 ```typescript
 {
-  packageId: "standard" | "value" | "premium";
+  packageId: 'standard' | 'value' | 'premium';
 }
 ```
 
 **Response:**
+
 ```typescript
 {
   success: true,
@@ -1052,6 +1089,7 @@ export async function POST(req: NextRequest) {
 ```
 
 **エラー:**
+
 ```typescript
 // 開発者以外
 { code: "FORBIDDEN", message: "開発者のみ利用可能です" }
@@ -1072,6 +1110,7 @@ export async function POST(req: NextRequest) {
 | limit | number | 20 | 取得件数（最大50） |
 
 **Response:**
+
 ```typescript
 {
   success: true,
@@ -1102,13 +1141,15 @@ export async function POST(req: NextRequest) {
 初回有効化時にボーナスコインを付与。
 
 **Request:**
+
 ```typescript
 {
-  tier: "plus" | "premium";
+  tier: 'plus' | 'premium';
 }
 ```
 
 **Response:**
+
 ```typescript
 {
   success: true,
@@ -1121,6 +1162,7 @@ export async function POST(req: NextRequest) {
 ```
 
 **エラー:**
+
 ```typescript
 // 開発者以外
 { code: "FORBIDDEN", message: "開発者のみ利用可能です" }
@@ -1135,6 +1177,7 @@ export async function POST(req: NextRequest) {
 サブスクリプションを解約。
 
 **Response:**
+
 ```typescript
 {
   success: true,
@@ -1151,6 +1194,7 @@ export async function POST(req: NextRequest) {
 現在のサブスクリプション状態を取得。
 
 **Response:**
+
 ```typescript
 {
   success: true,
@@ -1181,6 +1225,7 @@ export async function POST(req: NextRequest) {
 | articleId | string | No | 記事ID（指定時は利用可能キーワード数も返却） |
 
 **Response:**
+
 ```typescript
 {
   success: true,
@@ -1204,6 +1249,7 @@ export async function POST(req: NextRequest) {
 ユーザーの全シナリオのハイスコア一覧を取得。
 
 **Response:**
+
 ```typescript
 {
   success: true,
@@ -1235,6 +1281,7 @@ export async function POST(req: NextRequest) {
 | count | number | 5 | 取得件数（1-20） |
 
 **Response:**
+
 ```typescript
 {
   success: true,
@@ -1258,13 +1305,15 @@ export async function POST(req: NextRequest) {
 Stripe Checkoutセッションを作成し、決済ページURLを取得。
 
 **Request:**
+
 ```typescript
 {
-  tier: "plus" | "premium";
+  tier: 'plus' | 'premium';
 }
 ```
 
 **Response:**
+
 ```typescript
 {
   success: true,
@@ -1276,6 +1325,7 @@ Stripe Checkoutセッションを作成し、決済ページURLを取得。
 ```
 
 **エラー:**
+
 ```typescript
 // 既にサブスク中
 { code: "ALREADY_SUBSCRIBED", message: "既にサブスクリプション中です" }
@@ -1298,8 +1348,11 @@ Stripeからのイベント通知を受信。**内部使用専用（認証不要
 | invoice.payment_failed | 支払い失敗通知 |
 
 **Response:**
+
 ```typescript
-{ received: true }
+{
+  received: true;
+}
 ```
 
 ---
@@ -1311,17 +1364,19 @@ Stripeからのイベント通知を受信。**内部使用専用（認証不要
 システムの稼働状況を確認。**認証不要**。
 
 **Response:**
+
 ```typescript
 {
-  status: "healthy" | "unhealthy";
-  timestamp: string;             // ISO8601
-  version: string;               // アプリバージョン
+  status: 'healthy' | 'unhealthy';
+  timestamp: string; // ISO8601
+  version: string; // アプリバージョン
   checks: {
-    database: "connected" | "disconnected";
+    database: 'connected' | 'disconnected';
   }
 }
 ```
 
 **HTTPステータス:**
+
 - 200: healthy
 - 503: unhealthy

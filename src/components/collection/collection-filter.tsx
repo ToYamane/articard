@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Button } from '@/components/ui';
+import { Button, ToggleSwitch } from '@/components/ui';
 import type { Rarity } from '@/types/database';
 import { RARITY_DISPLAY_NAMES } from '@/types/database';
 
@@ -9,6 +9,7 @@ export interface FilterState {
   rarity: Rarity[];
   sortBy: 'createdAt' | 'rarity' | 'keyword';
   sortOrder: 'asc' | 'desc';
+  onlyFavorites: boolean;
 }
 
 interface CollectionFilterProps {
@@ -44,6 +45,7 @@ export function CollectionFilter({
       rarity: [],
       sortBy: 'createdAt',
       sortOrder: 'desc',
+      onlyFavorites: false,
     });
   };
 
@@ -55,17 +57,12 @@ export function CollectionFilter({
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center">
       {/* バックドロップ */}
-      <div
-        className="absolute inset-0 bg-black/50"
-        onClick={onClose}
-      />
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
 
       {/* フィルターパネル */}
       <div className="relative w-full max-w-md rounded-t-2xl bg-white p-6 dark:bg-black sm:rounded-2xl">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">
-            フィルター
-          </h2>
+          <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">フィルター</h2>
           <button
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
@@ -75,11 +72,18 @@ export function CollectionFilter({
         </div>
 
         <div className="space-y-6">
+          {/* お気に入りのみ */}
+          <div>
+            <ToggleSwitch
+              checked={filter.onlyFavorites}
+              onChange={(checked) => setFilter((prev) => ({ ...prev, onlyFavorites: checked }))}
+              label="お気に入りのみ"
+            />
+          </div>
+
           {/* レア度 */}
           <div>
-            <h3 className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-              レア度
-            </h3>
+            <h3 className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">レア度</h3>
             <div className="flex flex-wrap gap-2">
               {RARITY_OPTIONS.map((rarity) => (
                 <button
@@ -99,9 +103,7 @@ export function CollectionFilter({
 
           {/* 並び替え */}
           <div>
-            <h3 className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-              並び替え
-            </h3>
+            <h3 className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">並び替え</h3>
             <div className="flex gap-2">
               <select
                 value={filter.sortBy}

@@ -10,11 +10,13 @@ type ArticleWithCount = Article & { _count?: { cards: number } };
 export interface ArticleFilterState {
   sortBy: 'createdAt' | 'cardCount';
   sortOrder: 'asc' | 'desc';
+  onlyFavorites: boolean;
 }
 
 const DEFAULT_FILTER: ArticleFilterState = {
   sortBy: 'createdAt',
   sortOrder: 'desc',
+  onlyFavorites: false,
 };
 
 export function useArticles() {
@@ -33,6 +35,9 @@ export function useArticles() {
       if (searchQuery) params.append('search', searchQuery);
       params.append('sortBy', filter.sortBy);
       params.append('sortOrder', filter.sortOrder);
+      if (filter.onlyFavorites) {
+        params.append('onlyFavorites', 'true');
+      }
       params.append('limit', '20');
 
       const response = await fetch(`/api/articles?${params.toString()}`, {
@@ -81,12 +86,9 @@ export function useArticles() {
   );
 
   // 検索クエリ変更
-  const handleSearchChange = useCallback(
-    (query: string) => {
-      setSearchQuery(query);
-    },
-    []
-  );
+  const handleSearchChange = useCallback((query: string) => {
+    setSearchQuery(query);
+  }, []);
 
   // 検索実行
   const executeSearch = useCallback(() => {
@@ -97,7 +99,8 @@ export function useArticles() {
   const hasActiveFilter =
     searchQuery.length > 0 ||
     filter.sortBy !== 'createdAt' ||
-    filter.sortOrder !== 'desc';
+    filter.sortOrder !== 'desc' ||
+    filter.onlyFavorites;
 
   // フィルタークリア
   const clearFilter = useCallback(() => {
