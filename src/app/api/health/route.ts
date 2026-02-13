@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { logger } from '@/lib/logger';
 
 interface HealthStatus {
   status: 'healthy' | 'unhealthy';
@@ -21,7 +22,7 @@ export async function GET() {
     await prisma.$queryRaw`SELECT 1`;
     databaseStatus = 'connected';
   } catch (error) {
-    console.error('Health check - Database error:', error);
+    logger.error('Health check - Database error', { error });
   }
 
   const isHealthy = databaseStatus === 'connected';

@@ -5,6 +5,7 @@ import { updateUserSchema } from '@/lib/validations/user';
 import { deleteUser as deleteFirebaseUser } from '@/lib/firebase/admin';
 import { batchDeleteCardImages } from '@/lib/gcs/storage';
 import { ApiError } from '@/lib/errors';
+import { logger } from '@/lib/logger';
 import type { User } from '@prisma/client';
 
 // ユーザー情報取得
@@ -101,7 +102,7 @@ export const DELETE = withAuth<{ message: string }>(async (authUser) => {
       await batchDeleteCardImages(cardIds);
     } catch (error) {
       // 画像削除に失敗してもDBは削除済みなのでログのみ
-      console.error('Failed to delete card images for user:', error);
+      logger.error('Failed to delete card images for user', { error });
     }
   }
 
@@ -109,7 +110,7 @@ export const DELETE = withAuth<{ message: string }>(async (authUser) => {
   try {
     await deleteFirebaseUser(authUser.uid);
   } catch (firebaseError) {
-    console.error('Firebase user deletion error:', firebaseError);
+    logger.error('Firebase user deletion error', { error: firebaseError });
     // DBからは削除済みなので、Firebase削除失敗はログのみ
   }
 

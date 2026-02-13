@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSuggestedThemesQuerySchema } from '@/lib/validations/suggested-theme';
 import { getRandomSuggestedThemes } from '@/lib/services/suggested-theme-service';
 import { handleApiError } from '@/lib/errors';
+import { createRequestLogger } from '@/lib/logger';
 import type { ApiResponse } from '@/types/api';
 
 interface SuggestedThemesResponse {
@@ -40,7 +41,9 @@ export async function GET(
       data: { themes },
     });
   } catch (error) {
-    console.error('Get suggested themes error:', error);
+    const requestId = req.headers.get('x-request-id') || '';
+    const log = createRequestLogger(requestId, '/api/suggested-themes');
+    log.error('Get suggested themes error', { error });
     return handleApiError(error);
   }
 }

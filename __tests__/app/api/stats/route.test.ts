@@ -14,6 +14,7 @@ import {
 
 // モック関数
 const mockCount = jest.fn();
+const mockArticleCount = jest.fn();
 const mockGroupBy = jest.fn();
 const mockAggregate = jest.fn();
 
@@ -23,6 +24,9 @@ jest.mock('@/lib/prisma', () => {
     card: {
       count: (...args: unknown[]) => mockCount(...args),
       groupBy: (...args: unknown[]) => mockGroupBy(...args),
+    },
+    article: {
+      count: (...args: unknown[]) => mockArticleCount(...args),
     },
     knowledgeTransaction: {
       aggregate: (...args: unknown[]) => mockAggregate(...args),
@@ -52,6 +56,8 @@ describe('/api/stats', () => {
     });
     // デフォルトでknowledge aggregateを0にする
     mockAggregate.mockResolvedValue({ _sum: { amount: 0 } });
+    // デフォルトで記事数を0にする
+    mockArticleCount.mockResolvedValue(0);
   });
 
   describe('GET /api/stats', () => {
@@ -69,6 +75,7 @@ describe('/api/stats', () => {
     describe('正常系', () => {
       it('統計情報を取得できる', async () => {
         mockCount.mockResolvedValue(10);
+        mockArticleCount.mockResolvedValue(5);
         mockGroupBy.mockResolvedValue([
           { rarity: 'common', _count: { rarity: 5 } },
           { rarity: 'rare', _count: { rarity: 3 } },
@@ -80,6 +87,7 @@ describe('/api/stats', () => {
         const data = await expectSuccessResponse(response, 200);
 
         expect(data.totalCards).toBe(10);
+        expect(data.totalArticles).toBe(5);
         expect(data.rarityBreakdown).toBeDefined();
         expect(data.rarityBreakdown.common).toBe(5);
         expect(data.rarityBreakdown.rare).toBe(3);
@@ -88,6 +96,7 @@ describe('/api/stats', () => {
 
       it('カードがない場合は0を返す', async () => {
         mockCount.mockResolvedValue(0);
+        mockArticleCount.mockResolvedValue(0);
         mockGroupBy.mockResolvedValue([]);
 
         const req = createAuthenticatedRequest('/api/stats');
@@ -95,6 +104,7 @@ describe('/api/stats', () => {
         const data = await expectSuccessResponse(response, 200);
 
         expect(data.totalCards).toBe(0);
+        expect(data.totalArticles).toBe(0);
         expect(data.rarityBreakdown).toBeDefined();
         expect(data.rarityBreakdown.common).toBe(0);
         expect(data.rarityBreakdown.rare).toBe(0);
@@ -104,6 +114,7 @@ describe('/api/stats', () => {
 
       it('全てのレア度が統計に含まれる', async () => {
         mockCount.mockResolvedValue(11);
+        mockArticleCount.mockResolvedValue(3);
         mockGroupBy.mockResolvedValue([
           { rarity: 'common', _count: { rarity: 5 } },
           { rarity: 'rare', _count: { rarity: 3 } },
@@ -116,6 +127,7 @@ describe('/api/stats', () => {
         const data = await expectSuccessResponse(response, 200);
 
         expect(data.totalCards).toBe(11);
+        expect(data.totalArticles).toBe(3);
         expect(data.rarityBreakdown.common).toBe(5);
         expect(data.rarityBreakdown.rare).toBe(3);
         expect(data.rarityBreakdown.super_rare).toBe(2);

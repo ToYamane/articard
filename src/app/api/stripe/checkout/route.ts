@@ -3,12 +3,10 @@ import { verifyAuth } from '@/lib/auth';
 import { stripe, getPriceIdForTier } from '@/lib/stripe';
 import { prisma } from '@/lib/prisma';
 import { handleApiError } from '@/lib/errors';
+import { parseBody } from '@/lib/api';
+import { checkoutTierSchema } from '@/lib/validations/subscription';
+import { createRequestLogger } from '@/lib/logger';
 import type { ApiResponse } from '@/types/api';
-import type { SubscriptionTier } from '@/lib/constants/coins';
-
-interface CheckoutRequest {
-  tier: SubscriptionTier;
-}
 
 interface CheckoutResponse {
   sessionId: string;
@@ -28,15 +26,13 @@ export async function POST(
       );
     }
 
-    const body: CheckoutRequest = await req.json();
-    const { tier } = body;
+    const requestId = req.headers.get('x-request-id') || '';
+    const log = createRequestLogger(requestId, '/api/stripe/checkout', authUser.uid);
 
-    if (!tier || (tier !== 'plus' && tier !== 'premium')) {
-      return NextResponse.json(
-        { success: false, error: { code: 'INVALID_TIER', message: '無効なプランです' } },
-        { status: 400 }
-      );
-    }
+    // Zodバリデーション
+    const parsed = await parseBody(req, checkoutTierSchema);
+    if (parsed.error) return parsed.error;
+    const { tier } = parsed.data;
 
     // ユーザー情報取得
     const user = await prisma.user.findUnique({
@@ -63,7 +59,7 @@ export async function POST(
       );
     }
 
-    // Stripeカスタマーを取得または作成
+    // Stripeカスタマーを取得または作成（アトミック補償付き）
     let customerId = user.stripeCustomerId;
     if (!customerId) {
       const customer = await stripe.customers.create({
@@ -73,10 +69,17 @@ export async function POST(
       });
       customerId = customer.id;
 
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { stripeCustomerId: customerId },
-      });
+      try {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { stripeCustomerId: customerId },
+        });
+      } catch (dbError) {
+        // DB更新失敗時はStripe顧客を補償削除
+        log.error('Failed to save Stripe customer ID, rolling back', { error: dbError });
+        await stripe.customers.del(customerId);
+        throw dbError;
+      }
     }
 
     const priceId = getPriceIdForTier(tier);
@@ -114,7 +117,9 @@ export async function POST(
       },
     });
   } catch (error) {
-    console.error('Stripe checkout error:', error);
+    const requestId = req.headers.get('x-request-id') || '';
+    const log = createRequestLogger(requestId, '/api/stripe/checkout');
+    log.error('Stripe checkout error', { error });
     return handleApiError(error);
   }
 }

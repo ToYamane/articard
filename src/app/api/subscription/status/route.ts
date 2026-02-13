@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth';
 import { handleApiError } from '@/lib/errors';
 import { getSubscriptionStatus } from '@/lib/services/subscription-service';
+import { createRequestLogger } from '@/lib/logger';
 import type { ApiResponse } from '@/types/api';
 
 // GET /api/subscription/status
@@ -38,7 +39,9 @@ export async function GET(
       },
     });
   } catch (error) {
-    console.error('Get subscription status error:', error);
+    const requestId = req.headers.get('x-request-id') || '';
+    const log = createRequestLogger(requestId, '/api/subscription/status');
+    log.error('Get subscription status error', { error });
     return handleApiError(error);
   }
 }

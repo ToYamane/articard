@@ -75,7 +75,7 @@ describe('/api/stripe/checkout', () => {
         });
         const response = await POST(req);
 
-        await expectErrorResponse(response, 400, 'INVALID_TIER');
+        await expectErrorResponse(response, 400, ERROR_CODES.VALIDATION_ERROR);
       });
 
       it('無効なtierの場合、400を返す', async () => {
@@ -85,7 +85,7 @@ describe('/api/stripe/checkout', () => {
         });
         const response = await POST(req);
 
-        await expectErrorResponse(response, 400, 'INVALID_TIER');
+        await expectErrorResponse(response, 400, ERROR_CODES.VALIDATION_ERROR);
       });
     });
 

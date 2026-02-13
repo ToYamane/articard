@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { cardIdSchema } from '@/lib/validations/card';
+import { createRequestLogger } from '@/lib/logger';
 import type { ApiResponse } from '@/types/api';
 
 interface RouteContext {
@@ -92,7 +93,9 @@ export async function GET(
       data: shareData,
     });
   } catch (error) {
-    console.error('Get share card error:', error);
+    const requestId = req.headers.get('x-request-id') || '';
+    const log = createRequestLogger(requestId, '/api/cards/share');
+    log.error('Get share card error', { error });
     return NextResponse.json(
       {
         success: false,

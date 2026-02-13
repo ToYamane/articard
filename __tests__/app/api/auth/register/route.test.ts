@@ -7,7 +7,9 @@ import { NextRequest, NextResponse } from 'next/server';
 // モック関数を先に定義
 const mockVerifyIdToken = jest.fn();
 const mockFindUnique = jest.fn();
-const mockCreate = jest.fn();
+const mockTxUserCreate = jest.fn();
+const mockTxKnowledgeTransactionCreate = jest.fn();
+const mockTransaction = jest.fn();
 
 // モックをセットアップ
 jest.mock('@/lib/firebase/admin', () => ({
@@ -18,8 +20,8 @@ jest.mock('@/lib/prisma', () => ({
   prisma: {
     user: {
       findUnique: (...args: unknown[]) => mockFindUnique(...args),
-      create: (...args: unknown[]) => mockCreate(...args),
     },
+    $transaction: (...args: unknown[]) => mockTransaction(...args),
   },
 }));
 
@@ -30,10 +32,20 @@ import { POST } from '@/app/api/auth/register/route';
 const mockUser = {
   id: 'test-user-id-123',
   nickname: 'testuser',
-  knowledgeBalance: 100,
+  knowledgeBalance: 300,
   isPremium: false,
   createdAt: new Date('2026-01-01T00:00:00Z'),
   updatedAt: new Date('2026-01-01T00:00:00Z'),
+};
+
+// トランザクション内のPrismaモック
+const mockTxPrisma = {
+  user: {
+    create: (...args: unknown[]) => mockTxUserCreate(...args),
+  },
+  knowledgeTransaction: {
+    create: (...args: unknown[]) => mockTxKnowledgeTransactionCreate(...args),
+  },
 };
 
 // ヘルパー関数（ヘッダーはプレーンオブジェクトで渡す必要あり）
@@ -89,6 +101,9 @@ describe('POST /api/auth/register', () => {
     });
     // デフォルトでユーザーが存在しない
     mockFindUnique.mockResolvedValue(null);
+    // デフォルトでトランザクション成功
+    mockTransaction.mockImplementation(async (cb: (tx: typeof mockTxPrisma) => Promise<unknown>) => cb(mockTxPrisma));
+    mockTxKnowledgeTransactionCreate.mockResolvedValue({});
   });
 
   describe('認証チェック', () => {
@@ -213,7 +228,7 @@ describe('POST /api/auth/register', () => {
 
   describe('正常系', () => {
     it('新規ユーザーを登録できる', async () => {
-      mockCreate.mockResolvedValue(mockUser);
+      mockTxUserCreate.mockResolvedValue(mockUser);
 
       const req = createAuthenticatedRequest('/api/auth/register', {
         method: 'POST',
@@ -227,17 +242,18 @@ describe('POST /api/auth/register', () => {
       expect(data.success).toBe(true);
       expect(data.data.id).toBe(mockUser.id);
       expect(data.data.nickname).toBe(mockUser.nickname);
-      expect(mockCreate).toHaveBeenCalledWith({
+      expect(mockTxUserCreate).toHaveBeenCalledWith({
         data: {
           id: 'test-user-id-123',
           nickname: 'newuser',
+          knowledgeBalance: 300,
         },
       });
     });
 
     it('日本語のニックネームで登録できる', async () => {
       const japaneseNickname = 'テストユーザー';
-      mockCreate.mockResolvedValue({ ...mockUser, nickname: japaneseNickname });
+      mockTxUserCreate.mockResolvedValue({ ...mockUser, nickname: japaneseNickname });
 
       const req = createAuthenticatedRequest('/api/auth/register', {
         method: 'POST',
@@ -255,7 +271,7 @@ describe('POST /api/auth/register', () => {
 
   describe('エラーハンドリング', () => {
     it('データベースエラーの場合、500を返す', async () => {
-      mockCreate.mockRejectedValue(new Error('Database error'));
+      mockTransaction.mockRejectedValue(new Error('Database error'));
 
       const req = createAuthenticatedRequest('/api/auth/register', {
         method: 'POST',

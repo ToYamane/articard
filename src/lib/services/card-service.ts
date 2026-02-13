@@ -86,7 +86,7 @@ async function validateCardCreation(
   });
 
   if (!article || article.userId !== userId) {
-    throw new Error('記事が見つかりません');
+    throw ApiError.notFound('記事が見つかりません');
   }
 
   return { article, cost };
@@ -111,7 +111,7 @@ async function selectKeywordForCard(
   const keyword = selectRandomKeyword(extractedKeywords, usedKeywords);
 
   if (!keyword) {
-    throw new Error(
+    throw ApiError.noAvailableKeyword(
       'この記事から生成できるカードはもうありません。別の記事でお試しください'
     );
   }
@@ -396,9 +396,8 @@ export async function deleteCard(
   // ストレージから画像を削除
   try {
     await deleteCardImages(cardId);
-  } catch (error) {
-    // 画像削除に失敗してもDBは削除済みなのでログのみ
-    console.error('Failed to delete card images:', error);
+  } catch {
+    // 画像削除に失敗してもDBは削除済みなので無視
   }
 
   return true;
@@ -450,7 +449,7 @@ export async function getAvailableKeywordCount(
   });
 
   if (!article || article.userId !== userId) {
-    throw new Error('記事が見つかりません');
+    throw ApiError.notFound('記事が見つかりません');
   }
 
   // キーワード抽出

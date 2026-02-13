@@ -3,11 +3,13 @@ import { verifyAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { stripe } from '@/lib/stripe';
 import { handleApiError } from '@/lib/errors';
+import { parseBody } from '@/lib/api';
+import { subscriptionTierSchema } from '@/lib/validations/subscription';
+import { createRequestLogger } from '@/lib/logger';
 import {
   activateSubscription,
   cancelSubscription,
 } from '@/lib/services/subscription-service';
-import { SUBSCRIPTION_PLANS, type SubscriptionTier } from '@/lib/constants/coins';
 import type { ApiResponse } from '@/types/api';
 
 // POST /api/subscription - サブスク有効化（開発者のみ）
@@ -36,15 +38,10 @@ export async function POST(
       );
     }
 
-    const body = await req.json();
-    const { tier } = body as { tier: SubscriptionTier };
-
-    if (!tier || !(tier in SUBSCRIPTION_PLANS)) {
-      return NextResponse.json(
-        { success: false, error: { code: 'INVALID_TIER', message: '無効なプランです' } },
-        { status: 400 }
-      );
-    }
+    // Zodバリデーション
+    const parsed = await parseBody(req, subscriptionTierSchema);
+    if (parsed.error) return parsed.error;
+    const { tier } = parsed.data;
 
     const result = await activateSubscription(authUser.uid, tier);
 
@@ -57,7 +54,9 @@ export async function POST(
       },
     });
   } catch (error) {
-    console.error('Activate subscription error:', error);
+    const requestId = req.headers.get('x-request-id') || '';
+    const log = createRequestLogger(requestId, '/api/subscription');
+    log.error('Activate subscription error', { error });
     return handleApiError(error);
   }
 }
@@ -96,7 +95,9 @@ export async function DELETE(
       data: { message: 'サブスクリプションを解約しました' },
     });
   } catch (error) {
-    console.error('Cancel subscription error:', error);
+    const requestId = req.headers.get('x-request-id') || '';
+    const log = createRequestLogger(requestId, '/api/subscription');
+    log.error('Cancel subscription error', { error });
     return handleApiError(error);
   }
 }

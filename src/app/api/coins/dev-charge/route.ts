@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { handleApiError } from '@/lib/errors';
+import { parseBody } from '@/lib/api';
+import { devChargeSchema } from '@/lib/validations/subscription';
+import { createRequestLogger } from '@/lib/logger';
 import type { ApiResponse } from '@/types/api';
 
 // POST /api/coins/dev-charge - 開発者専用：任意金額の即時チャージ
@@ -30,16 +33,10 @@ export async function POST(
       );
     }
 
-    const body = await req.json();
-    const { amount } = body as { amount: number };
-
-    // バリデーション: 正の整数、1〜99999
-    if (!amount || !Number.isInteger(amount) || amount < 1 || amount > 99999) {
-      return NextResponse.json(
-        { success: false, error: { code: 'INVALID_AMOUNT', message: '金額は1〜99999の整数で指定してください' } },
-        { status: 400 }
-      );
-    }
+    // Zodバリデーション
+    const parsed = await parseBody(req, devChargeSchema);
+    if (parsed.error) return parsed.error;
+    const { amount } = parsed.data;
 
     // コイン付与
     const result = await prisma.$transaction(async (tx) => {
@@ -71,7 +68,9 @@ export async function POST(
       },
     });
   } catch (error) {
-    console.error('Dev charge coins error:', error);
+    const requestId = req.headers.get('x-request-id') || '';
+    const log = createRequestLogger(requestId, '/api/coins/dev-charge');
+    log.error('Dev charge coins error', { error });
     return handleApiError(error);
   }
 }

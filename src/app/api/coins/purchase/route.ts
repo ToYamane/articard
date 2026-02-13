@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { handleApiError } from '@/lib/errors';
-import { COIN_PACKAGES, type CoinPackageId } from '@/lib/constants/coins';
+import { parseBody } from '@/lib/api';
+import { coinPurchaseSchema } from '@/lib/validations/subscription';
+import { createRequestLogger } from '@/lib/logger';
+import { COIN_PACKAGES } from '@/lib/constants/coins';
 import type { ApiResponse } from '@/types/api';
 
 // POST /api/coins/purchase - コイン購入（開発者のみ）
@@ -31,15 +34,10 @@ export async function POST(
       );
     }
 
-    const body = await req.json();
-    const { packageId } = body as { packageId: CoinPackageId };
-
-    if (!packageId || !(packageId in COIN_PACKAGES)) {
-      return NextResponse.json(
-        { success: false, error: { code: 'INVALID_PACKAGE', message: '無効なパッケージです' } },
-        { status: 400 }
-      );
-    }
+    // Zodバリデーション
+    const parsed = await parseBody(req, coinPurchaseSchema);
+    if (parsed.error) return parsed.error;
+    const { packageId } = parsed.data;
 
     const pkg = COIN_PACKAGES[packageId];
 
@@ -73,7 +71,9 @@ export async function POST(
       },
     });
   } catch (error) {
-    console.error('Purchase coins error:', error);
+    const requestId = req.headers.get('x-request-id') || '';
+    const log = createRequestLogger(requestId, '/api/coins/purchase');
+    log.error('Purchase coins error', { error });
     return handleApiError(error);
   }
 }

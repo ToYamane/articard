@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { verifyIdToken } from '@/lib/firebase/admin';
 import { registerUserSchema } from '@/lib/validations/user';
 import { COIN_REWARDS } from '@/lib/constants/coins';
+import { createRequestLogger } from '@/lib/logger';
 import type { ApiResponse } from '@/types/api';
 import type { User } from '@prisma/client';
 
@@ -111,7 +112,9 @@ export async function POST(
       data: user,
     });
   } catch (error) {
-    console.error('Register error:', error);
+    const requestId = req.headers.get('x-request-id') || '';
+    const log = createRequestLogger(requestId, '/api/auth/register');
+    log.error('Register error', { error });
 
     if (error instanceof Error && error.message.includes('Firebase')) {
       return NextResponse.json(

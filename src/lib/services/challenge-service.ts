@@ -98,25 +98,25 @@ async function validateSessionForSubmit(
   });
 
   if (!session || session.userId !== userId) {
-    throw new Error('セッションが見つかりません');
+    throw ApiError.notFound('セッションが見つかりません');
   }
 
   if (session.status === 'in_progress' && isSessionExpired(session)) {
     await deleteExpiredSession(session.id);
-    throw new Error('セッションの有効期限が切れました。新しいセッションを開始してください');
+    throw ApiError.validation('セッションの有効期限が切れました。新しいセッションを開始してください');
   }
 
   if (session.status !== 'in_progress') {
-    throw new Error('ゲームが進行中ではありません');
+    throw ApiError.validation('ゲームが進行中ではありません');
   }
 
   if (session.currentPhase === 0) {
-    throw new Error('デッキを設定してください');
+    throw ApiError.validation('デッキを設定してください');
   }
 
   const scenario = getScenarioById(session.scenarioId);
   if (!scenario) {
-    throw new Error('シナリオが見つかりません');
+    throw ApiError.notFound('シナリオが見つかりません');
   }
 
   const gameState = deserializeGameState(session.gameState);
@@ -137,7 +137,7 @@ function validatePhaseSubmission(
 ): SelectedCard[] {
   // カード数検証
   if (cardIds.length !== phaseDefinition.cardCount) {
-    throw new Error(`このフェーズでは${phaseDefinition.cardCount}枚のカードが必要です`);
+    throw ApiError.validation(`このフェーズでは${phaseDefinition.cardCount}枚のカードが必要です`);
   }
 
   // 利用可能なカード確認
@@ -147,7 +147,7 @@ function validatePhaseSubmission(
   );
 
   if (selectedDeckCards.length !== cardIds.length) {
-    throw new Error('選択されたカードは利用できません');
+    throw ApiError.validation('選択されたカードは利用できません');
   }
 
   return selectedDeckCards.map((dc) => ({
@@ -337,7 +337,7 @@ export async function createSession(
 }> {
   const scenario = getScenarioById(scenarioId);
   if (!scenario) {
-    throw new Error('シナリオが見つかりません');
+    throw ApiError.notFound('シナリオが見つかりません');
   }
 
   // Check for existing in-progress session
@@ -353,7 +353,7 @@ export async function createSession(
     if (isSessionExpired(existingSession)) {
       await deleteExpiredSession(existingSession.id);
     } else {
-      throw new Error('進行中のセッションがあります。完了または中断してから新しいセッションを開始してください');
+      throw ApiError.validation('進行中のセッションがあります。完了または中断してから新しいセッションを開始してください');
     }
   }
 
@@ -534,20 +534,20 @@ export async function setSessionDeck(
   });
 
   if (!session || session.userId !== userId) {
-    throw new Error('セッションが見つかりません');
+    throw ApiError.notFound('セッションが見つかりません');
   }
 
   if (session.status !== 'in_progress' || session.currentPhase !== 0) {
-    throw new Error('デッキ編成は開始前のみ可能です');
+    throw ApiError.validation('デッキ編成は開始前のみ可能です');
   }
 
   const scenario = getScenarioById(session.scenarioId);
   if (!scenario) {
-    throw new Error('シナリオが見つかりません');
+    throw ApiError.notFound('シナリオが見つかりません');
   }
 
   if (cardIds.length !== scenario.deckSize) {
-    throw new Error(`デッキには${scenario.deckSize}枚のカードが必要です`);
+    throw ApiError.validation(`デッキには${scenario.deckSize}枚のカードが必要です`);
   }
 
   // Verify all cards belong to the user
@@ -568,13 +568,13 @@ export async function setSessionDeck(
   });
 
   if (cards.length !== cardIds.length) {
-    throw new Error('無効なカードが含まれています');
+    throw ApiError.validation('無効なカードが含まれています');
   }
 
   // Check for duplicates
   const uniqueIds = new Set(cardIds);
   if (uniqueIds.size !== cardIds.length) {
-    throw new Error('重複するカードは選択できません');
+    throw ApiError.validation('重複するカードは選択できません');
   }
 
   // Create deck cards array
@@ -621,31 +621,31 @@ export async function getCurrentPhaseChallenge(
   });
 
   if (!session || session.userId !== userId) {
-    throw new Error('セッションが見つかりません');
+    throw ApiError.notFound('セッションが見つかりません');
   }
 
   if (session.status === 'in_progress' && isSessionExpired(session)) {
     await deleteExpiredSession(session.id);
-    throw new Error('セッションの有効期限が切れました。新しいセッションを開始してください');
+    throw ApiError.validation('セッションの有効期限が切れました。新しいセッションを開始してください');
   }
 
   if (session.status !== 'in_progress') {
-    throw new Error('ゲームが進行中ではありません');
+    throw ApiError.validation('ゲームが進行中ではありません');
   }
 
   if (session.currentPhase === 0) {
-    throw new Error('デッキを設定してください');
+    throw ApiError.validation('デッキを設定してください');
   }
 
   const scenario = getScenarioById(session.scenarioId);
   if (!scenario) {
-    throw new Error('シナリオが見つかりません');
+    throw ApiError.notFound('シナリオが見つかりません');
   }
 
   const currentPhase = session.currentPhase;
   const phaseDefinition = getPhaseDefinition(session.scenarioId, currentPhase);
   if (!phaseDefinition) {
-    throw new Error('フェーズが見つかりません');
+    throw ApiError.notFound('フェーズが見つかりません');
   }
 
   const gameState = deserializeGameState(session.gameState);
@@ -688,7 +688,7 @@ export async function submitPhaseCards(
   const currentPhase = session.currentPhase;
   const phaseDefinition = getPhaseDefinition(session.scenarioId, currentPhase);
   if (!phaseDefinition) {
-    throw new Error('フェーズが見つかりません');
+    throw ApiError.notFound('フェーズが見つかりません');
   }
 
   // 2. フェーズ提出検証
@@ -802,11 +802,11 @@ export async function abandonSession(
   });
 
   if (!session || session.userId !== userId) {
-    throw new Error('セッションが見つかりません');
+    throw ApiError.notFound('セッションが見つかりません');
   }
 
   if (session.status === 'completed' || session.status === 'abandoned') {
-    throw new Error('このセッションは既に終了しています');
+    throw ApiError.validation('このセッションは既に終了しています');
   }
 
   // Delete the session instead of marking as abandoned

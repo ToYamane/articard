@@ -99,7 +99,7 @@ describe('/api/coins/purchase', () => {
         });
         const response = await POST(req);
 
-        await expectErrorResponse(response, 400, 'INVALID_PACKAGE');
+        await expectErrorResponse(response, 400, ERROR_CODES.VALIDATION_ERROR);
       });
 
       it('無効なpackageIdの場合、400を返す', async () => {
@@ -115,7 +115,7 @@ describe('/api/coins/purchase', () => {
         });
         const response = await POST(req);
 
-        await expectErrorResponse(response, 400, 'INVALID_PACKAGE');
+        await expectErrorResponse(response, 400, ERROR_CODES.VALIDATION_ERROR);
       });
     });
 

@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { SUBSCRIPTION_PLANS, type SubscriptionTier } from '@/lib/constants/coins';
+import { ApiError } from '@/lib/errors';
 
 /**
  * サブスク有効化結果
@@ -30,7 +31,7 @@ export async function activateSubscription(
 ): Promise<ActivateSubscriptionResult> {
   const plan = SUBSCRIPTION_PLANS[tier];
   if (!plan) {
-    throw new Error('無効なプランです');
+    throw ApiError.validation('無効なプランです');
   }
 
   const expiresAt = new Date();
@@ -47,7 +48,7 @@ export async function activateSubscription(
     });
 
     if (!user) {
-      throw new Error('ユーザーが見つかりません');
+      throw ApiError.notFound('ユーザーが見つかりません');
     }
 
     // ボーナス付与（毎回）
@@ -106,7 +107,7 @@ export async function getSubscriptionStatus(
   });
 
   if (!user) {
-    throw new Error('ユーザーが見つかりません');
+    throw ApiError.notFound('ユーザーが見つかりません');
   }
 
   const plan = user.subscriptionTier ? SUBSCRIPTION_PLANS[user.subscriptionTier] : null;

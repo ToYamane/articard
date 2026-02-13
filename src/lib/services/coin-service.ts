@@ -11,6 +11,7 @@ import {
   buildCursorOptions,
   DEFAULT_PAGE_SIZE,
 } from '@/lib/utils/pagination';
+import { ApiError } from '@/lib/errors';
 
 /**
  * ユーザーのサブスクリプションプラン設定を取得
@@ -129,7 +130,7 @@ export async function checkAndResetDaily(userId: string): Promise<{
   });
 
   if (!user) {
-    throw new Error('ユーザーが見つかりません');
+    throw ApiError.notFound('ユーザーが見つかりません');
   }
 
   // リセットが必要かチェック
@@ -175,7 +176,7 @@ export async function getBalances(userId: string): Promise<CoinBalances> {
   });
 
   if (!user) {
-    throw new Error('ユーザーが見つかりません');
+    throw ApiError.notFound('ユーザーが見つかりません');
   }
 
   return {
@@ -202,7 +203,7 @@ export async function consumeCoins(
   description: string
 ): Promise<ConsumeResult> {
   if (amount <= 0) {
-    throw new Error('消費額は正の値である必要があります');
+    throw ApiError.validation('消費額は正の値である必要があります');
   }
 
   // 日次リセットを先に実行
@@ -218,13 +219,13 @@ export async function consumeCoins(
     });
 
     if (!user) {
-      throw new Error('ユーザーが見つかりません');
+      throw ApiError.notFound('ユーザーが見つかりません');
     }
 
     const totalAvailable = user.dailyFreeCoins + user.knowledgeBalance;
 
     if (totalAvailable < amount) {
-      throw new Error(
+      throw ApiError.insufficientCoins(
         `コインが不足しています（必要: ${amount}、所持: ${totalAvailable}）`
       );
     }
@@ -282,7 +283,7 @@ export async function addPermanentCoins(
   description: string
 ): Promise<number> {
   if (amount <= 0) {
-    throw new Error('加算額は正の値である必要があります');
+    throw ApiError.validation('加算額は正の値である必要があります');
   }
 
   return await prisma.$transaction(async (tx) => {
@@ -295,7 +296,7 @@ export async function addPermanentCoins(
     });
 
     if (!user) {
-      throw new Error('ユーザーが見つかりません');
+      throw ApiError.notFound('ユーザーが見つかりません');
     }
 
     const newBalance = user.knowledgeBalance + amount;
@@ -360,7 +361,7 @@ export async function checkChallengeLimit(
   });
 
   if (!user) {
-    throw new Error('ユーザーが見つかりません');
+    throw ApiError.notFound('ユーザーが見つかりません');
   }
 
   const count = user.dailyChallengeCount;
