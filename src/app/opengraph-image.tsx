@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { ImageResponse } from 'next/og';
 
 export const alt = 'ArtiCard - 学んで集める、AIカードコレクション';
@@ -5,6 +7,9 @@ export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
 export default async function Image() {
+  const iconSrc = `data:image/png;base64,${readFileSync(join(process.cwd(), 'public/logo/icon.png')).toString('base64')}`;
+  const textSrc = `data:image/png;base64,${readFileSync(join(process.cwd(), 'public/logo/text.png')).toString('base64')}`;
+
   return new ImageResponse(
     <div
       style={{
@@ -17,26 +22,19 @@ export default async function Image() {
         background: 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 50%, #2563eb 100%)',
       }}
     >
-      {/* ロゴテキスト */}
+      {/* ロゴ */}
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '16px',
+          gap: '20px',
           marginBottom: '32px',
         }}
       >
-        <div
-          style={{
-            display: 'flex',
-            fontSize: '80px',
-            fontWeight: 800,
-            color: 'white',
-            letterSpacing: '-0.02em',
-          }}
-        >
-          ArtiCard
-        </div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={iconSrc} width={120} height={120} alt="" />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={textSrc} width={384} height={96} alt="" />
       </div>
       {/* サブタイトル */}
       <div
