@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button, Input } from '@/components/ui';
@@ -71,26 +70,14 @@ export function RegisterForm() {
   };
 
   return (
-    <div className="w-full max-w-md space-y-6">
-      <div className="flex flex-col items-center gap-3">
-        <Image
-          src="/logo/icon.webp"
-          alt="ArtiCard"
-          width={80}
-          height={80}
-          className="h-20 w-20"
-        />
+    <div className="w-full space-y-6">
+      <div className="flex flex-col items-center gap-1">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">新規登録</h1>
-        <p className="text-sm text-gray-600 dark:text-gray-400">
-          Articardで学習カードを集めよう
-        </p>
+        <p className="text-sm text-gray-600 dark:text-gray-400">Articardで学習カードを集めよう</p>
       </div>
 
       {/* OAuth Buttons */}
-      <OAuthButtons
-        onGoogleClick={handleGoogleLogin}
-        disabled={isLoading}
-      />
+      <OAuthButtons onGoogleClick={handleGoogleLogin} disabled={isLoading} />
 
       {/* Divider */}
       <div className="relative">
@@ -98,7 +85,7 @@ export function RegisterForm() {
           <div className="w-full border-t border-gray-300 dark:border-gray-700" />
         </div>
         <div className="relative flex justify-center text-sm">
-          <span className="bg-white px-2 text-gray-500 dark:bg-black dark:text-gray-400">
+          <span className="bg-white px-2 text-gray-500 dark:bg-gray-900 dark:text-gray-400">
             または
           </span>
         </div>

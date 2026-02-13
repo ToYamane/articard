@@ -42,7 +42,7 @@ export function NicknameSetupForm() {
   };
 
   return (
-    <div className="w-full max-w-md space-y-6">
+    <div className="w-full space-y-6">
       <div className="text-center">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">ニックネーム設定</h1>
         <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
@@ -51,7 +51,7 @@ export function NicknameSetupForm() {
       </div>
 
       {user && (
-        <div className="rounded-lg bg-gray-50 p-4 dark:bg-gray-950">
+        <div className="rounded-lg bg-gray-100 p-4 dark:bg-gray-800">
           <p className="text-sm text-gray-600 dark:text-gray-400">
             登録メールアドレス: <span className="font-medium">{user.email}</span>
           </p>

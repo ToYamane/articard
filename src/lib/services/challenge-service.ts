@@ -12,10 +12,7 @@ import {
   deserializeGameState,
   serializeGameState,
 } from '@/lib/challenge/game-state';
-import {
-  evaluateCardSelection,
-  generateChallengeSummary,
-} from '@/lib/openai';
+import { evaluateCardSelection, generateChallengeSummary } from '@/lib/openai';
 import {
   checkChallengeLimit,
   incrementChallengeCount,
@@ -103,7 +100,9 @@ async function validateSessionForSubmit(
 
   if (session.status === 'in_progress' && isSessionExpired(session)) {
     await deleteExpiredSession(session.id);
-    throw ApiError.validation('セッションの有効期限が切れました。新しいセッションを開始してください');
+    throw ApiError.validation(
+      'セッションの有効期限が切れました。新しいセッションを開始してください'
+    );
   }
 
   if (session.status !== 'in_progress') {
@@ -142,9 +141,7 @@ function validatePhaseSubmission(
 
   // 利用可能なカード確認
   const availableDeckCards = gameState.deck.filter((dc) => !dc.isUsed);
-  const selectedDeckCards = availableDeckCards.filter((dc) =>
-    cardIds.includes(dc.cardId)
-  );
+  const selectedDeckCards = availableDeckCards.filter((dc) => cardIds.includes(dc.cardId));
 
   if (selectedDeckCards.length !== cardIds.length) {
     throw ApiError.validation('選択されたカードは利用できません');
@@ -168,7 +165,12 @@ function buildPhaseResult(
   currentPhase: number,
   challenge: { situation: string; challenge: string },
   cardIds: string[],
-  evaluation: { fitScore: number; bonusScore: number; narrativeDescription: string; humorComment: string },
+  evaluation: {
+    fitScore: number;
+    bonusScore: number;
+    narrativeDescription: string;
+    humorComment: string;
+  },
   phaseScore: number
 ): PhaseResult {
   const aiCommentary = `${evaluation.narrativeDescription}\n\n${evaluation.humorComment}`;
@@ -271,11 +273,7 @@ async function processSessionCompletion(
   }
 
   // 実績報酬処理
-  const rewardResult = await processAchievementRewards(
-    userId,
-    scenarioId,
-    newTotalScore
-  );
+  const rewardResult = await processAchievementRewards(userId, scenarioId, newTotalScore);
 
   // サマリー生成
   const phaseResults = updatedGameState.phases.map((p) => {
@@ -291,11 +289,7 @@ async function processSessionCompletion(
     };
   });
 
-  const summary = await generateChallengeSummary(
-    scenario.title,
-    newTotalScore,
-    phaseResults
-  );
+  const summary = await generateChallengeSummary(scenario.title, newTotalScore, phaseResults);
 
   // 非ハイスコア → セッション削除（データ肥大化防止）
   // ハイスコア → submitPhaseCardsで既にstatus:'completed'に更新済みのため不要
@@ -353,32 +347,14 @@ export async function createSession(
     if (isSessionExpired(existingSession)) {
       await deleteExpiredSession(existingSession.id);
     } else {
-      throw ApiError.validation('進行中のセッションがあります。完了または中断してから新しいセッションを開始してください');
-    }
-  }
-
-  // Check challenge limit and charge if needed
-  const challengeLimit = await checkChallengeLimit(userId);
-
-  if (!challengeLimit.isFree) {
-    const hasSufficientCoins = await hasEnoughCoins(userId, challengeLimit.cost);
-    if (!hasSufficientCoins) {
-      throw new ApiError(
-        'INSUFFICIENT_COINS',
-        `チャレンジには${challengeLimit.cost}コインが必要です`,
-        400
+      throw ApiError.validation(
+        '進行中のセッションがあります。完了または中断してから新しいセッションを開始してください'
       );
     }
-
-    await consumeCoins(
-      userId,
-      challengeLimit.cost,
-      `チャレンジモード参加: ${scenario.title}`
-    );
   }
 
-  // Increment challenge count
-  await incrementChallengeCount(userId);
+  // Check challenge limit (charge is deferred to setSessionDeck)
+  const challengeLimit = await checkChallengeLimit(userId);
 
   // Initialize empty game state
   const initialGameState: GameState = {
@@ -449,11 +425,7 @@ export async function getSessionById(
 /**
  * Get user's sessions (simplified - only return in-progress sessions)
  */
-export async function getUserSessions(
-  userId: string,
-  status?: ChallengeSessionStatus,
-  limit = 10
-) {
+export async function getUserSessions(userId: string, status?: ChallengeSessionStatus, limit = 10) {
   const sessions = await prisma.challengeSession.findMany({
     where: {
       userId,
@@ -484,9 +456,13 @@ export async function getUserSessions(
 
   // 期限切れセッションを非同期で削除（レスポンスを待たない）
   if (expiredIds.length > 0) {
-    prisma.challengeSession.deleteMany({
-      where: { id: { in: expiredIds } },
-    }).catch(() => { /* ignore cleanup errors */ });
+    prisma.challengeSession
+      .deleteMany({
+        where: { id: { in: expiredIds } },
+      })
+      .catch(() => {
+        /* ignore cleanup errors */
+      });
   }
 
   return activeSessions.map((s) => {
@@ -593,6 +569,21 @@ export async function setSessionDeck(
     };
   });
 
+  // チャレンジ回数チェック・消費（デッキ確定=チャレンジ開始時に課金）
+  const challengeLimit = await checkChallengeLimit(userId);
+  if (!challengeLimit.isFree) {
+    const hasSufficientCoins = await hasEnoughCoins(userId, challengeLimit.cost);
+    if (!hasSufficientCoins) {
+      throw new ApiError(
+        'INSUFFICIENT_COINS',
+        `チャレンジには${challengeLimit.cost}コインが必要です`,
+        400
+      );
+    }
+    await consumeCoins(userId, challengeLimit.cost, `チャレンジモード参加: ${scenario.title}`);
+  }
+  await incrementChallengeCount(userId);
+
   // Update game state and move to phase 1
   const gameState: GameState = {
     deck: deckCards,
@@ -612,10 +603,7 @@ export async function setSessionDeck(
 /**
  * Get the current phase challenge (generates if needed)
  */
-export async function getCurrentPhaseChallenge(
-  sessionId: string,
-  userId: string
-) {
+export async function getCurrentPhaseChallenge(sessionId: string, userId: string) {
   const session = await prisma.challengeSession.findUnique({
     where: { id: sessionId },
   });
@@ -626,7 +614,9 @@ export async function getCurrentPhaseChallenge(
 
   if (session.status === 'in_progress' && isSessionExpired(session)) {
     await deleteExpiredSession(session.id);
-    throw ApiError.validation('セッションの有効期限が切れました。新しいセッションを開始してください');
+    throw ApiError.validation(
+      'セッションの有効期限が切れました。新しいセッションを開始してください'
+    );
   }
 
   if (session.status !== 'in_progress') {
@@ -677,11 +667,7 @@ export async function getCurrentPhaseChallenge(
 /**
  * Submit cards for the current phase
  */
-export async function submitPhaseCards(
-  sessionId: string,
-  userId: string,
-  cardIds: string[]
-) {
+export async function submitPhaseCards(sessionId: string, userId: string, cardIds: string[]) {
   // 1. セッション検証
   const { session, gameState, scenario } = await validateSessionForSubmit(sessionId, userId);
 
@@ -709,13 +695,7 @@ export async function submitPhaseCards(
   );
 
   // 5. フェーズ結果構築
-  const newPhaseResult = buildPhaseResult(
-    currentPhase,
-    challenge,
-    cardIds,
-    evaluation,
-    phaseScore
-  );
+  const newPhaseResult = buildPhaseResult(currentPhase, challenge, cardIds, evaluation, phaseScore);
 
   // 6. ゲーム状態更新
   const updatedGameState = updateGameState(
@@ -777,12 +757,14 @@ export async function submitPhaseCards(
     sessionTotalScore: newTotalScore,
     isComplete,
     // 完了時のみ全フェーズ結果を含める（フロントエンドがfetchSession不要になる）
-    phases: isComplete ? updatedGameState.phases.map((p) => ({
-      phaseNumber: p.phaseNumber,
-      fitScore: p.fitScore,
-      bonusScore: p.bonusScore,
-      totalScore: p.totalScore,
-    })) : undefined,
+    phases: isComplete
+      ? updatedGameState.phases.map((p) => ({
+          phaseNumber: p.phaseNumber,
+          fitScore: p.fitScore,
+          bonusScore: p.bonusScore,
+          totalScore: p.totalScore,
+        }))
+      : undefined,
     isHighScore: completionRewards?.isHighScore ?? false,
     summary: completionRewards?.summary,
     achievementRewards: completionRewards?.achievementRewards,
@@ -793,10 +775,7 @@ export async function submitPhaseCards(
 /**
  * Abandon a session
  */
-export async function abandonSession(
-  sessionId: string,
-  userId: string
-): Promise<void> {
+export async function abandonSession(sessionId: string, userId: string): Promise<void> {
   const session = await prisma.challengeSession.findUnique({
     where: { id: sessionId },
   });

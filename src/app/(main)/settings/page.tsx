@@ -116,7 +116,9 @@ export default function SettingsPage() {
     try {
       const result = await activateSubscription(tier);
       if (result.bonusCoins > 0) {
-        success(`${tier === 'plus' ? 'プラス' : 'プレミアム'}プランに加入しました！加入ボーナス ${result.bonusCoins} コインを獲得！`);
+        success(
+          `${tier === 'plus' ? 'プラス' : 'プレミアム'}プランに加入しました！加入ボーナス ${result.bonusCoins} コインを獲得！`
+        );
       } else {
         success(`${tier === 'plus' ? 'プラス' : 'プレミアム'}プランに加入しました！`);
       }
@@ -177,9 +179,7 @@ export default function SettingsPage() {
       transition={{ duration: 0.4 }}
       className="space-y-8"
     >
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-        設定
-      </h1>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">設定</h1>
 
       {/* Profile Section */}
       <SectionContainer variant="default" title="プロフィール" delay={0.1}>
@@ -215,11 +215,13 @@ export default function SettingsPage() {
       {/* Appearance Section */}
       <SectionContainer variant="default" title="外観" delay={0.15}>
         <div className="flex gap-3">
-          {([
-            { value: 'light', label: 'ライト', icon: '\u2600\uFE0F' },
-            { value: 'dark', label: 'ダーク', icon: '\uD83C\uDF19' },
-            { value: 'system', label: 'システム', icon: '\uD83D\uDCBB' },
-          ] as const).map((option) => (
+          {(
+            [
+              { value: 'light', label: 'ライト', icon: '\u2600\uFE0F' },
+              { value: 'dark', label: 'ダーク', icon: '\uD83C\uDF19' },
+              { value: 'system', label: 'システム', icon: '\uD83D\uDCBB' },
+            ] as const
+          ).map((option) => (
             <button
               key={option.value}
               onClick={() => setTheme(option.value)}
@@ -268,9 +270,7 @@ export default function SettingsPage() {
           <div className="flex justify-between">
             <span className="text-gray-600 dark:text-gray-400">登録日</span>
             <span className="font-medium text-gray-900 dark:text-gray-100">
-              {profile?.createdAt
-                ? new Date(profile.createdAt).toLocaleDateString('ja-JP')
-                : '-'}
+              {profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString('ja-JP') : '-'}
             </span>
           </div>
         </div>
@@ -279,132 +279,148 @@ export default function SettingsPage() {
       {/* Subscription Section */}
       <SectionContainer variant="info" title="サブスクリプション" delay={0.25}>
         {/* Plan Comparison */}
-          <div className="mb-6 overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-blue-200 dark:border-blue-800">
-                  <th className="py-2 text-left text-gray-600 dark:text-gray-400">特典</th>
-                  <th className="py-2 text-center text-gray-600 dark:text-gray-400">無料</th>
-                  <th className="py-2 text-center text-blue-600 dark:text-blue-400">プラス</th>
-                  <th className="py-2 text-center text-purple-600 dark:text-purple-400">プレミアム</th>
-                </tr>
-              </thead>
-              <tbody className="text-gray-700 dark:text-gray-300">
-                <tr className="border-b border-blue-100 dark:border-blue-900">
-                  <td className="py-2">デイリーコイン</td>
-                  <td className="py-2 text-center">90</td>
-                  <td className="py-2 text-center font-medium text-blue-600">150</td>
-                  <td className="py-2 text-center font-medium text-purple-600">300</td>
-                </tr>
-                <tr className="border-b border-blue-100 dark:border-blue-900">
-                  <td className="py-2">チャレンジ無料回数</td>
-                  <td className="py-2 text-center">3回/日</td>
-                  <td className="py-2 text-center font-medium text-blue-600">10回/日</td>
-                  <td className="py-2 text-center font-medium text-purple-600">無制限</td>
-                </tr>
-                <tr>
-                  <td className="py-2">加入ボーナス</td>
-                  <td className="py-2 text-center">-</td>
-                  <td className="py-2 text-center font-medium text-blue-600">300コイン</td>
-                  <td className="py-2 text-center font-medium text-purple-600">900コイン</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+        <div className="mb-6 overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-blue-200 dark:border-blue-800">
+                <th className="py-2 text-left text-gray-600 dark:text-gray-400">特典</th>
+                <th className="py-2 text-center text-gray-600 dark:text-gray-400">無料</th>
+                <th className="py-2 text-center text-blue-600 dark:text-blue-400">プラス</th>
+                <th className="py-2 text-center text-purple-600 dark:text-purple-400">
+                  プレミアム
+                </th>
+              </tr>
+            </thead>
+            <tbody className="text-gray-700 dark:text-gray-300">
+              <tr className="border-b border-blue-100 dark:border-blue-900">
+                <td className="py-2">デイリーコイン</td>
+                <td className="py-2 text-center">90</td>
+                <td className="py-2 text-center font-medium text-blue-600">150</td>
+                <td className="py-2 text-center font-medium text-purple-600">300</td>
+              </tr>
+              <tr className="border-b border-blue-100 dark:border-blue-900">
+                <td className="py-2">チャレンジ無料回数</td>
+                <td className="py-2 text-center">3回/日</td>
+                <td className="py-2 text-center font-medium text-blue-600">10回/日</td>
+                <td className="py-2 text-center font-medium text-purple-600">無制限</td>
+              </tr>
+              <tr className="border-b border-blue-100 dark:border-blue-900">
+                <td className="py-2">カード一括生成</td>
+                <td className="py-2 text-center">×</td>
+                <td className="py-2 text-center font-medium text-blue-600">○</td>
+                <td className="py-2 text-center font-medium text-purple-600">○</td>
+              </tr>
+              <tr>
+                <td className="py-2">加入ボーナス</td>
+                <td className="py-2 text-center">-</td>
+                <td className="py-2 text-center font-medium text-blue-600">300コイン</td>
+                <td className="py-2 text-center font-medium text-purple-600">900コイン</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
-          {/* Subscription Actions */}
-          <div className="flex flex-wrap gap-3">
+        {/* Subscription Actions */}
+        <div className="flex flex-wrap gap-3">
+          <Button
+            onClick={() => handleActivateSubscription('plus')}
+            disabled={
+              isSubscriptionLoading || processingAction !== null || subscription?.tier === 'plus'
+            }
+            isLoading={processingAction === 'subscribe-plus'}
+            variant={subscription?.tier === 'plus' ? 'primary' : 'secondary'}
+          >
+            {subscription?.tier === 'plus' ? 'プラス加入中' : 'プラスに加入 (¥980/月)'}
+          </Button>
+          <Button
+            onClick={() => handleActivateSubscription('premium')}
+            disabled={
+              isSubscriptionLoading || processingAction !== null || subscription?.tier === 'premium'
+            }
+            isLoading={processingAction === 'subscribe-premium'}
+            variant={subscription?.tier === 'premium' ? 'primary' : 'secondary'}
+          >
+            {subscription?.tier === 'premium' ? 'プレミアム加入中' : 'プレミアムに加入 (¥2,980/月)'}
+          </Button>
+          {subscription?.tier && (
             <Button
-              onClick={() => handleActivateSubscription('plus')}
-              disabled={isSubscriptionLoading || processingAction !== null || subscription?.tier === 'plus'}
-              isLoading={processingAction === 'subscribe-plus'}
-              variant={subscription?.tier === 'plus' ? 'primary' : 'secondary'}
+              onClick={handleCancelSubscription}
+              disabled={isSubscriptionLoading || processingAction !== null}
+              isLoading={processingAction === 'cancel'}
+              variant="danger"
             >
-              {subscription?.tier === 'plus' ? 'プラス加入中' : 'プラスに加入 (¥980/月)'}
+              解約
             </Button>
-            <Button
-              onClick={() => handleActivateSubscription('premium')}
-              disabled={isSubscriptionLoading || processingAction !== null || subscription?.tier === 'premium'}
-              isLoading={processingAction === 'subscribe-premium'}
-              variant={subscription?.tier === 'premium' ? 'primary' : 'secondary'}
-            >
-              {subscription?.tier === 'premium' ? 'プレミアム加入中' : 'プレミアムに加入 (¥2,980/月)'}
-            </Button>
-            {subscription?.tier && (
-              <Button
-                onClick={handleCancelSubscription}
-                disabled={isSubscriptionLoading || processingAction !== null}
-                isLoading={processingAction === 'cancel'}
-                variant="danger"
-              >
-                解約
-              </Button>
-            )}
-          </div>
-
-          {/* Developer Only: Direct Activation (Skip Stripe) */}
-          {profile?.isDeveloper && (
-            <div className="mt-4 rounded-lg border border-orange-300 bg-orange-50 p-4 dark:border-orange-700 dark:bg-orange-950/30">
-              <p className="mb-3 text-sm font-medium text-orange-700 dark:text-orange-400">
-                開発者専用：Stripeスキップ（テスト用）
-              </p>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  onClick={() => handleDirectActivation('plus')}
-                  disabled={isSubscriptionLoading || processingAction !== null || subscription?.tier === 'plus'}
-                  isLoading={processingAction === 'direct-plus'}
-                  variant="secondary"
-                  className="text-sm"
-                >
-                  プラス直接有効化
-                </Button>
-                <Button
-                  onClick={() => handleDirectActivation('premium')}
-                  disabled={isSubscriptionLoading || processingAction !== null || subscription?.tier === 'premium'}
-                  isLoading={processingAction === 'direct-premium'}
-                  variant="secondary"
-                  className="text-sm"
-                >
-                  プレミアム直接有効化
-                </Button>
-              </div>
-            </div>
           )}
+        </div>
+
+        {/* Developer Only: Direct Activation (Skip Stripe) */}
+        {profile?.isDeveloper && (
+          <div className="mt-4 rounded-lg border border-orange-300 bg-orange-50 p-4 dark:border-orange-700 dark:bg-orange-950/30">
+            <p className="mb-3 text-sm font-medium text-orange-700 dark:text-orange-400">
+              開発者専用：Stripeスキップ（テスト用）
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                onClick={() => handleDirectActivation('plus')}
+                disabled={
+                  isSubscriptionLoading ||
+                  processingAction !== null ||
+                  subscription?.tier === 'plus'
+                }
+                isLoading={processingAction === 'direct-plus'}
+                variant="secondary"
+                className="text-sm"
+              >
+                プラス直接有効化
+              </Button>
+              <Button
+                onClick={() => handleDirectActivation('premium')}
+                disabled={
+                  isSubscriptionLoading ||
+                  processingAction !== null ||
+                  subscription?.tier === 'premium'
+                }
+                isLoading={processingAction === 'direct-premium'}
+                variant="secondary"
+                className="text-sm"
+              >
+                プレミアム直接有効化
+              </Button>
+            </div>
+          </div>
+        )}
       </SectionContainer>
 
       {/* Coin Purchase Section */}
       <SectionContainer variant="warning" title="コイン購入" delay={0.3}>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            {packages.map((pkg) => (
-              <div
-                key={pkg.id}
-                className="rounded-lg border border-yellow-200 bg-white p-4 dark:border-yellow-800 dark:bg-black"
+          {packages.map((pkg) => (
+            <div
+              key={pkg.id}
+              className="rounded-lg border border-yellow-200 bg-white p-4 dark:border-yellow-800 dark:bg-black"
+            >
+              <h3 className="mb-2 text-center font-semibold text-gray-900 dark:text-gray-100">
+                {pkg.name}
+              </h3>
+              <p className="mb-1 text-center text-2xl font-bold text-yellow-600 dark:text-yellow-400">
+                {pkg.coins.toLocaleString()}
+              </p>
+              <p className="mb-3 text-center text-xs text-gray-500 dark:text-gray-400">コイン</p>
+              <p className="mb-3 text-center text-sm text-gray-600 dark:text-gray-400">
+                ¥{pkg.price.toLocaleString()}
+                <span className="ml-1 text-xs">(¥{(pkg.price / pkg.coins).toFixed(2)}/コイン)</span>
+              </p>
+              <Button
+                onClick={() => handlePurchaseCoins(pkg.id)}
+                disabled={isSubscriptionLoading || processingAction !== null}
+                isLoading={processingAction === `purchase-${pkg.id}`}
+                className="w-full"
               >
-                <h3 className="mb-2 text-center font-semibold text-gray-900 dark:text-gray-100">
-                  {pkg.name}
-                </h3>
-                <p className="mb-1 text-center text-2xl font-bold text-yellow-600 dark:text-yellow-400">
-                  {pkg.coins.toLocaleString()}
-                </p>
-                <p className="mb-3 text-center text-xs text-gray-500 dark:text-gray-400">
-                  コイン
-                </p>
-                <p className="mb-3 text-center text-sm text-gray-600 dark:text-gray-400">
-                  ¥{pkg.price.toLocaleString()}
-                  <span className="ml-1 text-xs">
-                    (¥{(pkg.price / pkg.coins).toFixed(2)}/コイン)
-                  </span>
-                </p>
-                <Button
-                  onClick={() => handlePurchaseCoins(pkg.id)}
-                  disabled={isSubscriptionLoading || processingAction !== null}
-                  isLoading={processingAction === `purchase-${pkg.id}`}
-                  className="w-full"
-                >
-                  購入
-                </Button>
-              </div>
-            ))}
+                購入
+              </Button>
+            </div>
+          ))}
         </div>
 
         {/* Developer Only: Instant Charge */}
@@ -474,11 +490,7 @@ export default function SettingsPage() {
           アカウントを削除すると、すべての記事、カード、データが完全に削除されます。
           この操作は取り消せません。
         </p>
-        <Button
-          variant="danger"
-          onClick={() => setShowDeleteModal(true)}
-          disabled={isLoading}
-        >
+        <Button variant="danger" onClick={() => setShowDeleteModal(true)} disabled={isLoading}>
           アカウントを削除
         </Button>
       </SectionContainer>
