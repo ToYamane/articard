@@ -1,27 +1,21 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { ImageResponse } from 'next/og';
 
-export const runtime = 'edge';
 export const alt = 'ArtiCard - 学んで集める、AIカードコレクション';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
-function toBase64DataUri(buffer: ArrayBuffer, mime: string): string {
-  let binary = '';
-  const bytes = new Uint8Array(buffer);
-  for (let i = 0; i < bytes.byteLength; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  return `data:${mime};base64,${btoa(binary)}`;
+function toBase64DataUri(buffer: Buffer, mime: string): string {
+  return `data:${mime};base64,${buffer.toString('base64')}`;
 }
 
 export default async function Image() {
-  const [iconData, textData] = await Promise.all([
-    fetch(new URL('/public/logo/icon.webp', import.meta.url)).then((r) => r.arrayBuffer()),
-    fetch(new URL('/public/logo/text.webp', import.meta.url)).then((r) => r.arrayBuffer()),
-  ]);
+  const iconBuffer = readFileSync(join(process.cwd(), 'public/logo/icon.webp'));
+  const textBuffer = readFileSync(join(process.cwd(), 'public/logo/text.webp'));
 
-  const iconSrc = toBase64DataUri(iconData, 'image/webp');
-  const textSrc = toBase64DataUri(textData, 'image/webp');
+  const iconSrc = toBase64DataUri(iconBuffer, 'image/webp');
+  const textSrc = toBase64DataUri(textBuffer, 'image/webp');
 
   return new ImageResponse(
     <div
