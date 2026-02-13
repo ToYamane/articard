@@ -24,6 +24,7 @@ import {
 } from '@/lib/services/coin-service';
 import { processAchievementRewards } from '@/lib/challenge/rewards';
 import { ApiError } from '@/lib/errors';
+import { SESSION_EXPIRATION_MS } from '@/lib/constants/challenge';
 import type {
   ChallengeSessionStatus,
   ScenarioDefinition,
@@ -31,6 +32,24 @@ import type {
 } from '@/types/challenge';
 import type { ChallengeSession } from '@prisma/client';
 import type { Rarity } from '@/types/database';
+
+/**
+ * セッションが期限切れかチェック
+ */
+function isSessionExpired(session: ChallengeSession): boolean {
+  return Date.now() - session.startedAt.getTime() > SESSION_EXPIRATION_MS;
+}
+
+/**
+ * 期限切れセッションを削除
+ */
+async function deleteExpiredSession(sessionId: string): Promise<void> {
+  try {
+    await prisma.challengeSession.delete({ where: { id: sessionId } });
+  } catch {
+    // 既に削除済みの場合は無視
+  }
+}
 
 // Response type for session details
 export interface SessionDetails {
@@ -80,6 +99,11 @@ async function validateSessionForSubmit(
 
   if (!session || session.userId !== userId) {
     throw new Error('セッションが見つかりません');
+  }
+
+  if (session.status === 'in_progress' && isSessionExpired(session)) {
+    await deleteExpiredSession(session.id);
+    throw new Error('セッションの有効期限が切れました。新しいセッションを開始してください');
   }
 
   if (session.status !== 'in_progress') {
@@ -325,7 +349,12 @@ export async function createSession(
   });
 
   if (existingSession) {
-    throw new Error('進行中のセッションがあります。完了または中断してから新しいセッションを開始してください');
+    // 期限切れなら自動削除して続行
+    if (isSessionExpired(existingSession)) {
+      await deleteExpiredSession(existingSession.id);
+    } else {
+      throw new Error('進行中のセッションがあります。完了または中断してから新しいセッションを開始してください');
+    }
   }
 
   // Check challenge limit and charge if needed
@@ -395,6 +424,12 @@ export async function getSessionById(
     return null;
   }
 
+  // 期限切れチェック（in_progress のみ）
+  if (session.status === 'in_progress' && isSessionExpired(session)) {
+    await deleteExpiredSession(session.id);
+    return null;
+  }
+
   const gameState = deserializeGameState(session.gameState);
 
   return {
@@ -437,7 +472,24 @@ export async function getUserSessions(
     },
   });
 
-  return sessions.map((s) => {
+  // 期限切れセッションをフィルタ & バックグラウンド削除
+  const expiredIds: string[] = [];
+  const activeSessions = sessions.filter((s) => {
+    if (s.status === 'in_progress' && isSessionExpired(s as unknown as ChallengeSession)) {
+      expiredIds.push(s.id);
+      return false;
+    }
+    return true;
+  });
+
+  // 期限切れセッションを非同期で削除（レスポンスを待たない）
+  if (expiredIds.length > 0) {
+    prisma.challengeSession.deleteMany({
+      where: { id: { in: expiredIds } },
+    }).catch(() => { /* ignore cleanup errors */ });
+  }
+
+  return activeSessions.map((s) => {
     const gameState = deserializeGameState(s.gameState);
     return {
       id: s.id,
@@ -570,6 +622,11 @@ export async function getCurrentPhaseChallenge(
 
   if (!session || session.userId !== userId) {
     throw new Error('セッションが見つかりません');
+  }
+
+  if (session.status === 'in_progress' && isSessionExpired(session)) {
+    await deleteExpiredSession(session.id);
+    throw new Error('セッションの有効期限が切れました。新しいセッションを開始してください');
   }
 
   if (session.status !== 'in_progress') {

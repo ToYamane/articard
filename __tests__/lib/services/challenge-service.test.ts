@@ -23,6 +23,7 @@ const mockSessionFindMany = jest.fn();
 const mockSessionCreate = jest.fn();
 const mockSessionUpdate = jest.fn();
 const mockSessionDelete = jest.fn();
+const mockSessionDeleteMany = jest.fn();
 const mockHighScoreFindUnique = jest.fn();
 const mockHighScoreFindMany = jest.fn();
 const mockHighScoreCreate = jest.fn();
@@ -38,6 +39,7 @@ jest.mock('@/lib/prisma', () => ({
       create: (...args: unknown[]) => mockSessionCreate(...args),
       update: (...args: unknown[]) => mockSessionUpdate(...args),
       delete: (...args: unknown[]) => mockSessionDelete(...args),
+      deleteMany: (...args: unknown[]) => mockSessionDeleteMany(...args),
     },
     challengeHighScore: {
       findUnique: (...args: unknown[]) => mockHighScoreFindUnique(...args),
@@ -163,7 +165,7 @@ const mockSession = {
   status: 'in_progress',
   currentPhase: 1,
   gameState: { /* serialized */ },
-  startedAt: new Date('2026-01-15T10:00:00Z'),
+  startedAt: new Date(), // 現在時刻（期限切れしていないセッション）
   completedAt: null,
 };
 
@@ -211,7 +213,10 @@ describe('challenge-service', () => {
 
     it('進行中のセッションがある場合エラーを投げる', async () => {
       mockGetScenarioById.mockReturnValue(mockScenario);
-      mockSessionFindFirst.mockResolvedValue({ id: 'existing-session' });
+      mockSessionFindFirst.mockResolvedValue({
+        id: 'existing-session',
+        startedAt: new Date(), // 期限内
+      });
 
       await expect(
         createSession(TEST_USER_ID, TEST_SCENARIO_ID)

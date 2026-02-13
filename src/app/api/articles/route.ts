@@ -20,7 +20,7 @@ export const POST = withAuth<Article>(async (authUser, req) => {
     theme,
     contentType,
   });
-});
+}, { rateLimit: 'expensive' });
 
 // 記事一覧取得
 export const GET = withAuth<ArticleListResponse>(async (authUser, req) => {

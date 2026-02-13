@@ -208,3 +208,14 @@ model ChallengeAchievement {
   @@index([userId, scenarioId])
   @@map("challenge_achievements")
 }
+
+// Stripe Webhook 冪等性チェック用
+model StripeWebhookEvent {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  eventId     String   @unique @map("event_id") @db.VarChar(255)
+  eventType   String   @map("event_type") @db.VarChar(100)
+  processedAt DateTime @default(now()) @map("processed_at") @db.Timestamptz
+
+  @@index([processedAt])
+  @@map("stripe_webhook_events")
+}

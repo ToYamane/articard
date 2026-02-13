@@ -36,4 +36,4 @@ export const POST = withAuthParams<SubmitResult>(async (authUser, req, { id }) =
   if (error) return error;
 
   return submitPhaseCards(id, authUser.uid, data.cardIds);
-});
+}, { rateLimit: 'expensive' });

@@ -32,7 +32,7 @@ export const POST = withAuth<SessionResponse>(async (authUser, req) => {
   if (error) return error;
 
   return createSession(authUser.uid, data.scenarioId);
-});
+}, { rateLimit: 'standard' });
 
 // セッション一覧取得
 export const GET = withAuth<{ sessions: SessionListItem[] }>(async (authUser, req) => {

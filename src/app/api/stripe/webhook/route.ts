@@ -2,21 +2,26 @@ import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import Stripe from 'stripe';
 import type { SubscriptionTier } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { stripe, STRIPE_PRICE_TO_TIER } from '@/lib/stripe';
 import { prisma } from '@/lib/prisma';
 import { activateSubscription, cancelSubscription } from '@/lib/services/subscription-service';
+import { createRequestLogger } from '@/lib/logger';
 
 // Webhookのbodyを生で取得するために必要
 export const dynamic = 'force-dynamic';
 
 // POST /api/stripe/webhook - Stripe Webhook
 export async function POST(req: NextRequest) {
+  const requestId = req.headers.get('x-request-id') || crypto.randomUUID();
+  const log = createRequestLogger(requestId, '/api/stripe/webhook');
+
   const body = await req.text();
   const headersList = await headers();
   const signature = headersList.get('stripe-signature');
 
   if (!signature) {
-    console.error('Missing stripe-signature header');
+    log.error('Missing stripe-signature header');
     return NextResponse.json(
       { error: 'Missing signature' },
       { status: 400 }
@@ -25,7 +30,7 @@ export async function POST(req: NextRequest) {
 
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
   if (!webhookSecret) {
-    console.error('STRIPE_WEBHOOK_SECRET is not set');
+    log.error('STRIPE_WEBHOOK_SECRET is not set');
     return NextResponse.json(
       { error: 'Webhook secret not configured' },
       { status: 500 }
@@ -37,54 +42,70 @@ export async function POST(req: NextRequest) {
   try {
     event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
   } catch (err) {
-    console.error('Webhook signature verification failed:', err);
+    log.error('Webhook signature verification failed', { error: err });
     return NextResponse.json(
       { error: 'Invalid signature' },
       { status: 400 }
     );
   }
 
-  console.log(`Stripe webhook received: ${event.type}`);
+  log.info(`Stripe webhook received: ${event.type}`, { eventId: event.id });
+
+  // 冪等性チェック: 重複イベントをスキップ
+  try {
+    await prisma.stripeWebhookEvent.create({
+      data: { eventId: event.id, eventType: event.type },
+    });
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === 'P2002'
+    ) {
+      log.info(`Duplicate webhook event ignored: ${event.id}`);
+      return NextResponse.json({ received: true });
+    }
+    throw error;
+  }
 
   try {
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
-        await handleCheckoutCompleted(session);
+        await handleCheckoutCompleted(session, log);
         break;
       }
 
       case 'customer.subscription.updated': {
         const subscription = event.data.object as Stripe.Subscription;
-        await handleSubscriptionUpdated(subscription);
+        await handleSubscriptionUpdated(subscription, log);
         break;
       }
 
       case 'customer.subscription.deleted': {
         const subscription = event.data.object as Stripe.Subscription;
-        await handleSubscriptionDeleted(subscription);
+        await handleSubscriptionDeleted(subscription, log);
         break;
       }
 
       case 'invoice.paid': {
         const invoice = event.data.object as Stripe.Invoice;
-        await handleInvoicePaid(invoice);
+        await handleInvoicePaid(invoice, log);
         break;
       }
 
       case 'invoice.payment_failed': {
         const invoice = event.data.object as Stripe.Invoice;
-        await handlePaymentFailed(invoice);
+        await handlePaymentFailed(invoice, log);
         break;
       }
 
       default:
-        console.log(`Unhandled event type: ${event.type}`);
+        log.info(`Unhandled event type: ${event.type}`);
     }
 
     return NextResponse.json({ received: true });
   } catch (error) {
-    console.error('Webhook handler error:', error);
+    log.error('Webhook handler error', { error, eventType: event.type });
     return NextResponse.json(
       { error: 'Webhook handler failed' },
       { status: 500 }
@@ -95,12 +116,15 @@ export async function POST(req: NextRequest) {
 /**
  * Checkout完了時の処理
  */
-async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
+async function handleCheckoutCompleted(
+  session: Stripe.Checkout.Session,
+  log: ReturnType<typeof createRequestLogger>
+) {
   const userId = session.metadata?.userId;
   const tier = session.metadata?.tier as SubscriptionTier | undefined;
 
   if (!userId || !tier) {
-    console.error('Missing metadata in checkout session:', session.id);
+    log.error('Missing metadata in checkout session', { sessionId: session.id });
     return;
   }
 
@@ -115,13 +139,16 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   // サブスクリプションを有効化
   await activateSubscription(userId, tier);
 
-  console.log(`Subscription activated for user ${userId}: ${tier}`);
+  log.info(`Subscription activated for user ${userId}: ${tier}`);
 }
 
 /**
  * サブスクリプション更新時の処理
  */
-async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
+async function handleSubscriptionUpdated(
+  subscription: Stripe.Subscription,
+  log: ReturnType<typeof createRequestLogger>
+) {
   const customerId = subscription.customer as string;
 
   // カスタマーIDからユーザーを検索
@@ -130,7 +157,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   });
 
   if (!user) {
-    console.error('User not found for customer:', customerId);
+    log.error('User not found for customer', { customerId });
     return;
   }
 
@@ -143,19 +170,22 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     if (tier && tier !== user.subscriptionTier) {
       // プラン変更があった場合
       await activateSubscription(user.id, tier);
-      console.log(`Subscription updated for user ${user.id}: ${tier}`);
+      log.info(`Subscription updated for user ${user.id}: ${tier}`);
     }
   } else if (['canceled', 'unpaid', 'past_due'].includes(subscription.status)) {
     // サブスクが無効になった場合
     await cancelSubscription(user.id);
-    console.log(`Subscription canceled for user ${user.id}`);
+    log.info(`Subscription canceled for user ${user.id}`);
   }
 }
 
 /**
  * サブスクリプション削除時の処理
  */
-async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
+async function handleSubscriptionDeleted(
+  subscription: Stripe.Subscription,
+  log: ReturnType<typeof createRequestLogger>
+) {
   const customerId = subscription.customer as string;
 
   const user = await prisma.user.findFirst({
@@ -163,7 +193,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
   });
 
   if (!user) {
-    console.error('User not found for customer:', customerId);
+    log.error('User not found for customer', { customerId });
     return;
   }
 
@@ -174,16 +204,19 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
     data: { stripeSubscriptionId: null },
   });
 
-  console.log(`Subscription deleted for user ${user.id}`);
+  log.info(`Subscription deleted for user ${user.id}`);
 }
 
 /**
  * 月次更新（renewal）時のボーナス付与
  */
-async function handleInvoicePaid(invoice: Stripe.Invoice) {
+async function handleInvoicePaid(
+  invoice: Stripe.Invoice,
+  log: ReturnType<typeof createRequestLogger>
+) {
   // renewalのみ処理（初回・プラン変更は別ハンドラで処理済み）
   if (invoice.billing_reason !== 'subscription_cycle') {
-    console.log(`Skipping invoice.paid (billing_reason: ${invoice.billing_reason})`);
+    log.info(`Skipping invoice.paid (billing_reason: ${invoice.billing_reason})`);
     return;
   }
 
@@ -194,7 +227,7 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
   });
 
   if (!user) {
-    console.error('User not found for customer:', customerId);
+    log.error('User not found for customer', { customerId });
     return;
   }
 
@@ -202,24 +235,27 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
   const priceRef = invoice.lines.data[0]?.pricing?.price_details?.price;
   const priceId = typeof priceRef === 'string' ? priceRef : priceRef?.id;
   if (!priceId) {
-    console.error('No price found in invoice lines:', invoice.id);
+    log.error('No price found in invoice lines', { invoiceId: invoice.id });
     return;
   }
 
   const tier = STRIPE_PRICE_TO_TIER[priceId];
   if (!tier) {
-    console.error('Unknown price ID in invoice:', priceId);
+    log.error('Unknown price ID in invoice', { priceId });
     return;
   }
 
   await activateSubscription(user.id, tier);
-  console.log(`Subscription renewed for user ${user.id}: ${tier} (invoice: ${invoice.id})`);
+  log.info(`Subscription renewed for user ${user.id}: ${tier}`, { invoiceId: invoice.id });
 }
 
 /**
  * 支払い失敗時の処理
  */
-async function handlePaymentFailed(invoice: Stripe.Invoice) {
+async function handlePaymentFailed(
+  invoice: Stripe.Invoice,
+  log: ReturnType<typeof createRequestLogger>
+) {
   const customerId = invoice.customer as string;
 
   const user = await prisma.user.findFirst({
@@ -227,12 +263,12 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
   });
 
   if (!user) {
-    console.error('User not found for customer:', customerId);
+    log.error('User not found for customer', { customerId });
     return;
   }
 
-  console.warn(
-    `Payment failed for user ${user.id} (tier: ${user.subscriptionTier}). ` +
-    `Invoice: ${invoice.id}, Amount: ${invoice.amount_due}`
+  log.warn(
+    `Payment failed for user ${user.id} (tier: ${user.subscriptionTier})`,
+    { invoiceId: invoice.id, amountDue: invoice.amount_due }
   );
 }

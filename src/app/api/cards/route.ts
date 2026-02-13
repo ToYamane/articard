@@ -34,7 +34,7 @@ export const POST = withAuth<Card>(async (authUser, req) => {
     articleId,
     specifiedRarity: rarity,
   });
-});
+}, { rateLimit: 'expensive' });
 
 // カード一覧取得
 export const GET = withAuth<CardListResponse>(async (authUser, req) => {

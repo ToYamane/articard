@@ -24,11 +24,29 @@ jest.mock('@/lib/stripe', () => ({
 // Prismaモック
 const mockUserFindFirst = jest.fn();
 const mockUserUpdate = jest.fn();
+const mockWebhookEventCreate = jest.fn();
 jest.mock('@/lib/prisma', () => ({
   prisma: {
     user: {
       findFirst: (...args: unknown[]) => mockUserFindFirst(...args),
       update: (...args: unknown[]) => mockUserUpdate(...args),
+    },
+    stripeWebhookEvent: {
+      create: (...args: unknown[]) => mockWebhookEventCreate(...args),
+    },
+  },
+}));
+
+// Prisma エラークラスモック
+jest.mock('@prisma/client', () => ({
+  Prisma: {
+    PrismaClientKnownRequestError: class PrismaClientKnownRequestError extends Error {
+      code: string;
+      constructor(message: string, { code }: { code: string }) {
+        super(message);
+        this.code = code;
+        this.name = 'PrismaClientKnownRequestError';
+      }
     },
   },
 }));
@@ -56,6 +74,7 @@ describe('/api/stripe/webhook', () => {
     jest.clearAllMocks();
     process.env = { ...originalEnv, STRIPE_WEBHOOK_SECRET: 'whsec_test' };
     mockHeaders.mockResolvedValue(new Headers({ 'stripe-signature': 'sig_test' }));
+    mockWebhookEventCreate.mockResolvedValue({ id: 'wh-1', eventId: 'evt_test', eventType: 'test' });
   });
 
   afterEach(() => {
@@ -474,6 +493,68 @@ describe('/api/stripe/webhook', () => {
       expect(response.status).toBe(500);
       const data = await response.json();
       expect(data.error).toBe('Webhook handler failed');
+    });
+  });
+
+  describe('冪等性チェック', () => {
+    it('重複イベントは処理をスキップして200を返す', async () => {
+      const { Prisma } = jest.requireMock('@prisma/client') as {
+        Prisma: { PrismaClientKnownRequestError: new (message: string, opts: { code: string }) => Error & { code: string } };
+      };
+
+      mockConstructEvent.mockReturnValue({
+        id: 'evt_duplicate',
+        type: 'checkout.session.completed',
+        data: {
+          object: {
+            id: 'cs_test',
+            metadata: { userId: 'user-1', tier: 'plus' },
+            subscription: 'sub_test_123',
+          },
+        },
+      });
+
+      // ユニーク制約違反（P2002）= 重複
+      mockWebhookEventCreate.mockRejectedValue(
+        new Prisma.PrismaClientKnownRequestError('Unique constraint violation', { code: 'P2002' })
+      );
+
+      const req = createWebhookRequest();
+      const response = await POST(req);
+
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(data.received).toBe(true);
+
+      // ハンドラーは呼ばれない
+      expect(mockActivateSubscription).not.toHaveBeenCalled();
+      expect(mockUserUpdate).not.toHaveBeenCalled();
+    });
+
+    it('新規イベントは正常に処理される', async () => {
+      mockConstructEvent.mockReturnValue({
+        id: 'evt_new',
+        type: 'checkout.session.completed',
+        data: {
+          object: {
+            id: 'cs_test',
+            metadata: { userId: 'user-1', tier: 'plus' },
+            subscription: 'sub_test_123',
+          },
+        },
+      });
+      mockWebhookEventCreate.mockResolvedValue({ id: 'wh-1' });
+      mockUserUpdate.mockResolvedValue({});
+      mockActivateSubscription.mockResolvedValue({ success: true });
+
+      const req = createWebhookRequest();
+      const response = await POST(req);
+
+      expect(response.status).toBe(200);
+      expect(mockWebhookEventCreate).toHaveBeenCalledWith({
+        data: { eventId: 'evt_new', eventType: 'checkout.session.completed' },
+      });
+      expect(mockActivateSubscription).toHaveBeenCalledWith('user-1', 'plus');
     });
   });
 });
