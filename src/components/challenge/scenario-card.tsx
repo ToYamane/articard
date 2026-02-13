@@ -32,7 +32,7 @@ export function ScenarioCard({
     <motion.div
       whileHover={shouldReduceMotion ? undefined : { scale: 1.02 }}
       className={cn(
-        'rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md dark:border-gray-700 dark:bg-gray-800',
+        'rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md dark:border-gray-700 dark:bg-gray-950',
         className
       )}
     >

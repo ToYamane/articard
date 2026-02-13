@@ -43,7 +43,7 @@ export function ToggleSwitch({
           'relative h-6 w-11 rounded-full transition-colors',
           checked
             ? 'bg-blue-600 dark:bg-blue-500'
-            : 'bg-gray-300 dark:bg-gray-600'
+            : 'bg-gray-300 dark:bg-gray-800'
         )}
         animate={{
           backgroundColor: checked ? '#2563eb' : '#d1d5db',

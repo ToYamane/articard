@@ -13,7 +13,7 @@ export function Skeleton({ className }: SkeletonProps) {
   return (
     <div
       className={cn(
-        'animate-pulse rounded-md bg-gray-200 dark:bg-gray-700',
+        'animate-pulse rounded-md bg-gray-200 dark:bg-gray-900',
         className
       )}
     />
@@ -67,7 +67,7 @@ export function ArticleSkeleton({ className }: SkeletonProps) {
   return (
     <div
       className={cn(
-        'rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800',
+        'rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-950',
         className
       )}
     >
@@ -146,7 +146,7 @@ export function StatsSkeleton({ className }: SkeletonProps) {
   return (
     <div
       className={cn(
-        'rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800',
+        'rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-950',
         className
       )}
     >

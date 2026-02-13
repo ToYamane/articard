@@ -135,7 +135,7 @@ export default function CardPage() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.15, duration: 0.3 }}
-          className="mx-auto mt-6 max-w-md rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800"
+          className="mx-auto mt-6 max-w-md rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-950"
         >
           <p className="text-sm text-gray-600 dark:text-gray-300">
             <span className="mr-1">📄</span>

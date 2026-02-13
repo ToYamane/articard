@@ -31,7 +31,7 @@ const EmptyState = forwardRef<HTMLDivElement, EmptyStateProps>(
       >
         <div className="relative mb-6">
           <div className="absolute inset-0 rounded-full bg-gradient-to-br from-blue-100 to-purple-100 opacity-60 blur-xl dark:from-blue-900 dark:to-purple-900" />
-          <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
+          <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-950">
             {icon}
           </div>
         </div>

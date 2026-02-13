@@ -27,7 +27,7 @@ export function PhaseDisplay({
       initial={shouldReduceMotion ? false : { opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       className={cn(
-        'rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800',
+        'rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-950',
         className
       )}
     >
@@ -42,7 +42,7 @@ export function PhaseDisplay({
       </div>
 
       {/* プログレスバー */}
-      <div className="mb-6 h-2 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+      <div className="mb-6 h-2 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-900">
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: `${progress}%` }}
@@ -128,7 +128,7 @@ export function PhaseTimeline({
                   ? 'bg-green-500 text-white'
                   : isCurrent
                   ? 'bg-blue-500 text-white'
-                  : 'bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
+                  : 'bg-gray-200 text-gray-500 dark:bg-gray-900 dark:text-gray-400'
               )}
             >
               {isCompleted ? (
@@ -155,7 +155,7 @@ export function PhaseTimeline({
                   'h-1 w-6',
                   isCompleted
                     ? 'bg-green-500'
-                    : 'bg-gray-200 dark:bg-gray-700'
+                    : 'bg-gray-200 dark:bg-gray-900'
                 )}
               />
             )}

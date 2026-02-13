@@ -97,7 +97,7 @@ export function ThemeSuggestions({ onSelectTheme, disabled }: ThemeSuggestionsPr
                         type="button"
                         onClick={() => handleSelectTheme(theme.theme)}
                         disabled={disabled}
-                        className="rounded-full border-2 border-purple-200 bg-white px-3 py-1.5 text-sm text-gray-700 shadow-md transition-all hover:scale-105 hover:bg-purple-100 hover:text-purple-700 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 dark:border-purple-700 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-purple-900/40 dark:hover:text-purple-400"
+                        className="rounded-full border-2 border-purple-200 bg-white px-3 py-1.5 text-sm text-gray-700 shadow-md transition-all hover:scale-105 hover:bg-purple-100 hover:text-purple-700 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 dark:border-purple-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-purple-900/40 dark:hover:text-purple-400"
                       >
                         {theme.theme}
                       </button>

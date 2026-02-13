@@ -103,7 +103,7 @@ export function ThemeInput({
           maxLength={30}
           showCharCount
           disabled={disabled || isLoading}
-          className="h-12 rounded-xl border-2 border-purple-200 bg-white/80 text-base shadow-sm focus:border-purple-500 focus:ring-purple-500/20 focus:shadow-purple-500/10 dark:border-purple-700 dark:bg-gray-800/80"
+          className="h-12 rounded-xl border-2 border-purple-200 bg-white/80 text-base shadow-sm focus:border-purple-500 focus:ring-purple-500/20 focus:shadow-purple-500/10 dark:border-purple-700 dark:bg-gray-950/80"
         />
       </div>
 
@@ -122,7 +122,7 @@ export function ThemeInput({
           value={contentType}
           onChange={(value) => setContentType(value as ContentType)}
           disabled={disabled || isLoading}
-          className="h-12 rounded-xl border-2 border-purple-200 bg-white/80 text-base shadow-sm focus:border-purple-500 focus:ring-purple-500/20 dark:border-purple-700 dark:bg-gray-800/80"
+          className="h-12 rounded-xl border-2 border-purple-200 bg-white/80 text-base shadow-sm focus:border-purple-500 focus:ring-purple-500/20 dark:border-purple-700 dark:bg-gray-950/80"
         />
       </div>
 
@@ -144,7 +144,7 @@ export function ThemeInput({
             max={maxGeneratable}
             value={cardCount}
             onChange={(e) => setCardCount(Number(e.target.value))}
-            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-purple-600"
+            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-900 accent-purple-600"
             disabled={disabled || isLoading || maxGeneratable <= 1}
           />
 

@@ -127,7 +127,7 @@ export function ResultDisplay({
         initial={shouldReduceMotion ? false : { opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={shouldReduceMotion ? { duration: 0 } : { delay: 0.6 }}
-        className="space-y-4 rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800"
+        className="space-y-4 rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-950"
       >
         {/* 接続説明 */}
         <div>

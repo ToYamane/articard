@@ -111,7 +111,7 @@ export default function ChallengeHistoryPage() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
-                className="flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800"
+                className="flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-950"
               >
                 {/* Scenario icon */}
                 <div className="text-3xl" aria-hidden="true">
@@ -148,7 +148,7 @@ export default function ChallengeHistoryPage() {
                         ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
                         : rank === 'C'
                         ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
-                        : 'border-gray-400 bg-gray-50 dark:bg-gray-800'
+                        : 'border-gray-400 bg-gray-50 dark:bg-gray-950'
                     )}
                   >
                     {rank}

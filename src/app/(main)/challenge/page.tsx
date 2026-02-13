@@ -210,7 +210,7 @@ export default function ChallengePage() {
 
         {/* チャレンジ回数情報 */}
         {challengeInfo && (
-          <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-gray-100 px-4 py-2 dark:bg-gray-800">
+          <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-gray-100 px-4 py-2 dark:bg-gray-950">
             <span className="text-sm text-gray-600 dark:text-gray-400">
               本日の無料回数:
             </span>
@@ -250,7 +250,7 @@ export default function ChallengePage() {
               'rounded-full px-4 py-2 text-sm font-medium transition-colors',
               difficultyFilter === option.value
                 ? 'bg-blue-500 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-950'
             )}
           >
             {option.label}
@@ -273,7 +273,7 @@ export default function ChallengePage() {
               'rounded-full px-3 py-1.5 text-xs font-medium transition-colors',
               sortOption === option.value
                 ? 'bg-purple-500 text-white'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-900 dark:text-gray-300 dark:hover:bg-gray-950'
             )}
           >
             {option.label}

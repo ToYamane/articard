@@ -61,7 +61,7 @@ export function CollectionFilter({
       />
 
       {/* フィルターパネル */}
-      <div className="relative w-full max-w-md rounded-t-2xl bg-white p-6 dark:bg-gray-900 sm:rounded-2xl">
+      <div className="relative w-full max-w-md rounded-t-2xl bg-white p-6 dark:bg-black sm:rounded-2xl">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">
             フィルター
@@ -88,7 +88,7 @@ export function CollectionFilter({
                   className={`rounded-full px-3 py-1 text-sm ${
                     filter.rarity.includes(rarity)
                       ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+                      : 'bg-gray-100 text-gray-700 dark:bg-gray-950 dark:text-gray-300'
                   }`}
                 >
                   {RARITY_DISPLAY_NAMES[rarity]}
@@ -111,7 +111,7 @@ export function CollectionFilter({
                     sortBy: e.target.value as FilterState['sortBy'],
                   }))
                 }
-                className="flex-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800"
+                className="flex-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-950"
               >
                 <option value="createdAt">生成日</option>
                 <option value="rarity">レア度</option>
@@ -125,7 +125,7 @@ export function CollectionFilter({
                     sortOrder: e.target.value as FilterState['sortOrder'],
                   }))
                 }
-                className="flex-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800"
+                className="flex-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-950"
               >
                 <option value="desc">新しい順</option>
                 <option value="asc">古い順</option>

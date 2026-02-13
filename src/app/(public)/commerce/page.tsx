@@ -7,7 +7,7 @@ export const metadata: Metadata = {
 
 export default function CommercePage() {
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900 md:p-8">
+    <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-black md:p-8">
       <h1 className="mb-8 text-2xl font-bold text-gray-900 dark:text-gray-100">
         特定商取引法に基づく表記
       </h1>

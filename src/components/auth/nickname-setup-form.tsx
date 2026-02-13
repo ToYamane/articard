@@ -51,7 +51,7 @@ export function NicknameSetupForm() {
       </div>
 
       {user && (
-        <div className="rounded-lg bg-gray-50 p-4 dark:bg-gray-800">
+        <div className="rounded-lg bg-gray-50 p-4 dark:bg-gray-950">
           <p className="text-sm text-gray-600 dark:text-gray-400">
             登録メールアドレス: <span className="font-medium">{user.email}</span>
           </p>

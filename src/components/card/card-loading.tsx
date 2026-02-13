@@ -42,7 +42,7 @@ export function CardLoading({ stage = 'keyword', onCancel }: CardLoadingProps) {
               className={`h-2 w-2 rounded-full ${
                 Object.keys(STAGE_MESSAGES).indexOf(stage) >= index
                   ? 'bg-blue-600'
-                  : 'bg-gray-300 dark:bg-gray-700'
+                  : 'bg-gray-300 dark:bg-gray-900'
               }`}
             />
           )

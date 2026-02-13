@@ -417,7 +417,7 @@ export default function LandingPage() {
       </section>
 
       {/* ===== (B) Article -> Card Generation Section ===== */}
-      <section className="bg-white px-4 py-20 dark:bg-gray-950 md:py-28">
+      <section className="bg-white px-4 py-20 dark:bg-black md:py-28">
         <div className="mx-auto max-w-6xl">
           <motion.h2
             className="mb-12 text-center text-2xl font-bold text-gray-900 dark:text-white md:mb-16 md:text-3xl"
@@ -586,7 +586,7 @@ export default function LandingPage() {
       </section>
 
       {/* ===== (D) Challenge Mode Section ===== */}
-      <section className="bg-white px-4 py-20 dark:bg-gray-950 md:py-28">
+      <section className="bg-white px-4 py-20 dark:bg-black md:py-28">
         <div className="mx-auto max-w-6xl">
           <motion.h2
             className="mb-12 text-center text-2xl font-bold text-gray-900 dark:text-white md:mb-16 md:text-3xl"
@@ -647,7 +647,7 @@ export default function LandingPage() {
             ].map((scenario) => (
               <div
                 key={scenario.name}
-                className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 dark:border-gray-700 dark:bg-gray-800"
+                className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 dark:border-gray-700 dark:bg-gray-950"
               >
                 <span className="text-lg">{scenario.icon}</span>
                 <span className="text-xs font-bold text-gray-900 dark:text-white">

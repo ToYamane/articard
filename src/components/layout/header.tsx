@@ -161,7 +161,7 @@ export function Header() {
   }, [isMobileMenuOpen]);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-gray-200 bg-white/80 backdrop-blur-md dark:border-gray-800 dark:bg-gray-900/80">
+    <header className="sticky top-0 z-50 border-b border-gray-200 bg-white/80 backdrop-blur-md dark:border-gray-800 dark:bg-black/80">
       <div className="mx-auto flex h-14 max-w-4xl items-center justify-between px-4">
         {/* ロゴ */}
         <Link
@@ -222,9 +222,9 @@ export function Header() {
 
               {/* ホバーポップアップ */}
               <div className="pointer-events-none absolute left-1/2 top-full z-50 mt-2 -translate-x-1/2 opacity-0 transition-opacity duration-200 group-hover:pointer-events-auto group-hover:opacity-100">
-                <div className="w-56 rounded-xl border border-gray-200 bg-white p-3 shadow-lg dark:border-gray-700 dark:bg-gray-800">
+                <div className="w-56 rounded-xl border border-gray-200 bg-white p-3 shadow-lg dark:border-gray-700 dark:bg-gray-950">
                   {/* 矢印 */}
-                  <div className="absolute -top-1.5 left-1/2 h-3 w-3 -translate-x-1/2 rotate-45 border-l border-t border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800" />
+                  <div className="absolute -top-1.5 left-1/2 h-3 w-3 -translate-x-1/2 rotate-45 border-l border-t border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-950" />
 
                   <div className="space-y-2.5">
                     {/* 無料コイン行 */}
@@ -279,7 +279,7 @@ export function Header() {
                   'flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-all',
                   isActive(item.href)
                     ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
-                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100'
+                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-950 dark:hover:text-gray-100'
                 )}
               >
                 {item.icon}
@@ -291,7 +291,7 @@ export function Header() {
           {/* モバイルメニューボタン */}
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="flex h-10 w-10 items-center justify-center rounded-lg text-gray-600 transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 md:hidden"
+            className="flex h-10 w-10 items-center justify-center rounded-lg text-gray-600 transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-950 md:hidden"
             aria-label="メニューを開く"
           >
             <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -325,7 +325,7 @@ export function Header() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.2 }}
-              className="absolute left-0 right-0 top-14 z-50 border-b border-gray-200 bg-white p-4 shadow-lg dark:border-gray-800 dark:bg-gray-900 md:hidden"
+              className="absolute left-0 right-0 top-14 z-50 border-b border-gray-200 bg-white p-4 shadow-lg dark:border-gray-800 dark:bg-black md:hidden"
             >
               <div className="flex flex-col gap-1">
                 {navItems.map((item) => (
@@ -337,7 +337,7 @@ export function Header() {
                       'flex items-center gap-3 rounded-lg px-4 py-3 text-base font-medium transition-all',
                       isActive(item.href)
                         ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
-                        : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100'
+                        : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-950 dark:hover:text-gray-100'
                     )}
                   >
                     {item.icon}

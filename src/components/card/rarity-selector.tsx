@@ -14,14 +14,14 @@ export interface RaritySelectorProps {
 const RARITIES: Rarity[] = ['common', 'rare', 'super_rare', 'legend'];
 
 const RARITY_COLORS: Record<Rarity, string> = {
-  common: 'border-gray-300 bg-gray-50 text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700',
+  common: 'border-gray-300 bg-gray-50 text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-950 dark:text-gray-300 dark:hover:bg-gray-900',
   rare: 'border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 dark:border-blue-600 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50',
   super_rare: 'border-purple-300 bg-purple-50 text-purple-700 hover:bg-purple-100 dark:border-purple-600 dark:bg-purple-900/30 dark:text-purple-400 dark:hover:bg-purple-900/50',
   legend: 'border-yellow-300 bg-yellow-50 text-yellow-700 hover:bg-yellow-100 dark:border-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400 dark:hover:bg-yellow-900/50',
 };
 
 const RARITY_SELECTED_COLORS: Record<Rarity, string> = {
-  common: 'border-gray-500 bg-gray-200 dark:border-gray-400 dark:bg-gray-700',
+  common: 'border-gray-500 bg-gray-200 dark:border-gray-400 dark:bg-gray-900',
   rare: 'border-blue-500 bg-blue-200 dark:border-blue-400 dark:bg-blue-800/50',
   super_rare: 'border-purple-500 bg-purple-200 dark:border-purple-400 dark:bg-purple-800/50',
   legend: 'border-yellow-500 bg-yellow-200 dark:border-yellow-400 dark:bg-yellow-800/50',

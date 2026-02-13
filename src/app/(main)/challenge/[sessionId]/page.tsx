@@ -442,7 +442,7 @@ export default function ChallengeGamePage() {
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-xl bg-white/80 backdrop-blur-sm dark:bg-gray-900/80"
+                className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-xl bg-white/80 backdrop-blur-sm dark:bg-black/80"
               >
                 <LoadingSpinner size="lg" />
                 <motion.p

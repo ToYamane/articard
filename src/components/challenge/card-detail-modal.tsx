@@ -45,7 +45,7 @@ export function CardDetailModal({ card, isOpen, onClose }: CardDetailModalProps)
 
         {/* Flavor Text */}
         {card.flavorText && (
-          <div className="rounded-lg bg-gray-50 p-3 dark:bg-gray-800">
+          <div className="rounded-lg bg-gray-50 p-3 dark:bg-gray-950">
             <p className="text-sm italic text-gray-600 dark:text-gray-400">
               {card.flavorText}
             </p>

@@ -75,7 +75,7 @@ export function CardSelector({
                 'h-3 w-3 rounded-full',
                 index < selectedCardIds.length
                   ? 'bg-blue-500'
-                  : 'bg-gray-300 dark:bg-gray-600'
+                  : 'bg-gray-300 dark:bg-gray-800'
               )}
               animate={{
                 scale: index < selectedCardIds.length ? [1, 1.2, 1] : 1,

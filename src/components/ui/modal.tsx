@@ -61,7 +61,7 @@ export function Modal({
           >
             <div
               className={cn(
-                'w-full max-w-md rounded-xl bg-white p-6 shadow-xl dark:bg-gray-900',
+                'w-full max-w-md rounded-xl bg-white p-6 shadow-xl dark:bg-black',
                 className
               )}
             >
@@ -76,7 +76,7 @@ export function Modal({
                   {showCloseButton && (
                     <button
                       onClick={onClose}
-                      className="ml-auto rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800 dark:hover:text-gray-300"
+                      className="ml-auto rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-950 dark:hover:text-gray-300"
                     >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"

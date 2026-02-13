@@ -18,9 +18,9 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       primary:
         'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md hover:from-blue-500 hover:to-indigo-500 hover:shadow-lg hover:shadow-blue-500/25 focus-visible:ring-blue-600',
       secondary:
-        'bg-gray-100 text-gray-900 shadow-sm hover:bg-gray-200 hover:shadow-md focus-visible:ring-gray-500 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700',
+        'bg-gray-100 text-gray-900 shadow-sm hover:bg-gray-200 hover:shadow-md focus-visible:ring-gray-500 dark:bg-gray-950 dark:text-gray-100 dark:hover:bg-gray-900',
       ghost:
-        'bg-transparent text-gray-700 hover:bg-gray-100 focus-visible:ring-gray-500 dark:text-gray-300 dark:hover:bg-gray-800',
+        'bg-transparent text-gray-700 hover:bg-gray-100 focus-visible:ring-gray-500 dark:text-gray-300 dark:hover:bg-gray-950',
       danger:
         'bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-md hover:from-red-500 hover:to-rose-500 hover:shadow-lg hover:shadow-red-500/25 focus-visible:ring-red-600',
     };

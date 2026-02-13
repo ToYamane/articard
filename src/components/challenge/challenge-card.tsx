@@ -40,7 +40,7 @@ export function ChallengeCard({ challenge, className }: ChallengeCardProps) {
         initial={shouldReduceMotion ? false : { opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={shouldReduceMotion ? { duration: 0 } : { delay: 0.2 }}
-        className="mb-4 rounded-lg border-2 border-purple-300 bg-white/80 p-4 dark:border-purple-700 dark:bg-gray-800/50"
+        className="mb-4 rounded-lg border-2 border-purple-300 bg-white/80 p-4 dark:border-purple-700 dark:bg-gray-950/50"
       >
         <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-purple-600 dark:text-purple-400">
           <span className="text-lg" aria-hidden="true">🎯</span>

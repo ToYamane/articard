@@ -12,7 +12,7 @@ interface RarityBadgeProps {
 }
 
 const RARITY_COLORS: Record<Rarity, string> = {
-  common: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
+  common: 'bg-gray-100 text-gray-700 dark:bg-gray-950 dark:text-gray-300',
   rare: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
   super_rare: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
   legend: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',

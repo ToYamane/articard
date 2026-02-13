@@ -86,7 +86,7 @@ export function ChallengeComplete({
               ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
               : rank === 'C'
               ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
-              : 'border-gray-400 bg-gray-50 dark:bg-gray-800'
+              : 'border-gray-400 bg-gray-50 dark:bg-gray-950'
           )}
         >
           {rank}
@@ -137,7 +137,7 @@ export function ChallengeComplete({
         initial={shouldReduceMotion ? false : { opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={shouldReduceMotion ? { duration: 0 } : { delay: newAchievements.length > 0 ? 0.7 : 0.5 }}
-        className="mx-auto max-w-md rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800"
+        className="mx-auto max-w-md rounded-xl border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-950"
       >
         <h3 className="mb-4 font-semibold text-gray-900 dark:text-gray-100">
           フェーズ別スコア
@@ -155,7 +155,7 @@ export function ChallengeComplete({
                 フェーズ {result.phaseNumber}
               </span>
               <div className="flex items-center gap-2">
-                <div className="h-2 w-24 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+                <div className="h-2 w-24 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-900">
                   <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${result.fitScore}%` }}

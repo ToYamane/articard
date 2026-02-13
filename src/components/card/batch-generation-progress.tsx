@@ -38,7 +38,7 @@ export function BatchGenerationProgress({
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="rounded-xl border border-gray-200 bg-white p-4 shadow-lg dark:border-gray-700 dark:bg-gray-800"
+        className="rounded-xl border border-gray-200 bg-white p-4 shadow-lg dark:border-gray-700 dark:bg-gray-950"
       >
         <div className="flex items-center gap-4">
           {/* スピナー */}
@@ -58,7 +58,7 @@ export function BatchGenerationProgress({
                 ? `カードを生成中... (${completedCount}/${totalCount})`
                 : '生成完了!'}
             </p>
-            <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+            <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-900">
               <motion.div
                 className="h-full bg-gradient-to-r from-blue-500 to-purple-500"
                 initial={{ width: 0 }}
@@ -138,7 +138,7 @@ export function BatchGenerationProgress({
 
       {/* プログレスバー */}
       <div className="w-full max-w-md">
-        <div className="h-3 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+        <div className="h-3 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-900">
           <motion.div
             className="h-full bg-gradient-to-r from-blue-500 to-purple-500"
             initial={{ width: 0 }}

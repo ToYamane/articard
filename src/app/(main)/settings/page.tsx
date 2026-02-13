@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { useTheme } from 'next-themes';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/hooks/use-auth';
 import { useSubscription } from '@/hooks/use-subscription';
@@ -26,6 +27,12 @@ export default function SettingsPage() {
     fetchData,
   } = useSubscription();
   const { success, error: showError } = useToast();
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const [nickname, setNickname] = useState(profile?.nickname || '');
   const [isUpdating, setIsUpdating] = useState(false);
@@ -205,6 +212,30 @@ export default function SettingsPage() {
         </div>
       </SectionContainer>
 
+      {/* Appearance Section */}
+      <SectionContainer variant="default" title="外観" delay={0.15}>
+        <div className="flex gap-3">
+          {([
+            { value: 'light', label: 'ライト', icon: '\u2600\uFE0F' },
+            { value: 'dark', label: 'ダーク', icon: '\uD83C\uDF19' },
+            { value: 'system', label: 'システム', icon: '\uD83D\uDCBB' },
+          ] as const).map((option) => (
+            <button
+              key={option.value}
+              onClick={() => setTheme(option.value)}
+              className={`flex flex-1 flex-col items-center gap-1 rounded-lg border-2 px-4 py-3 text-sm font-medium transition-colors ${
+                mounted && theme === option.value
+                  ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-300'
+                  : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-400 dark:hover:border-gray-600 dark:hover:bg-gray-900'
+              }`}
+            >
+              <span className="text-lg">{option.icon}</span>
+              <span>{option.label}</span>
+            </button>
+          ))}
+        </div>
+      </SectionContainer>
+
       {/* Account Stats Section */}
       <SectionContainer variant="default" title="アカウント情報" delay={0.2}>
         <div className="space-y-3 text-sm">
@@ -347,7 +378,7 @@ export default function SettingsPage() {
             {packages.map((pkg) => (
               <div
                 key={pkg.id}
-                className="rounded-lg border border-yellow-200 bg-white p-4 dark:border-yellow-800 dark:bg-gray-900"
+                className="rounded-lg border border-yellow-200 bg-white p-4 dark:border-yellow-800 dark:bg-black"
               >
                 <h3 className="mb-2 text-center font-semibold text-gray-900 dark:text-gray-100">
                   {pkg.name}

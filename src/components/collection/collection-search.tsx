@@ -25,7 +25,7 @@ export function CollectionSearch({
   return (
     <div
       className={cn(
-        'relative flex items-center rounded-lg border bg-white transition-colors dark:bg-gray-900',
+        'relative flex items-center rounded-lg border bg-white transition-colors dark:bg-black',
         isFocused
           ? 'border-blue-500 ring-2 ring-blue-500/20'
           : 'border-gray-300 dark:border-gray-700',

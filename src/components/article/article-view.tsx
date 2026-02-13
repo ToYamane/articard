@@ -22,7 +22,7 @@ export function ArticleView({ article }: ArticleViewProps) {
       </div>
 
       {/* 記事本文 */}
-      <div className="rounded-lg bg-white p-6 shadow-sm dark:bg-gray-800">
+      <div className="rounded-lg bg-white p-6 shadow-sm dark:bg-gray-950">
         <div className="prose prose-gray dark:prose-invert max-w-none leading-relaxed">
           <ReactMarkdown>{article.content}</ReactMarkdown>
         </div>
