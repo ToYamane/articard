@@ -91,7 +91,9 @@ describe('getArticlesQuerySchema', () => {
     const result = getArticlesQuerySchema.safeParse({});
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.limit).toBe(20); // デフォルト値
+      expect(result.data.limit).toBe(20);
+      expect(result.data.sortBy).toBe('createdAt');
+      expect(result.data.sortOrder).toBe('desc');
     }
   });
 
@@ -120,6 +122,47 @@ describe('getArticlesQuerySchema', () => {
 
   it('limitの範囲外（51）を拒否する', () => {
     const result = getArticlesQuerySchema.safeParse({ limit: '51' });
+    expect(result.success).toBe(false);
+  });
+
+  it('searchパラメータを許可する', () => {
+    const result = getArticlesQuerySchema.safeParse({ search: 'AI' });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.search).toBe('AI');
+    }
+  });
+
+  it('100文字を超えるsearchを拒否する', () => {
+    const result = getArticlesQuerySchema.safeParse({
+      search: 'あ'.repeat(101),
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('有効なsortByを許可する', () => {
+    const result1 = getArticlesQuerySchema.safeParse({ sortBy: 'createdAt' });
+    expect(result1.success).toBe(true);
+
+    const result2 = getArticlesQuerySchema.safeParse({ sortBy: 'cardCount' });
+    expect(result2.success).toBe(true);
+  });
+
+  it('無効なsortByを拒否する', () => {
+    const result = getArticlesQuerySchema.safeParse({ sortBy: 'invalid' });
+    expect(result.success).toBe(false);
+  });
+
+  it('有効なsortOrderを許可する', () => {
+    const result1 = getArticlesQuerySchema.safeParse({ sortOrder: 'asc' });
+    expect(result1.success).toBe(true);
+
+    const result2 = getArticlesQuerySchema.safeParse({ sortOrder: 'desc' });
+    expect(result2.success).toBe(true);
+  });
+
+  it('無効なsortOrderを拒否する', () => {
+    const result = getArticlesQuerySchema.safeParse({ sortOrder: 'invalid' });
     expect(result.success).toBe(false);
   });
 });

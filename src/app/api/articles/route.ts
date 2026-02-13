@@ -28,13 +28,19 @@ export const GET = withAuth<ArticleListResponse>(async (authUser, req) => {
   const queryParams = {
     cursor: searchParams.get('cursor') || undefined,
     limit: searchParams.get('limit') || undefined,
+    search: searchParams.get('search') || undefined,
+    sortBy: searchParams.get('sortBy') || undefined,
+    sortOrder: searchParams.get('sortOrder') || undefined,
   };
 
-  const { cursor, limit } = getArticlesQuerySchema.parse(queryParams);
+  const { cursor, limit, search, sortBy, sortOrder } = getArticlesQuerySchema.parse(queryParams);
 
   return getArticlesByUser({
     userId: authUser.uid,
     cursor,
     limit,
+    search,
+    sortBy,
+    sortOrder,
   });
 });

@@ -26,6 +26,9 @@ export const createArticleSchema = z.object({
 export const getArticlesQuerySchema = z.object({
   cursor: z.string().uuid().optional(),
   limit: z.coerce.number().int().min(1).max(50).default(20),
+  search: z.string().max(100).optional(),
+  sortBy: z.enum(['createdAt', 'cardCount']).default('createdAt'),
+  sortOrder: z.enum(['asc', 'desc']).default('desc'),
 });
 
 // 記事IDパラメータスキーマ

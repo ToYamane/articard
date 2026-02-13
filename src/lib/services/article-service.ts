@@ -1,12 +1,13 @@
 import { prisma } from '@/lib/prisma';
 import { isThemeSafe, generateArticle } from '@/lib/openai';
 import { batchDeleteCardImages } from '@/lib/gcs/storage';
+import { ApiError } from '@/lib/errors';
 import {
   processPaginationResult,
   buildCursorOptions,
   DEFAULT_PAGE_SIZE,
 } from '@/lib/utils/pagination';
-import type { Article } from '@prisma/client';
+import type { Article, Prisma } from '@prisma/client';
 import type { ContentType } from '@/types/article';
 
 export interface CreateArticleParams {
@@ -19,6 +20,9 @@ export interface ArticleListParams {
   userId: string;
   cursor?: string;
   limit?: number;
+  search?: string;
+  sortBy?: 'createdAt' | 'cardCount';
+  sortOrder?: 'asc' | 'desc';
 }
 
 export interface ArticleListResult {
@@ -38,7 +42,7 @@ export async function createArticle({
   // テーマの安全性チェック
   const safetyCheck = await isThemeSafe(theme);
   if (!safetyCheck.safe) {
-    throw new Error(safetyCheck.reason || 'このテーマでは記事を生成できません');
+    throw ApiError.moderationBlocked(safetyCheck.reason || 'このテーマでは記事を生成できません');
   }
 
   // 記事生成
@@ -66,10 +70,25 @@ export async function getArticlesByUser({
   userId,
   cursor,
   limit = DEFAULT_PAGE_SIZE,
+  search,
+  sortBy = 'createdAt',
+  sortOrder = 'desc',
 }: ArticleListParams): Promise<ArticleListResult> {
+  const where: Prisma.ArticleWhereInput = {
+    userId,
+    ...(search && {
+      theme: { contains: search, mode: 'insensitive' as const },
+    }),
+  };
+
+  const orderBy: Prisma.ArticleOrderByWithRelationInput =
+    sortBy === 'cardCount'
+      ? { cards: { _count: sortOrder } }
+      : { createdAt: sortOrder };
+
   const articles = await prisma.article.findMany({
-    where: { userId },
-    orderBy: { createdAt: 'desc' },
+    where,
+    orderBy,
     take: limit + 1,
     include: {
       _count: {
@@ -147,9 +166,8 @@ export async function deleteArticle(
   if (cardIds.length > 0) {
     try {
       await batchDeleteCardImages(cardIds);
-    } catch (error) {
-      // 画像削除に失敗してもDBは削除済みなのでログのみ
-      console.error('Failed to delete card images for article:', error);
+    } catch {
+      // 画像削除に失敗してもDBは削除済みなので無視
     }
   }
 

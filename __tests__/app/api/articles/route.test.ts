@@ -216,7 +216,52 @@ describe('/api/articles', () => {
           userId: 'test-user-id-123',
           cursor: prevArticleId,
           limit: 10,
+          search: undefined,
+          sortBy: 'createdAt',
+          sortOrder: 'desc',
         });
+      });
+
+      it('検索パラメータが正しく渡される', async () => {
+        mockGetArticlesByUser.mockResolvedValue({
+          articles: [mockArticle],
+          hasMore: false,
+          nextCursor: null,
+        });
+
+        const req = createRequestWithParams('/api/articles', {
+          search: 'AI',
+        });
+        const response = await GET(req);
+
+        await expectSuccessResponse(response, 200);
+        expect(mockGetArticlesByUser).toHaveBeenCalledWith(
+          expect.objectContaining({
+            search: 'AI',
+          })
+        );
+      });
+
+      it('ソートパラメータが正しく渡される', async () => {
+        mockGetArticlesByUser.mockResolvedValue({
+          articles: [mockArticle],
+          hasMore: false,
+          nextCursor: null,
+        });
+
+        const req = createRequestWithParams('/api/articles', {
+          sortBy: 'cardCount',
+          sortOrder: 'asc',
+        });
+        const response = await GET(req);
+
+        await expectSuccessResponse(response, 200);
+        expect(mockGetArticlesByUser).toHaveBeenCalledWith(
+          expect.objectContaining({
+            sortBy: 'cardCount',
+            sortOrder: 'asc',
+          })
+        );
       });
 
       it('記事がない場合は空配列を返す', async () => {

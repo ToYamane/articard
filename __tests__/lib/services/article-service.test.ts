@@ -232,6 +232,55 @@ describe('article-service', () => {
       expect(result.hasMore).toBe(false);
       expect(result.nextCursor).toBeNull();
     });
+
+    it('searchパラメータでテーマ検索ができる', async () => {
+      mockFindMany.mockResolvedValue([mockArticle]);
+
+      await getArticlesByUser({
+        userId: mockUser.id,
+        search: 'テスト',
+      });
+
+      expect(mockFindMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            userId: mockUser.id,
+            theme: { contains: 'テスト', mode: 'insensitive' },
+          },
+        })
+      );
+    });
+
+    it('sortByでカード数順にソートできる', async () => {
+      mockFindMany.mockResolvedValue([mockArticle]);
+
+      await getArticlesByUser({
+        userId: mockUser.id,
+        sortBy: 'cardCount',
+        sortOrder: 'desc',
+      });
+
+      expect(mockFindMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          orderBy: { cards: { _count: 'desc' } },
+        })
+      );
+    });
+
+    it('sortOrderで昇順ソートができる', async () => {
+      mockFindMany.mockResolvedValue([mockArticle]);
+
+      await getArticlesByUser({
+        userId: mockUser.id,
+        sortOrder: 'asc',
+      });
+
+      expect(mockFindMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          orderBy: { createdAt: 'asc' },
+        })
+      );
+    });
   });
 
   // ==================== getArticleById ====================
