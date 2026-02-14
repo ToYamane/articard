@@ -12,27 +12,27 @@
 
 `npx sharp-cli` で全画像を WebP 変換 + リサイズ。合計 3.3MB → 1.4MB（58% 削減）。
 
-| 元ファイル | 元サイズ | WebP サイズ | 削減率 |
-|-----------|---------|------------|--------|
-| `logo/icon.png` | 510KB | 15KB | 97% |
-| `logo/text.png` | 552KB | 44KB | 92% |
-| `promo/screenshot-article.png` | 331KB | 72KB | 78% |
-| `promo/screenshot-challenge.png` | 674KB | 53KB | 92% |
-| `promo/screenshot-score.png` | 235KB | 46KB | 80% |
-| `promo/cards/*.jpg` (16枚) | 1.4MB | ~800KB | 43% |
+| 元ファイル                       | 元サイズ | WebP サイズ | 削減率 |
+| -------------------------------- | -------- | ----------- | ------ |
+| `logo/icon.png`                  | 510KB    | 15KB        | 97%    |
+| `logo/text.png`                  | 552KB    | 44KB        | 92%    |
+| `promo/screenshot-article.png`   | 331KB    | 72KB        | 78%    |
+| `promo/screenshot-challenge.png` | 674KB    | 53KB        | 92%    |
+| `promo/screenshot-score.png`     | 235KB    | 46KB        | 80%    |
+| `promo/cards/*.jpg` (16枚)       | 1.4MB    | ~800KB      | 43%    |
 
 元の PNG/JPG ファイルは削除済み。全参照元（page.tsx, layout.tsx, header.tsx, login-form.tsx, register-form.tsx）のパスを `.webp` に更新。
 
 ## 2. カルーセル UI 改善 (`src/app/page.tsx`)
 
-| 項目 | 変更前 | 変更後 |
-|------|--------|--------|
-| 表示領域 | 固定 480px | `h-[380px] md:h-[480px]` |
-| カードサイズ | 240×360 固定 | モバイル 180×270 / デスクトップ 240×360 |
-| カード間隔 | `offset * 220` 固定 | モバイル `*160` / デスクトップ `*220` |
-| ヒントテキスト | `text-xs text-white/40` | `text-sm text-white/60` + フリップアイコン |
-| 矢印ボタン | `bg-white/15 p-3` SVG 20px | `bg-white/20 border border-white/30 p-3.5 md:p-4` SVG 24px + shadow |
-| 隣接カードクリック | 不可（pointer-events-none） | クリックでそのカードへ移動 |
+| 項目               | 変更前                      | 変更後                                                              |
+| ------------------ | --------------------------- | ------------------------------------------------------------------- |
+| 表示領域           | 固定 480px                  | `h-[380px] md:h-[480px]`                                            |
+| カードサイズ       | 240×360 固定                | モバイル 180×270 / デスクトップ 240×360                             |
+| カード間隔         | `offset * 220` 固定         | モバイル `*160` / デスクトップ `*220`                               |
+| ヒントテキスト     | `text-xs text-white/40`     | `text-sm text-white/60` + フリップアイコン                          |
+| 矢印ボタン         | `bg-white/15 p-3` SVG 20px  | `bg-white/20 border border-white/30 p-3.5 md:p-4` SVG 24px + shadow |
+| 隣接カードクリック | 不可（pointer-events-none） | クリックでそのカードへ移動                                          |
 
 `useIsMobile` フック（`matchMedia` ベース）を追加してレスポンシブ対応。
 
@@ -51,13 +51,13 @@
   - 事業者名・代表者名: 山根聡展
   - 所在地・電話番号: 「請求があれば遅滞なく開示」
 - 「電話番号」行を新規追加
-- 「販売商品」行を新規追加（ナレッジの購入）
+- 「販売商品」行を新規追加（コインの購入）
 - 「販売価格」を具体化（アプリ内購入画面に表示）
 
 ### 4.2 利用規約 (`src/app/(public)/terms/page.tsx`)
 
 - 前文に運営者名（山根聡展）を明記
-- **第2条の2「有料サービス」新設**: ナレッジ購入・Stripe 決済・返金ポリシー
+- **第2条の2「有料サービス」新設**: コイン購入・Stripe 決済・返金ポリシー
 - **第3条の2「アカウントの停止・削除」新設**: 禁止事項違反時の措置
 - 第4条: 商用利用禁止を明記（個人利用・SNS 共有のみ許可）
 - 第5条: サービス終了時 30 日前通知を追加
@@ -79,21 +79,21 @@
 
 ## 変更ファイル一覧
 
-| ファイル | 操作 |
-|----------|------|
-| `public/logo/icon.png` → `icon.webp` | WebP 変換 + リサイズ（元ファイル削除） |
-| `public/logo/text.png` → `text.webp` | WebP 変換 + リサイズ（元ファイル削除） |
-| `public/promo/screenshot-*.png` → `.webp` | WebP 変換（元ファイル削除） |
-| `public/promo/cards/*.jpg` → `.webp` | WebP 変換（元ファイル削除） |
-| `src/app/page.tsx` | カルーセル UI 改善 + セクション E 削除 + ロゴ拡大 + 画像パス更新 |
-| `src/app/(public)/layout.tsx` | ロゴパス .png → .webp |
-| `src/components/layout/header.tsx` | ロゴパス .png → .webp |
-| `src/components/auth/login-form.tsx` | ロゴパス .png → .webp |
-| `src/components/auth/register-form.tsx` | ロゴパス .png → .webp |
-| `src/app/(public)/commerce/page.tsx` | プレースホルダー更新 + 電話番号・販売商品追加 |
-| `src/app/(public)/terms/page.tsx` | 有料サービス条項・アカウント停止条項新設 + 既存条項改善 |
-| `src/app/(public)/privacy/page.tsx` | 外部サービス追加 + AI 学習セクション + データ保持期間 |
-| `src/app/(public)/contact/page.tsx` | 個人情報取り扱い文追加 |
+| ファイル                                  | 操作                                                             |
+| ----------------------------------------- | ---------------------------------------------------------------- |
+| `public/logo/icon.png` → `icon.webp`      | WebP 変換 + リサイズ（元ファイル削除）                           |
+| `public/logo/text.png` → `text.webp`      | WebP 変換 + リサイズ（元ファイル削除）                           |
+| `public/promo/screenshot-*.png` → `.webp` | WebP 変換（元ファイル削除）                                      |
+| `public/promo/cards/*.jpg` → `.webp`      | WebP 変換（元ファイル削除）                                      |
+| `src/app/page.tsx`                        | カルーセル UI 改善 + セクション E 削除 + ロゴ拡大 + 画像パス更新 |
+| `src/app/(public)/layout.tsx`             | ロゴパス .png → .webp                                            |
+| `src/components/layout/header.tsx`        | ロゴパス .png → .webp                                            |
+| `src/components/auth/login-form.tsx`      | ロゴパス .png → .webp                                            |
+| `src/components/auth/register-form.tsx`   | ロゴパス .png → .webp                                            |
+| `src/app/(public)/commerce/page.tsx`      | プレースホルダー更新 + 電話番号・販売商品追加                    |
+| `src/app/(public)/terms/page.tsx`         | 有料サービス条項・アカウント停止条項新設 + 既存条項改善          |
+| `src/app/(public)/privacy/page.tsx`       | 外部サービス追加 + AI 学習セクション + データ保持期間            |
+| `src/app/(public)/contact/page.tsx`       | 個人情報取り扱い文追加                                           |
 
 ## 検証結果
 

@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Button, Input } from '@/components/ui';
 import { OAuthButtons } from './oauth-buttons';
 import { useAuth } from '@/hooks/use-auth';
+import { sendVerificationEmail } from '@/lib/firebase/client';
 import { signUpSchema, type SignUpInput } from '@/lib/validations/user';
 
 export function RegisterForm() {
@@ -45,9 +46,9 @@ export function RegisterForm() {
     }
 
     try {
-      await registerWithEmail(formData.email, formData.password);
-      // User will be redirected to setup page after auth state updates
-      router.push('/setup');
+      const credential = await registerWithEmail(formData.email, formData.password);
+      await sendVerificationEmail(credential.user);
+      router.push('/verify-email');
     } catch (error: unknown) {
       const firebaseError = error as { code?: string };
       if (firebaseError.code === 'auth/email-already-in-use') {

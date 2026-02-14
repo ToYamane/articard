@@ -7,6 +7,7 @@ import {
   GoogleAuthProvider,
   signOut,
   sendPasswordResetEmail,
+  sendEmailVerification,
   onAuthStateChanged,
   type Auth,
   type User,
@@ -66,6 +67,15 @@ export async function logout() {
  */
 export async function resetPassword(email: string) {
   return sendPasswordResetEmail(auth, email);
+}
+
+/**
+ * Send email verification to the user
+ */
+export async function sendVerificationEmail(user: User) {
+  return sendEmailVerification(user, {
+    url: `${window.location.origin}/login`,
+  });
 }
 
 /**

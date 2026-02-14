@@ -9,12 +9,12 @@ allowed-tools: Bash
 # 開発サーバー制御
 
 開発サーバー（Next.js + Cloud SQL Proxy）を制御するコマンド。
-`/dev start` で DB Proxy と Next.js を同時にバックグラウンド起動する。
+`npm run dev`（concurrently）で proxy + next を1プロセスグループとして管理する。
 
 ## 引数
 
-- `start` または引数なし - DB Proxy + 開発サーバーをバックグラウンドで起動
-- `stop` - 実行中のプロセスをすべて停止
+- `start` または引数なし - 開発サーバーをバックグラウンドで起動
+- `stop` - 実行中のプロセスを停止
 - `restart` - 停止して再起動
 - `status` - 現在の状態を確認
 
@@ -22,36 +22,31 @@ allowed-tools: Bash
 
 ### `/dev start` または `/dev`
 
-1. 既存のプロセスを確認（node, cloud-sql-proxy）
-2. Cloud SQL Proxy をバックグラウンドで起動（run_in_background: true）
-3. Next.js 開発サーバーをバックグラウンドで起動（run_in_background: true）
-4. 数秒待ってからポート確認
+1. ポート3000, 5433が使用中でないか確認（`netstat -ano | findstr ":3000 :5433"`）
+2. `npm run dev` を **1つのバックグラウンドタスク** で起動（`run_in_background: true`）
+3. 数秒待ってからポート確認
 
-Cloud SQL Proxy 起動:
 ```bash
-# Windows
-./cloud-sql-proxy.exe articard-ff673:asia-northeast1:articard-db --port 5433
-
-# Mac/Linux
-./cloud-sql-proxy articard-ff673:asia-northeast1:articard-db --port 5433
+npm run dev
 ```
 
-Next.js 起動:
-```bash
-npm run dev:next
-```
+**重要**: `run_in_background: true` で起動すること。task_id を記録しておく（stop で使用）。
 
 ### `/dev stop`
 
-すべてのプロセスを停止:
+1. まず TaskStop で起動時の task_id を使って停止を試みる
+2. フォールバック: ポートを使用中のプロセスを特定して停止
 
 ```bash
-# Windows
-taskkill /F /IM cloud-sql-proxy.exe 2>nul; taskkill /F /IM node.exe
+# Windows - ポートからPIDを特定して停止
+for /f "tokens=5" %a in ('netstat -ano ^| findstr ":3000.*LISTENING"') do taskkill /F /PID %a 2>nul
+for /f "tokens=5" %a in ('netstat -ano ^| findstr ":5433.*LISTENING"') do taskkill /F /PID %a 2>nul
 
 # Mac/Linux
-pkill -f cloud-sql-proxy; pkill -f "next dev" || pkill -f "node.*next"
+lsof -ti :3000 | xargs kill -9 2>/dev/null; lsof -ti :5433 | xargs kill -9 2>/dev/null
 ```
+
+**注意**: `taskkill /F /IM node.exe` は使わないこと（Claude Code 自身の node プロセスを殺す危険性がある）。
 
 ### `/dev restart`
 
@@ -65,11 +60,9 @@ pkill -f cloud-sql-proxy; pkill -f "next dev" || pkill -f "node.*next"
 
 ```bash
 # Windows
-tasklist | findstr /i "node cloud-sql-proxy"
 netstat -ano | findstr ":3000 :5433"
 
 # Mac/Linux
-ps aux | grep -E "next|node|cloud-sql-proxy" | grep -v grep
 lsof -i :3000 -i :5433
 ```
 

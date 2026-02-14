@@ -12,15 +12,24 @@ interface AuthGuardProps {
 }
 
 // Public routes that don't require authentication
-const publicRoutes = ['/', '/login', '/register', '/share', '/terms', '/privacy', '/commerce', '/contact'];
+const publicRoutes = [
+  '/',
+  '/login',
+  '/register',
+  '/share',
+  '/terms',
+  '/privacy',
+  '/commerce',
+  '/contact',
+];
 
 // Routes that require authentication but NOT setup
-const authOnlyRoutes = ['/setup'];
+const authOnlyRoutes = ['/setup', '/verify-email'];
 
 export function AuthGuard({ children, requireAuth = true, requireSetup = true }: AuthGuardProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const { isAuthenticated, isRegistered, isInitialized } = useAuth();
+  const { isAuthenticated, isRegistered, isInitialized, needsEmailVerification } = useAuth();
 
   useEffect(() => {
     if (!isInitialized) return;
@@ -30,14 +39,35 @@ export function AuthGuard({ children, requireAuth = true, requireSetup = true }:
     );
     const isAuthOnlyRoute = authOnlyRoutes.some((route) => pathname.startsWith(route));
 
-    // If user is not authenticated and route requires auth
+    // 1. If user is not authenticated and route requires auth
     if (requireAuth && !isAuthenticated && !isPublicRoute) {
       router.push('/login');
       return;
     }
 
-    // If user is authenticated but on a public route (login/register)
-    if (isAuthenticated && (pathname === '/login' || pathname === '/register' || pathname === '/')) {
+    // 2. If user is authenticated but on a public route (login/register)
+    if (
+      isAuthenticated &&
+      (pathname === '/login' || pathname === '/register' || pathname === '/')
+    ) {
+      if (needsEmailVerification) {
+        router.push('/verify-email');
+      } else if (isRegistered) {
+        router.push('/home');
+      } else {
+        router.push('/setup');
+      }
+      return;
+    }
+
+    // 3. If user is authenticated but email not verified (redirect to verify-email)
+    if (isAuthenticated && needsEmailVerification && pathname !== '/verify-email') {
+      router.push('/verify-email');
+      return;
+    }
+
+    // 4. If user is authenticated, email verified, but on verify-email page
+    if (isAuthenticated && !needsEmailVerification && pathname === '/verify-email') {
       if (isRegistered) {
         router.push('/home');
       } else {
@@ -46,7 +76,7 @@ export function AuthGuard({ children, requireAuth = true, requireSetup = true }:
       return;
     }
 
-    // If user is authenticated but not registered (needs setup)
+    // 5. If user is authenticated but not registered (needs setup)
     if (
       requireAuth &&
       requireSetup &&
@@ -59,12 +89,21 @@ export function AuthGuard({ children, requireAuth = true, requireSetup = true }:
       return;
     }
 
-    // If user is registered and on setup page
+    // 6. If user is registered and on setup page
     if (isAuthenticated && isRegistered && pathname === '/setup') {
       router.push('/home');
       return;
     }
-  }, [isInitialized, isAuthenticated, isRegistered, pathname, router, requireAuth, requireSetup]);
+  }, [
+    isInitialized,
+    isAuthenticated,
+    isRegistered,
+    needsEmailVerification,
+    pathname,
+    router,
+    requireAuth,
+    requireSetup,
+  ]);
 
   // Show loading only during initial auth check (not during API calls)
   if (!isInitialized) {

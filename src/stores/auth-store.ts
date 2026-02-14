@@ -62,3 +62,7 @@ export const useAuthStore = create<AuthState>()(
 export const selectIsAuthenticated = (state: AuthState) => !!state.user;
 export const selectIsRegistered = (state: AuthState) => !!state.profile;
 export const selectNeedsSetup = (state: AuthState) => !!state.user && !state.profile;
+export const selectNeedsEmailVerification = (state: AuthState) =>
+  !!state.user &&
+  state.user.providerData[0]?.providerId === 'password' &&
+  !state.user.emailVerified;

@@ -69,20 +69,27 @@ export default function ChallengeGamePage() {
   const [userCards, setUserCards] = useState<Card[]>([]);
   const [challenge, setChallenge] = useState<PhaseChallenge | null>(null);
   const [phaseDefinition, setPhaseDefinition] = useState<PhaseDefinition | null>(null);
-  const [availableCards, setAvailableCards] = useState<Array<{
-    id: string;
-    keyword: string;
-    rarity: string;
-    thumbnailUrl: string;
-    cardImageUrl: string;
-    flavorText: string;
-    contextDescription: string;
-  }>>([]);
+  const [availableCards, setAvailableCards] = useState<
+    Array<{
+      id: string;
+      keyword: string;
+      rarity: string;
+      thumbnailUrl: string;
+      cardImageUrl: string;
+      flavorText: string;
+      contextDescription: string;
+    }>
+  >([]);
   const [lastResult, setLastResult] = useState<SubmitResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isStartingNewGame, setIsStartingNewGame] = useState(false);
   const [loadingTextIndex, setLoadingTextIndex] = useState(0);
-  const loadingTexts = ['AIが評価中...', '物語を紡いでいます...', 'カードの力を解析中...', '結果をまとめています...'];
+  const loadingTexts = [
+    'AIが評価中...',
+    '物語を紡いでいます...',
+    'カードの力を解析中...',
+    '結果をまとめています...',
+  ];
 
   useEffect(() => {
     if (gameState !== 'submitting') {
@@ -146,10 +153,9 @@ export default function ChallengeGamePage() {
       const token = await getIdToken();
       if (!token) throw new Error('認証トークンの取得に失敗しました');
 
-      const response = await fetch(
-        `/api/challenge/sessions/${sessionId}/challenge`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const response = await fetch(`/api/challenge/sessions/${sessionId}/challenge`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       const data = await response.json();
 
@@ -209,17 +215,14 @@ export default function ChallengeGamePage() {
         const token = await getIdToken();
         if (!token) throw new Error('認証トークンの取得に失敗しました');
 
-        const response = await fetch(
-          `/api/challenge/sessions/${sessionId}/deck`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({ cardIds }),
-          }
-        );
+        const response = await fetch(`/api/challenge/sessions/${sessionId}/deck`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ cardIds }),
+        });
 
         const data = await response.json();
 
@@ -232,10 +235,7 @@ export default function ChallengeGamePage() {
         await fetchChallenge();
       } catch (err) {
         console.error('Set deck error:', err);
-        addToast(
-          err instanceof Error ? err.message : 'エラーが発生しました',
-          'error'
-        );
+        addToast(err instanceof Error ? err.message : 'エラーが発生しました', 'error');
       }
     },
     [sessionId, fetchSession, fetchChallenge, addToast]
@@ -250,17 +250,14 @@ export default function ChallengeGamePage() {
         const token = await getIdToken();
         if (!token) throw new Error('認証トークンの取得に失敗しました');
 
-        const response = await fetch(
-          `/api/challenge/sessions/${sessionId}/submit`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({ cardIds }),
-          }
-        );
+        const response = await fetch(`/api/challenge/sessions/${sessionId}/submit`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ cardIds }),
+        });
 
         const data = await response.json();
 
@@ -273,13 +270,17 @@ export default function ChallengeGamePage() {
         if (data.data.isComplete) {
           // 完了時: セッションが削除される可能性があるためfetchしない
           // submit レスポンスのデータでsession stateを更新
-          setSession((prev) => prev ? {
-            ...prev,
-            status: 'completed' as const,
-            totalScore: data.data.sessionTotalScore,
-            phases: data.data.phases ?? prev.phases,
-            completedAt: new Date(),
-          } : prev);
+          setSession((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  status: 'completed' as const,
+                  totalScore: data.data.sessionTotalScore,
+                  phases: data.data.phases ?? prev.phases,
+                  completedAt: new Date(),
+                }
+              : prev
+          );
         } else {
           await fetchSession();
         }
@@ -288,10 +289,7 @@ export default function ChallengeGamePage() {
         setGameState('result');
       } catch (err) {
         console.error('Submit cards error:', err);
-        addToast(
-          err instanceof Error ? err.message : 'エラーが発生しました',
-          'error'
-        );
+        addToast(err instanceof Error ? err.message : 'エラーが発生しました', 'error');
         setGameState('challenge');
       }
     },
@@ -337,10 +335,7 @@ export default function ChallengeGamePage() {
 
       router.push(`/challenge/${data.data.id}`);
     } catch (err) {
-      addToast(
-        err instanceof Error ? err.message : 'エラーが発生しました',
-        'error'
-      );
+      addToast(err instanceof Error ? err.message : 'エラーが発生しました', 'error');
       setIsStartingNewGame(false);
     }
   }, [session, router, addToast, isStartingNewGame]);
@@ -367,17 +362,15 @@ export default function ChallengeGamePage() {
       <div className="flex min-h-[60vh] flex-col items-center justify-center">
         <div className="mb-4 text-4xl">😢</div>
         <p className="mb-4 text-gray-600 dark:text-gray-400">{error}</p>
-        <Button type="button" onClick={handleBackToScenarios}>シナリオ選択に戻る</Button>
+        <Button type="button" onClick={handleBackToScenarios}>
+          シナリオ選択に戻る
+        </Button>
       </div>
     );
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="py-6"
-    >
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-6">
       {/* デッキ編成 */}
       {gameState === 'deck_building' && scenario && (
         <div>
@@ -399,9 +392,7 @@ export default function ChallengeGamePage() {
       {gameState === 'loading_challenge' && (
         <div className="flex min-h-[60vh] flex-col items-center justify-center">
           <LoadingSpinner size="lg" />
-          <p className="mt-4 text-gray-600 dark:text-gray-400">
-            チャレンジを生成中...
-          </p>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">チャレンジを生成中...</p>
         </div>
       )}
 
@@ -411,9 +402,9 @@ export default function ChallengeGamePage() {
         scenario &&
         challenge &&
         phaseDefinition && (
-          <div className="relative flex h-[calc(100vh-120px)] flex-col gap-3">
+          <div className="relative flex flex-col gap-3">
             {/* フェーズ情報 */}
-            <div className="flex-shrink-0">
+            <div>
               <PhaseDisplay
                 phase={phaseDefinition}
                 currentPhase={session.currentPhase}
@@ -423,18 +414,17 @@ export default function ChallengeGamePage() {
             </div>
 
             {/* チャレンジ */}
-            <div className="flex-shrink-0">
+            <div>
               <ChallengeCard challenge={challenge} />
             </div>
 
-            {/* カード選択 - 残りのスペースを使用 */}
-            <div className="min-h-0 flex-1">
+            {/* カード選択 */}
+            <div>
               <CardSelector
                 availableCards={availableCards}
                 requiredCount={phaseDefinition.cardCount}
                 onSubmit={handleSubmitCards}
                 isSubmitting={gameState === 'submitting'}
-                className="h-full"
               />
             </div>
 

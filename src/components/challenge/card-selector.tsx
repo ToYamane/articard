@@ -73,9 +73,7 @@ export function CardSelector({
               key={index}
               className={cn(
                 'h-3 w-3 rounded-full',
-                index < selectedCardIds.length
-                  ? 'bg-blue-500'
-                  : 'bg-gray-300 dark:bg-gray-800'
+                index < selectedCardIds.length ? 'bg-blue-500' : 'bg-gray-300 dark:bg-gray-800'
               )}
               animate={{
                 scale: index < selectedCardIds.length ? [1, 1.2, 1] : 1,
@@ -85,81 +83,79 @@ export function CardSelector({
         </div>
       </div>
 
-      {/* カード一覧 - スクロール可能 */}
-      <div className="min-h-0 flex-1 overflow-y-auto pb-2">
-        <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5" role="group" aria-label="カード選択">
-        {availableCards.map((card) => {
-          const isSelected = selectedCardIds.includes(card.id);
-          const canSelect = isSelected || selectedCardIds.length < requiredCount;
-          const selectionOrder = selectedCardIds.indexOf(card.id) + 1;
+      {/* カード一覧 */}
+      <div className="pb-2">
+        <div
+          className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5"
+          role="group"
+          aria-label="カード選択"
+        >
+          {availableCards.map((card) => {
+            const isSelected = selectedCardIds.includes(card.id);
+            const canSelect = isSelected || selectedCardIds.length < requiredCount;
+            const selectionOrder = selectedCardIds.indexOf(card.id) + 1;
 
-          return (
-            <motion.button
-              key={card.id}
-              whileHover={shouldReduceMotion ? undefined : { scale: canSelect ? 1.05 : 1 }}
-              whileTap={shouldReduceMotion ? undefined : { scale: canSelect ? 0.95 : 1 }}
-              onClick={() => canSelect && toggleCard(card.id)}
-              disabled={!canSelect}
-              className={cn(
-                'relative overflow-hidden rounded-lg transition-all focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none',
-                isSelected
-                  ? 'ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-gray-900'
-                  : canSelect
-                  ? 'opacity-100 hover:opacity-90'
-                  : 'cursor-not-allowed opacity-40'
-              )}
-            >
-              <div className="relative aspect-[2/3] w-full">
-                <Image
-                  src={card.thumbnailUrl}
-                  alt={card.keyword}
-                  fill
-                  className="object-cover"
-                  sizes="120px"
-                />
+            return (
+              <motion.button
+                key={card.id}
+                whileHover={shouldReduceMotion ? undefined : { scale: canSelect ? 1.05 : 1 }}
+                whileTap={shouldReduceMotion ? undefined : { scale: canSelect ? 0.95 : 1 }}
+                onClick={() => canSelect && toggleCard(card.id)}
+                disabled={!canSelect}
+                className={cn(
+                  'relative overflow-hidden rounded-lg transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
+                  isSelected
+                    ? 'ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-gray-900'
+                    : canSelect
+                      ? 'opacity-100 hover:opacity-90'
+                      : 'cursor-not-allowed opacity-40'
+                )}
+              >
+                <div className="relative aspect-[2/3] w-full">
+                  <Image
+                    src={card.thumbnailUrl}
+                    alt={card.keyword}
+                    fill
+                    className="object-cover"
+                    sizes="120px"
+                  />
 
-                {/* 詳細ボタン */}
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setDetailCard(card);
-                  }}
-                  className="absolute right-1 top-1 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-black/50 text-xs text-white hover:bg-black/70"
-                  aria-label={`${card.keyword}の詳細を見る`}
-                >
-                  i
-                </button>
+                  {/* 詳細ボタン */}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDetailCard(card);
+                    }}
+                    className="absolute right-1 top-1 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-black/50 text-xs text-white hover:bg-black/70"
+                    aria-label={`${card.keyword}の詳細を見る`}
+                  >
+                    i
+                  </button>
 
-                {/* 選択番号 */}
-                <AnimatePresence>
-                  {isSelected && (
-                    <motion.div
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      exit={{ scale: 0 }}
-                      className="absolute left-1/2 top-1/2 flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-blue-500 text-lg font-bold text-white shadow-lg"
-                    >
-                      {selectionOrder}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
+                  {/* 選択番号 */}
+                  <AnimatePresence>
+                    {isSelected && (
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        exit={{ scale: 0 }}
+                        className="absolute left-1/2 top-1/2 flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-blue-500 text-lg font-bold text-white shadow-lg"
+                      >
+                        {selectionOrder}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
 
-              {/* カード名 */}
-              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2">
-                <p className="truncate text-xs font-medium text-white">
-                  {card.keyword}
-                </p>
-                <RarityBadge
-                  rarity={card.rarity as Rarity}
-                  size="sm"
-                  className="mt-0.5"
-                />
-              </div>
-            </motion.button>
-          );
-        })}
+                {/* カード名 */}
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2">
+                  <p className="truncate text-xs font-medium text-white">{card.keyword}</p>
+                  <RarityBadge rarity={card.rarity as Rarity} size="sm" className="mt-0.5" />
+                </div>
+              </motion.button>
+            );
+          })}
         </div>
       </div>
 
@@ -176,7 +172,11 @@ export function CardSelector({
       </div>
 
       {/* カード詳細モーダル */}
-      <CardDetailModal card={detailCard} isOpen={!!detailCard} onClose={() => setDetailCard(null)} />
+      <CardDetailModal
+        card={detailCard}
+        isOpen={!!detailCard}
+        onClose={() => setDetailCard(null)}
+      />
     </div>
   );
 }

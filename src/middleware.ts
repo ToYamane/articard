@@ -5,6 +5,11 @@ import { NextRequest, NextResponse } from 'next/server';
  * - リクエスト ID 生成
  * - セキュリティヘッダー
  */
+const isDev = process.env.NODE_ENV === 'development';
+const scriptSrc = isDev
+  ? "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://js.stripe.com"
+  : "script-src 'self' 'unsafe-inline' https://apis.google.com https://js.stripe.com";
+
 export function middleware(req: NextRequest) {
   // リクエスト ID: 既存ヘッダーがあればそのまま使用
   const requestId = req.headers.get('x-request-id') || crypto.randomUUID();
@@ -43,7 +48,7 @@ export function middleware(req: NextRequest) {
     'Content-Security-Policy',
     [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' https://apis.google.com https://js.stripe.com",
+      scriptSrc,
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob: https://storage.googleapis.com https://*.stripe.com",
       "font-src 'self'",

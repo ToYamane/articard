@@ -96,12 +96,9 @@ function CardCarousel() {
   const [flippedCards, setFlippedCards] = useState<Set<number>>(new Set());
   const isMobile = useIsMobile();
 
-  const goTo = useCallback(
-    (index: number) => {
-      setActiveIndex(((index % showcaseCards.length) + showcaseCards.length) % showcaseCards.length);
-    },
-    []
-  );
+  const goTo = useCallback((index: number) => {
+    setActiveIndex(((index % showcaseCards.length) + showcaseCards.length) % showcaseCards.length);
+  }, []);
 
   const goNext = useCallback(() => goTo(activeIndex + 1), [activeIndex, goTo]);
   const goPrev = useCallback(() => goTo(activeIndex - 1), [activeIndex, goTo]);
@@ -126,7 +123,7 @@ function CardCarousel() {
   return (
     <div className="relative mx-auto max-w-4xl">
       {/* Cards display area */}
-      <div className="relative flex items-center justify-center h-[380px] md:h-[480px]">
+      <div className="relative flex h-[380px] items-center justify-center md:h-[480px]">
         {/* Swipe layer */}
         <motion.div
           className="absolute inset-0 z-30 cursor-grab active:cursor-grabbing md:hidden"
@@ -186,7 +183,7 @@ function CardCarousel() {
                 >
                   {/* Front face */}
                   <div
-                    className="absolute inset-0 rounded-xl overflow-hidden shadow-2xl"
+                    className="absolute inset-0 overflow-hidden rounded-xl shadow-2xl"
                     style={{ backfaceVisibility: 'hidden' }}
                   >
                     <Image
@@ -200,7 +197,7 @@ function CardCarousel() {
 
                   {/* Back face */}
                   <div
-                    className="absolute inset-0 rounded-xl overflow-hidden shadow-2xl"
+                    className="absolute inset-0 overflow-hidden rounded-xl shadow-2xl"
                     style={{
                       backfaceVisibility: 'hidden',
                       transform: 'rotateY(180deg)',
@@ -224,7 +221,10 @@ function CardCarousel() {
       {/* Flip hint */}
       <p className="mt-2 flex items-center justify-center gap-1.5 text-sm text-white/60">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="opacity-70">
-          <path d="M2 8a6 6 0 0 1 10.2-4.3L11 5h4V1l-1.5 1.5A8 8 0 0 0 0 8h2zm12 0a6 6 0 0 1-10.2 4.3L5 11H1v4l1.5-1.5A8 8 0 0 0 16 8h-2z" fill="currentColor" />
+          <path
+            d="M2 8a6 6 0 0 1 10.2-4.3L11 5h4V1l-1.5 1.5A8 8 0 0 0 0 8h2zm12 0a6 6 0 0 1-10.2 4.3L5 11H1v4l1.5-1.5A8 8 0 0 0 16 8h-2z"
+            fill="currentColor"
+          />
         </svg>
         タップでカードを裏返す
       </p>
@@ -236,7 +236,13 @@ function CardCarousel() {
         aria-label="前のカード"
       >
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-          <path d="M15 18L9 12L15 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+          <path
+            d="M15 18L9 12L15 6"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
         </svg>
       </button>
       <button
@@ -245,7 +251,13 @@ function CardCarousel() {
         aria-label="次のカード"
       >
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-          <path d="M9 6L15 12L9 18" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+          <path
+            d="M9 6L15 12L9 18"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
         </svg>
       </button>
 
@@ -256,9 +268,7 @@ function CardCarousel() {
             key={card.id}
             onClick={() => goTo(index)}
             className={`h-2 rounded-full transition-all ${
-              index === activeIndex
-                ? 'w-6 bg-purple-400'
-                : 'w-2 bg-white/30 hover:bg-white/50'
+              index === activeIndex ? 'w-6 bg-purple-400' : 'w-2 bg-white/30 hover:bg-white/50'
             }`}
             aria-label={`カード ${index + 1}`}
           />
@@ -267,9 +277,7 @@ function CardCarousel() {
 
       {/* Current card info */}
       <div className="mt-4 text-center">
-        <span className="text-lg font-bold text-white">
-          {showcaseCards[activeIndex].keyword}
-        </span>
+        <span className="text-lg font-bold text-white">{showcaseCards[activeIndex].keyword}</span>
         <span className="ml-3 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white/70">
           {
             {
@@ -308,8 +316,15 @@ export default function LandingPage() {
     <div className="overflow-x-hidden">
       <style jsx global>{`
         @keyframes twinkle {
-          0%, 100% { opacity: 0.3; transform: scale(1); }
-          50% { opacity: 0.8; transform: scale(1.5); }
+          0%,
+          100% {
+            opacity: 0.3;
+            transform: scale(1);
+          }
+          50% {
+            opacity: 0.8;
+            transform: scale(1.5);
+          }
         }
       `}</style>
 
@@ -351,6 +366,20 @@ export default function LandingPage() {
             }}
           />
         ))}
+
+        {/* Background card decorations */}
+        <div className="pointer-events-none absolute -top-5 left-5 hidden h-[330px] w-[220px] rotate-[-18deg] overflow-hidden rounded-[14px] opacity-[0.16] shadow-[0_0_40px_rgba(139,92,246,0.3)] blur-[2px] md:block">
+          <Image src="/promo/card-common.webp" alt="" fill className="object-cover" />
+        </div>
+        <div className="pointer-events-none absolute right-[30px] top-2.5 hidden h-[330px] w-[220px] rotate-[15deg] overflow-hidden rounded-[14px] opacity-20 shadow-[0_0_40px_rgba(139,92,246,0.3)] blur-[2px] md:block">
+          <Image src="/promo/card-rare.webp" alt="" fill className="object-cover" />
+        </div>
+        <div className="pointer-events-none absolute -bottom-[30px] left-20 hidden h-[330px] w-[220px] rotate-[10deg] overflow-hidden rounded-[14px] opacity-[0.17] shadow-[0_0_40px_rgba(139,92,246,0.3)] blur-[2px] md:block">
+          <Image src="/promo/card-super-rare.webp" alt="" fill className="object-cover" />
+        </div>
+        <div className="pointer-events-none absolute -bottom-5 right-[60px] hidden h-[330px] w-[220px] rotate-[-12deg] overflow-hidden rounded-[14px] opacity-[0.19] shadow-[0_0_40px_rgba(139,92,246,0.3)] blur-[2px] md:block">
+          <Image src="/promo/card-legend.webp" alt="" fill className="object-cover" />
+        </div>
 
         {/* Center content */}
         <motion.div
@@ -413,6 +442,33 @@ export default function LandingPage() {
               ログイン
             </Link>
           </div>
+        </motion.div>
+
+        {/* Scroll indicator */}
+        <motion.div
+          className="absolute bottom-8 left-1/2 flex -translate-x-1/2 flex-col items-center gap-2"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1.2, duration: 0.8 }}
+        >
+          <span className="text-sm tracking-widest text-white/50 md:text-base">MORE</span>
+          <motion.svg
+            width="28"
+            height="28"
+            viewBox="0 0 24 24"
+            fill="none"
+            className="text-white/50"
+            animate={{ y: [0, 6, 0] }}
+            transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+          >
+            <path
+              d="M6 9L12 15L18 9"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </motion.svg>
         </motion.div>
       </section>
 
@@ -674,9 +730,7 @@ export default function LandingPage() {
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
         >
-          <h2 className="text-2xl font-bold text-white md:text-3xl">
-            今すぐはじめよう
-          </h2>
+          <h2 className="text-2xl font-bold text-white md:text-3xl">今すぐはじめよう</h2>
           <Link
             href="/register"
             className="rounded-full bg-gradient-to-r from-purple-600 to-blue-600 px-10 py-4 text-base font-bold text-white shadow-lg shadow-purple-500/30 transition hover:shadow-purple-500/50"
@@ -707,9 +761,7 @@ export default function LandingPage() {
               お問い合わせ
             </Link>
           </div>
-          <p className="text-xs text-gray-500">
-            &copy; 2026 Articard. All rights reserved.
-          </p>
+          <p className="text-xs text-gray-500">&copy; 2026 Articard. All rights reserved.</p>
         </div>
       </footer>
     </div>

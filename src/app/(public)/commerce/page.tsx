@@ -11,9 +11,7 @@ export default function CommercePage() {
       <h1 className="mb-8 text-2xl font-bold text-gray-900 dark:text-gray-100">
         特定商取引法に基づく表記
       </h1>
-      <p className="mb-6 text-sm text-gray-500 dark:text-gray-400">
-        最終更新日: 2026年2月12日
-      </p>
+      <p className="mb-6 text-sm text-gray-500 dark:text-gray-400">最終更新日: 2026年2月12日</p>
 
       <div className="overflow-x-auto">
         <table className="w-full border-collapse">
@@ -22,17 +20,13 @@ export default function CommercePage() {
               <th className="whitespace-nowrap px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">
                 事業者名
               </th>
-              <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
-                山根聡展
-              </td>
+              <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">山根聡展</td>
             </tr>
             <tr className="border-b border-gray-200 dark:border-gray-700">
               <th className="whitespace-nowrap px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">
                 代表者名
               </th>
-              <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
-                山根聡展
-              </td>
+              <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">山根聡展</td>
             </tr>
             <tr className="border-b border-gray-200 dark:border-gray-700">
               <th className="whitespace-nowrap px-4 py-3 text-left text-sm font-semibold text-gray-900 dark:text-gray-100">
@@ -69,7 +63,7 @@ export default function CommercePage() {
                 販売商品
               </th>
               <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
-                ナレッジ（アプリ内通貨）の購入
+                コイン（アプリ内通貨）の購入
               </td>
             </tr>
             <tr className="border-b border-gray-200 dark:border-gray-700">

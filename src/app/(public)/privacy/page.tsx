@@ -11,12 +11,10 @@ export default function PrivacyPage() {
       <h1 className="mb-8 text-2xl font-bold text-gray-900 dark:text-gray-100">
         プライバシーポリシー
       </h1>
-      <p className="mb-6 text-sm text-gray-500 dark:text-gray-400">
-        最終更新日: 2026年2月12日
-      </p>
+      <p className="mb-6 text-sm text-gray-500 dark:text-gray-400">最終更新日: 2026年2月12日</p>
 
       <p className="mb-4 leading-relaxed text-gray-600 dark:text-gray-300">
-        山根聡展（以下「運営者」）が提供するArticard（以下「本サービス」）は、ユーザーのプライバシーを尊重し、個人情報の保護に努めます。本プライバシーポリシーは、本サービスにおける個人情報の取り扱いについて説明するものです。
+        運営者が提供するArticard（以下「本サービス」）は、ユーザーのプライバシーを尊重し、個人情報の保護に努めます。本プライバシーポリシーは、本サービスにおける個人情報の取り扱いについて説明するものです。
       </p>
 
       <h2 className="mb-4 mt-8 text-xl font-semibold text-gray-900 dark:text-gray-100">
@@ -27,12 +25,11 @@ export default function PrivacyPage() {
       </p>
       <ul className="mb-4 list-inside list-disc space-y-2 text-gray-600 dark:text-gray-300">
         <li>
-          <strong>アカウント情報:</strong>{' '}
-          Firebase Authenticationを通じて取得するメールアドレス、表示名、プロフィール画像URL等の認証情報
+          <strong>アカウント情報:</strong> Firebase
+          Authenticationを通じて取得するメールアドレス、表示名、プロフィール画像URL等の認証情報
         </li>
         <li>
-          <strong>プロフィール情報:</strong>{' '}
-          ユーザーが設定するニックネーム等の情報
+          <strong>プロフィール情報:</strong> ユーザーが設定するニックネーム等の情報
         </li>
         <li>
           <strong>利用データ:</strong>{' '}
@@ -114,7 +111,8 @@ export default function PrivacyPage() {
         6. データの保管
       </h2>
       <p className="mb-4 leading-relaxed text-gray-600 dark:text-gray-300">
-        ユーザーのデータは、Google Cloud Platform上のサーバー（東京リージョン: asia-northeast1）に保管されます。適切なセキュリティ対策を講じ、不正アクセス、紛失、破損、漏洩の防止に努めます。アカウント削除後、30日以内に個人データを削除いたします。
+        ユーザーのデータは、Google Cloud Platform上のサーバー（東京リージョン:
+        asia-northeast1）に保管されます。適切なセキュリティ対策を講じ、不正アクセス、紛失、破損、漏洩の防止に努めます。アカウント削除後、30日以内に個人データを削除いたします。
       </p>
 
       <h2 className="mb-4 mt-8 text-xl font-semibold text-gray-900 dark:text-gray-100">

@@ -16,6 +16,7 @@ import {
   selectIsAuthenticated,
   selectIsRegistered,
   selectNeedsSetup,
+  selectNeedsEmailVerification,
   type UserProfile,
 } from '@/stores/auth-store';
 
@@ -36,6 +37,7 @@ export function useAuth() {
   const isAuthenticated = useAuthStore(selectIsAuthenticated);
   const isRegistered = useAuthStore(selectIsRegistered);
   const needsSetup = useAuthStore(selectNeedsSetup);
+  const needsEmailVerification = useAuthStore(selectNeedsEmailVerification);
 
   // Fetch profile in background (non-blocking)
   const fetchProfileInBackground = useCallback(
@@ -70,7 +72,15 @@ export function useAuth() {
     let unsubscribe: (() => void) | undefined;
 
     try {
-      unsubscribe = subscribeToAuthState((firebaseUser) => {
+      unsubscribe = subscribeToAuthState(async (firebaseUser) => {
+        if (
+          firebaseUser &&
+          firebaseUser.providerData[0]?.providerId === 'password' &&
+          !firebaseUser.emailVerified
+        ) {
+          await firebaseUser.reload();
+        }
+
         setUser(firebaseUser);
 
         if (!useAuthStore.getState().isInitialized) {
@@ -123,13 +133,23 @@ export function useAuth() {
     async (email: string, password: string) => {
       setLoading(true);
       try {
-        await signUpWithEmail(email, password);
+        return await signUpWithEmail(email, password);
       } finally {
         setLoading(false);
       }
     },
     [setLoading]
   );
+
+  // Reload current user to refresh emailVerified status
+  const reloadUser = useCallback(async () => {
+    if (!user) return false;
+    await user.reload();
+    await user.getIdToken(true);
+    // Trigger store notification so selectors re-evaluate
+    setUser(user);
+    return user.emailVerified;
+  }, [user, setUser]);
 
   // Login with Google
   const loginWithGoogle = useCallback(async () => {
@@ -147,7 +167,7 @@ export function useAuth() {
     try {
       await logout();
       reset();
-      router.push('/login');
+      router.push('/');
     } finally {
       setLoading(false);
     }
@@ -267,6 +287,7 @@ export function useAuth() {
     isAuthenticated,
     isRegistered,
     needsSetup,
+    needsEmailVerification,
 
     // Actions
     loginWithEmail,
@@ -278,5 +299,6 @@ export function useAuth() {
     updateProfile,
     deleteAccount,
     getIdToken,
+    reloadUser,
   };
 }

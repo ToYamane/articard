@@ -8,12 +8,8 @@ export const metadata: Metadata = {
 export default function TermsPage() {
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-black md:p-8">
-      <h1 className="mb-8 text-2xl font-bold text-gray-900 dark:text-gray-100">
-        利用規約
-      </h1>
-      <p className="mb-6 text-sm text-gray-500 dark:text-gray-400">
-        最終更新日: 2026年2月12日
-      </p>
+      <h1 className="mb-8 text-2xl font-bold text-gray-900 dark:text-gray-100">利用規約</h1>
+      <p className="mb-6 text-sm text-gray-500 dark:text-gray-400">最終更新日: 2026年2月12日</p>
 
       <p className="mb-4 leading-relaxed text-gray-600 dark:text-gray-300">
         本利用規約（以下「本規約」）は、山根聡展（以下「運営者」）が提供するArticard（以下「本サービス」）の利用条件を定めるものです。ユーザーの皆様には、本規約に同意の上、本サービスをご利用いただきます。
@@ -43,9 +39,15 @@ export default function TermsPage() {
         第2条の2 有料サービス
       </h2>
       <ul className="mb-4 list-inside list-disc space-y-2 text-gray-600 dark:text-gray-300">
-        <li>本サービスでは、ナレッジ（アプリ内通貨）を購入することで、記事生成やカード作成等の機能を利用できます。</li>
-        <li>決済はStripeによるクレジットカード決済で行われ、購入手続き完了時に即時決済されます。</li>
-        <li>デジタルコンテンツの性質上、購入後のナレッジの返金には原則として応じかねます。ただし、サービスの不具合等により正常にサービスが提供されなかった場合は、個別に対応いたします。</li>
+        <li>
+          本サービスでは、コイン（アプリ内通貨）を購入することで、記事生成やカード作成等の機能を利用できます。
+        </li>
+        <li>
+          決済はStripeによるクレジットカード決済で行われ、購入手続き完了時に即時決済されます。
+        </li>
+        <li>
+          デジタルコンテンツの性質上、購入後のコインの返金には原則として応じかねます。ただし、サービスの不具合等により正常にサービスが提供されなかった場合は、個別に対応いたします。
+        </li>
       </ul>
 
       <h2 className="mb-4 mt-8 text-xl font-semibold text-gray-900 dark:text-gray-100">
@@ -71,7 +73,7 @@ export default function TermsPage() {
         第3条の2 アカウントの停止・削除
       </h2>
       <p className="mb-4 leading-relaxed text-gray-600 dark:text-gray-300">
-        運営者は、ユーザーが前条の禁止事項に違反した場合、またはその他運営者が不適切と判断した場合、事前の通知なくアカウントの停止または削除を行うことができます。アカウント停止・削除時に残存するナレッジの返金は行いません。
+        運営者は、ユーザーが前条の禁止事項に違反した場合、またはその他運営者が不適切と判断した場合、事前の通知なくアカウントの停止または削除を行うことができます。アカウント停止・削除時に残存するコインの返金は行いません。
       </p>
 
       <h2 className="mb-4 mt-8 text-xl font-semibold text-gray-900 dark:text-gray-100">
@@ -85,9 +87,13 @@ export default function TermsPage() {
         第5条 免責事項
       </h2>
       <ul className="mb-4 list-inside list-disc space-y-2 text-gray-600 dark:text-gray-300">
-        <li>本サービスは現状有姿で提供され、特定の目的への適合性について保証するものではありません。</li>
+        <li>
+          本サービスは現状有姿で提供され、特定の目的への適合性について保証するものではありません。
+        </li>
         <li>AIによって生成されたコンテンツの正確性、完全性について保証しません。</li>
-        <li>本サービスの利用により生じた損害について、運営者の故意または重過失による場合を除き、一切の責任を負いません。</li>
+        <li>
+          本サービスの利用により生じた損害について、運営者の故意または重過失による場合を除き、一切の責任を負いません。
+        </li>
         <li>サービスの中断、変更、終了によりユーザーに生じた損害について責任を負いません。</li>
         <li>サービスを終了する場合は、30日前までにサービス上で通知いたします。</li>
       </ul>
