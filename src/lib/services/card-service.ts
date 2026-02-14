@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import { logger } from '@/lib/logger';
 import {
   extractKeywords,
   selectRandomKeyword,
@@ -16,7 +17,7 @@ import {
   uploadThumbnail,
   deleteCardImages,
 } from '@/lib/gcs/storage';
-import { hasEnoughCoins, consumeCoins } from '@/lib/services/coin-service';
+import { hasEnoughCoins } from '@/lib/services/coin-service';
 import { COIN_COSTS } from '@/lib/constants/coins';
 import { ApiError } from '@/lib/errors';
 import {
@@ -188,7 +189,7 @@ async function generateAndUploadImages(
     emotionalTone: contextAnalysis.emotionalTone,
   });
 
-  console.log(
+  logger.info(
     `Image generated with ${imageModel} (${imageProvider}), estimated cost: $${imageCost.toFixed(4)}`
   );
 
@@ -224,7 +225,7 @@ async function generateAndUploadImages(
 }
 
 /**
- * カードをDBに保存（トランザクション）
+ * カードをDBに保存し、コインを消費（トランザクション）
  */
 async function saveCard(
   tempCardId: string,
@@ -235,7 +236,8 @@ async function saveCard(
   flavorText: string,
   contextAnalysis: ContextAnalysisResult,
   images: CardImageUrls,
-  imagePrompt: string
+  imagePrompt: string,
+  cost: number
 ): Promise<Card> {
   return prisma.$transaction(async (tx) => {
     // 再度最大番号を確認（同時実行時の競合対策）
@@ -245,7 +247,7 @@ async function saveCard(
     });
     const finalCardNumber = (latestMaxResult._max.cardNumber ?? 0) + 1;
 
-    return tx.card.create({
+    const card = await tx.card.create({
       data: {
         id: tempCardId,
         userId,
@@ -263,6 +265,59 @@ async function saveCard(
         fluxPrompt: imagePrompt,
       },
     });
+
+    // コイン消費（カード保存と同一トランザクション内で実行）
+    const user = await tx.user.findUnique({
+      where: { id: userId },
+      select: { knowledgeBalance: true, dailyFreeCoins: true },
+    });
+
+    if (!user) {
+      throw new ApiError('NOT_FOUND', 'ユーザーが見つかりません', 404);
+    }
+
+    const totalAvailable = user.dailyFreeCoins + user.knowledgeBalance;
+    if (totalAvailable < cost) {
+      throw new ApiError(
+        'INSUFFICIENT_COINS',
+        `コインが不足しています（必要: ${cost}、所持: ${totalAvailable}）`,
+        400
+      );
+    }
+
+    // 無料コインから優先消費
+    let freeCoinsUsed = 0;
+    let permanentCoinsUsed = 0;
+
+    if (user.dailyFreeCoins >= cost) {
+      freeCoinsUsed = cost;
+    } else {
+      freeCoinsUsed = user.dailyFreeCoins;
+      permanentCoinsUsed = cost - freeCoinsUsed;
+    }
+
+    const newFreeBalance = user.dailyFreeCoins - freeCoinsUsed;
+    const newPermanentBalance = user.knowledgeBalance - permanentCoinsUsed;
+
+    await tx.user.update({
+      where: { id: userId },
+      data: {
+        dailyFreeCoins: newFreeBalance,
+        knowledgeBalance: newPermanentBalance,
+      },
+    });
+
+    await tx.knowledgeTransaction.create({
+      data: {
+        userId,
+        amount: -cost,
+        transactionType: 'consume',
+        description: `カード生成: ${keyword}`,
+        balanceAfter: newFreeBalance + newPermanentBalance,
+      },
+    });
+
+    return card;
   });
 }
 
@@ -304,7 +359,7 @@ export async function createCard({
     createdAt
   );
 
-  // 6. DB保存（トランザクション）
+  // 6. DB保存 + コイン消費（同一トランザクション）
   const card = await saveCard(
     tempCardId,
     userId,
@@ -314,11 +369,9 @@ export async function createCard({
     flavorText,
     contextAnalysis,
     images,
-    imagePrompt
+    imagePrompt,
+    cost
   );
-
-  // 7. コイン消費
-  await consumeCoins(userId, cost, `カード生成: ${keyword}`);
 
   return card;
 }
@@ -419,8 +472,11 @@ export async function deleteCard(cardId: string, userId: string): Promise<boolea
   // ストレージから画像を削除
   try {
     await deleteCardImages(cardId);
-  } catch {
-    // 画像削除に失敗してもDBは削除済みなので無視
+  } catch (error) {
+    logger.warn('Failed to delete card images from GCS, orphaned images may remain', {
+      cardId,
+      error,
+    });
   }
 
   return true;

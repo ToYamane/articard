@@ -1,12 +1,14 @@
+import { logger } from '@/lib/logger';
+
 const BFL_API_BASE_URL = 'https://api.bfl.ai/v1';
 
 // FLUX モデルタイプ
 export type FluxModel =
-  | 'flux-pro-1.1'      // FLUX 1.1 Pro (現在使用中) ~$0.04
-  | 'flux-2-pro'        // FLUX.2 Pro (最高品質) ~$0.04
-  | 'flux-2-dev'        // FLUX.2 Dev (32Bパラメータ) ~$0.015
-  | 'flux-2-klein'      // FLUX.2 Klein (超高速) ~$0.01
-  | 'flux-schnell';     // FLUX.1 Schnell (最速・最安) ~$0.003
+  | 'flux-pro-1.1' // FLUX 1.1 Pro (現在使用中) ~$0.04
+  | 'flux-2-pro' // FLUX.2 Pro (最高品質) ~$0.04
+  | 'flux-2-dev' // FLUX.2 Dev (32Bパラメータ) ~$0.015
+  | 'flux-2-klein' // FLUX.2 Klein (超高速) ~$0.01
+  | 'flux-schnell'; // FLUX.1 Schnell (最速・最安) ~$0.003
 
 // モデルごとのエンドポイント
 const MODEL_ENDPOINTS: Record<FluxModel, string> = {
@@ -34,7 +36,13 @@ interface FluxGenerationResponse {
 }
 
 interface FluxResultResponse {
-  status: 'Ready' | 'Pending' | 'Error' | 'Request Moderated' | 'Content Moderated' | 'Task not found';
+  status:
+    | 'Ready'
+    | 'Pending'
+    | 'Error'
+    | 'Request Moderated'
+    | 'Content Moderated'
+    | 'Task not found';
   result?: {
     sample: string; // URL to the generated image
   };
@@ -68,7 +76,7 @@ export async function requestImageGeneration(
   const model = params.model || 'flux-pro-1.1';
   const endpoint = MODEL_ENDPOINTS[model];
 
-  console.log(`FLUX API request starting with model: ${model}`);
+  logger.info(`FLUX API request starting with model: ${model}`);
 
   const response = await fetch(`${BFL_API_BASE_URL}/${endpoint}`, {
     method: 'POST',
@@ -85,11 +93,12 @@ export async function requestImageGeneration(
       output_format: params.output_format || 'jpeg',
       ...(params.seed !== undefined && { seed: params.seed }),
     }),
+    signal: AbortSignal.timeout(30000),
   });
 
   if (!response.ok) {
     const error = await response.text();
-    console.error('FLUX API request error:', {
+    logger.error('FLUX API request error', {
       status: response.status,
       statusText: response.statusText,
       body: error,
@@ -99,7 +108,7 @@ export async function requestImageGeneration(
   }
 
   const data: FluxGenerationResponse = await response.json();
-  console.log('FLUX API request success:', { taskId: data.id, pollingUrl: data.polling_url });
+  logger.info('FLUX API request success', { taskId: data.id, pollingUrl: data.polling_url });
   return { taskId: data.id, pollingUrl: data.polling_url };
 }
 
@@ -118,11 +127,12 @@ export async function getGenerationResult(pollingUrl: string): Promise<string> {
       headers: {
         'X-Key': apiKey,
       },
+      signal: AbortSignal.timeout(15000),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('FLUX API get_result error:', {
+      logger.error('FLUX API get_result error', {
         status: response.status,
         statusText: response.statusText,
         body: errorText,
@@ -135,7 +145,9 @@ export async function getGenerationResult(pollingUrl: string): Promise<string> {
 
     switch (data.status) {
       case 'Ready':
-        console.log('FLUX API generation ready, imageUrl:', data.result?.sample?.substring(0, 50));
+        logger.info('FLUX API generation ready', {
+          imageUrl: data.result?.sample?.substring(0, 50),
+        });
         if (data.result?.sample) {
           return data.result.sample;
         }
@@ -168,7 +180,9 @@ export async function getGenerationResult(pollingUrl: string): Promise<string> {
  * 画像をダウンロード
  */
 export async function downloadImage(url: string): Promise<Buffer> {
-  const response = await fetch(url);
+  const response = await fetch(url, {
+    signal: AbortSignal.timeout(30000),
+  });
 
   if (!response.ok) {
     throw new Error('画像のダウンロードに失敗しました');

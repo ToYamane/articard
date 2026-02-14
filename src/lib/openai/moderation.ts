@@ -1,4 +1,5 @@
 import { getOpenAIClient } from './client';
+import { logger } from '@/lib/logger';
 
 // ブロック対象カテゴリ
 const BLOCKED_CATEGORIES = [
@@ -70,50 +71,69 @@ export async function moderateContent(text: string): Promise<ModerationResult> {
     };
   }
 
-  // OpenAI Moderation API
+  // OpenAI Moderation API (with retry, fail-open)
   const client = getOpenAIClient();
+  const MAX_RETRIES = 2;
 
-  try {
-    const response = await client.moderations.create({
-      model: 'omni-moderation-latest',
-      input: text,
-    });
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const response = await client.moderations.create({
+        model: 'omni-moderation-latest',
+        input: text,
+      });
 
-    const result = response.results[0];
+      const result = response.results[0];
 
-    if (!result.flagged) {
+      if (!result.flagged) {
+        return {
+          flagged: false,
+          categories: [],
+          customBlocked: false,
+        };
+      }
+
+      // フラグされたカテゴリを収集
+      const flaggedCategories: string[] = [];
+      const categories = result.categories as unknown as Record<string, boolean>;
+
+      for (const category of BLOCKED_CATEGORIES) {
+        const normalizedCategory = category.replace('/', '_');
+        if (categories[normalizedCategory]) {
+          flaggedCategories.push(category);
+        }
+      }
+
+      return {
+        flagged: flaggedCategories.length > 0,
+        categories: flaggedCategories,
+        customBlocked: false,
+      };
+    } catch (error) {
+      logger.error('Moderation API error', {
+        error,
+        attempt: attempt + 1,
+        maxRetries: MAX_RETRIES + 1,
+      });
+
+      if (attempt < MAX_RETRIES) {
+        continue;
+      }
+
+      // All retries exhausted: fail-open（生成API自体のコンテンツポリシーがセーフティネット）
       return {
         flagged: false,
         categories: [],
         customBlocked: false,
       };
     }
-
-    // フラグされたカテゴリを収集
-    const flaggedCategories: string[] = [];
-    const categories = result.categories as unknown as Record<string, boolean>;
-
-    for (const category of BLOCKED_CATEGORIES) {
-      const normalizedCategory = category.replace('/', '_');
-      if (categories[normalizedCategory]) {
-        flaggedCategories.push(category);
-      }
-    }
-
-    return {
-      flagged: flaggedCategories.length > 0,
-      categories: flaggedCategories,
-      customBlocked: false,
-    };
-  } catch (error) {
-    console.error('Moderation API error:', error);
-    // エラー時は安全側に倒してフラグなしとする（生成時に再チェックされる）
-    return {
-      flagged: false,
-      categories: [],
-      customBlocked: false,
-    };
   }
+
+  // Unreachable, but TypeScript requires a return
+  return {
+    flagged: false,
+    categories: [],
+    customBlocked: false,
+  };
 }
 
 /**

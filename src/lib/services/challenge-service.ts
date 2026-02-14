@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import { logger } from '@/lib/logger';
 import {
   getScenarioById,
   getPhaseDefinition,
@@ -460,8 +461,8 @@ export async function getUserSessions(userId: string, status?: ChallengeSessionS
       .deleteMany({
         where: { id: { in: expiredIds } },
       })
-      .catch(() => {
-        /* ignore cleanup errors */
+      .catch((error) => {
+        logger.warn('Failed to delete expired challenge sessions', { expiredIds, error });
       });
   }
 

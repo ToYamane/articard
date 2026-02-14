@@ -18,13 +18,14 @@ jest.mock('@/lib/stripe', () => ({
   stripe: {
     webhooks: { constructEvent: (...args: unknown[]) => mockConstructEvent(...args) },
   },
-  STRIPE_PRICE_TO_TIER: { 'price_plus': 'plus', 'price_premium': 'premium' } as Record<string, string>,
+  STRIPE_PRICE_TO_TIER: { price_plus: 'plus', price_premium: 'premium' } as Record<string, string>,
 }));
 
 // Prismaモック
 const mockUserFindFirst = jest.fn();
 const mockUserUpdate = jest.fn();
 const mockWebhookEventCreate = jest.fn();
+const mockWebhookEventFindUnique = jest.fn();
 jest.mock('@/lib/prisma', () => ({
   prisma: {
     user: {
@@ -33,6 +34,7 @@ jest.mock('@/lib/prisma', () => ({
     },
     stripeWebhookEvent: {
       create: (...args: unknown[]) => mockWebhookEventCreate(...args),
+      findUnique: (...args: unknown[]) => mockWebhookEventFindUnique(...args),
     },
   },
 }));
@@ -74,7 +76,12 @@ describe('/api/stripe/webhook', () => {
     jest.clearAllMocks();
     process.env = { ...originalEnv, STRIPE_WEBHOOK_SECRET: 'whsec_test' };
     mockHeaders.mockResolvedValue(new Headers({ 'stripe-signature': 'sig_test' }));
-    mockWebhookEventCreate.mockResolvedValue({ id: 'wh-1', eventId: 'evt_test', eventType: 'test' });
+    mockWebhookEventFindUnique.mockResolvedValue(null); // No existing event (not a duplicate)
+    mockWebhookEventCreate.mockResolvedValue({
+      id: 'wh-1',
+      eventId: 'evt_test',
+      eventType: 'test',
+    });
   });
 
   afterEach(() => {
@@ -498,10 +505,6 @@ describe('/api/stripe/webhook', () => {
 
   describe('冪等性チェック', () => {
     it('重複イベントは処理をスキップして200を返す', async () => {
-      const { Prisma } = jest.requireMock('@prisma/client') as {
-        Prisma: { PrismaClientKnownRequestError: new (message: string, opts: { code: string }) => Error & { code: string } };
-      };
-
       mockConstructEvent.mockReturnValue({
         id: 'evt_duplicate',
         type: 'checkout.session.completed',
@@ -514,10 +517,12 @@ describe('/api/stripe/webhook', () => {
         },
       });
 
-      // ユニーク制約違反（P2002）= 重複
-      mockWebhookEventCreate.mockRejectedValue(
-        new Prisma.PrismaClientKnownRequestError('Unique constraint violation', { code: 'P2002' })
-      );
+      // findUniqueが既存レコードを返す = 重複
+      mockWebhookEventFindUnique.mockResolvedValue({
+        id: 'wh-1',
+        eventId: 'evt_duplicate',
+        eventType: 'checkout.session.completed',
+      });
 
       const req = createWebhookRequest();
       const response = await POST(req);
@@ -543,6 +548,7 @@ describe('/api/stripe/webhook', () => {
           },
         },
       });
+      mockWebhookEventFindUnique.mockResolvedValue(null); // Not a duplicate
       mockWebhookEventCreate.mockResolvedValue({ id: 'wh-1' });
       mockUserUpdate.mockResolvedValue({});
       mockActivateSubscription.mockResolvedValue({ success: true });
@@ -551,6 +557,7 @@ describe('/api/stripe/webhook', () => {
       const response = await POST(req);
 
       expect(response.status).toBe(200);
+      // Idempotency record created after successful processing
       expect(mockWebhookEventCreate).toHaveBeenCalledWith({
         data: { eventId: 'evt_new', eventType: 'checkout.session.completed' },
       });

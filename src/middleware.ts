@@ -7,8 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
  */
 export function middleware(req: NextRequest) {
   // リクエスト ID: 既存ヘッダーがあればそのまま使用
-  const requestId =
-    req.headers.get('x-request-id') || crypto.randomUUID();
+  const requestId = req.headers.get('x-request-id') || crypto.randomUUID();
 
   // レスポンスヘッダー設定
   const response = NextResponse.next({
@@ -39,20 +38,17 @@ export function middleware(req: NextRequest) {
     'Strict-Transport-Security',
     'max-age=63072000; includeSubDomains; preload'
   );
-  nextResponse.headers.set(
-    'Permissions-Policy',
-    'camera=(), microphone=(), geolocation=()'
-  );
+  nextResponse.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
   nextResponse.headers.set(
     'Content-Security-Policy',
     [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://apis.google.com https://js.stripe.com",
+      "script-src 'self' 'unsafe-inline' https://apis.google.com https://js.stripe.com",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob: https://storage.googleapis.com https://*.stripe.com",
       "font-src 'self'",
       "connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.firebase.com https://api.stripe.com https://firebaseinstallations.googleapis.com wss://*.firebaseio.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com",
-      "frame-src https://js.stripe.com https://*.firebaseapp.com",
+      'frame-src https://js.stripe.com https://*.firebaseapp.com',
       "object-src 'none'",
       "base-uri 'self'",
     ].join('; ')

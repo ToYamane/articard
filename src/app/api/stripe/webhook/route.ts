@@ -22,19 +22,13 @@ export async function POST(req: NextRequest) {
 
   if (!signature) {
     log.error('Missing stripe-signature header');
-    return NextResponse.json(
-      { error: 'Missing signature' },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: 'Missing signature' }, { status: 400 });
   }
 
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
   if (!webhookSecret) {
     log.error('STRIPE_WEBHOOK_SECRET is not set');
-    return NextResponse.json(
-      { error: 'Webhook secret not configured' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Webhook secret not configured' }, { status: 500 });
   }
 
   let event: Stripe.Event;
@@ -43,28 +37,18 @@ export async function POST(req: NextRequest) {
     event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
   } catch (err) {
     log.error('Webhook signature verification failed', { error: err });
-    return NextResponse.json(
-      { error: 'Invalid signature' },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
   }
 
   log.info(`Stripe webhook received: ${event.type}`, { eventId: event.id });
 
-  // 冪等性チェック: 重複イベントをスキップ
-  try {
-    await prisma.stripeWebhookEvent.create({
-      data: { eventId: event.id, eventType: event.type },
-    });
-  } catch (error) {
-    if (
-      error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === 'P2002'
-    ) {
-      log.info(`Duplicate webhook event ignored: ${event.id}`);
-      return NextResponse.json({ received: true });
-    }
-    throw error;
+  // 冪等性チェック: 処理済みイベントをスキップ
+  const existingEvent = await prisma.stripeWebhookEvent.findUnique({
+    where: { eventId: event.id },
+  });
+  if (existingEvent) {
+    log.info(`Duplicate webhook event ignored: ${event.id}`);
+    return NextResponse.json({ received: true });
   }
 
   try {
@@ -103,13 +87,22 @@ export async function POST(req: NextRequest) {
         log.info(`Unhandled event type: ${event.type}`);
     }
 
+    // Record successful processing for idempotency
+    try {
+      await prisma.stripeWebhookEvent.create({
+        data: { eventId: event.id, eventType: event.type },
+      });
+    } catch (dupError) {
+      if (dupError instanceof Prisma.PrismaClientKnownRequestError && dupError.code === 'P2002') {
+        log.info(`Event already processed by another instance: ${event.id}`);
+      }
+      // Other errors: log but still return success since processing completed
+    }
+
     return NextResponse.json({ received: true });
   } catch (error) {
     log.error('Webhook handler error', { error, eventType: event.type });
-    return NextResponse.json(
-      { error: 'Webhook handler failed' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Webhook handler failed' }, { status: 500 });
   }
 }
 
@@ -267,8 +260,8 @@ async function handlePaymentFailed(
     return;
   }
 
-  log.warn(
-    `Payment failed for user ${user.id} (tier: ${user.subscriptionTier})`,
-    { invoiceId: invoice.id, amountDue: invoice.amount_due }
-  );
+  log.warn(`Payment failed for user ${user.id} (tier: ${user.subscriptionTier})`, {
+    invoiceId: invoice.id,
+    amountDue: invoice.amount_due,
+  });
 }

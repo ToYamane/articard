@@ -5,16 +5,17 @@ import type { ApiResponse } from '@/types/api';
 /**
  * バリデーションエラーレスポンスを生成
  */
-export function validationErrorResponse(
-  error: ZodError
-): NextResponse<ApiResponse<never>> {
+export function validationErrorResponse(error: ZodError): NextResponse<ApiResponse<never>> {
   return NextResponse.json(
     {
       success: false,
       error: {
         code: 'VALIDATION_ERROR',
         message: error.issues[0]?.message || 'バリデーションエラー',
-        details: error.issues,
+        details: error.issues.map((issue) => ({
+          field: issue.path.join('.'),
+          message: issue.message,
+        })),
       },
     },
     { status: 400 }

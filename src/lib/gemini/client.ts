@@ -3,6 +3,8 @@
  * Gemini 2.5 Flash Image を使用
  */
 
+import { logger } from '@/lib/logger';
+
 const GEMINI_API_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta';
 
 /**
@@ -44,12 +46,10 @@ interface GeminiImageResponse {
  * Nano Banana (Gemini 2.5 Flash Image) で画像を生成
  * rare カード用の高速・中品質モデル
  */
-export async function generateWithNanoBanana(
-  params: GeminiImageGenerationParams
-): Promise<Buffer> {
+export async function generateWithNanoBanana(params: GeminiImageGenerationParams): Promise<Buffer> {
   const apiKey = getApiKey();
 
-  console.log('Nano Banana (Gemini) generation starting...', {
+  logger.info('Nano Banana (Gemini) generation starting', {
     prompt: params.prompt.substring(0, 100),
     aspectRatio: params.aspectRatio || '3:4',
   });
@@ -77,12 +77,13 @@ export async function generateWithNanoBanana(
           responseMimeType: 'image/png',
         },
       }),
+      signal: AbortSignal.timeout(60000),
     }
   );
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error('Gemini API error:', {
+    logger.error('Gemini API error', {
       status: response.status,
       statusText: response.statusText,
       body: errorText,
@@ -93,7 +94,7 @@ export async function generateWithNanoBanana(
   const data: GeminiImageResponse = await response.json();
 
   if (data.error) {
-    console.error('Gemini API error response:', data.error);
+    logger.error('Gemini API error response', { error: data.error });
     throw new Error(`Gemini APIエラー: ${data.error.message}`);
   }
 
@@ -114,7 +115,7 @@ export async function generateWithNanoBanana(
     throw new Error('Gemini APIレスポンスに画像データがありません');
   }
 
-  console.log('Nano Banana generation complete, mimeType:', imagePart.inlineData.mimeType);
+  logger.info('Nano Banana generation complete', { mimeType: imagePart.inlineData.mimeType });
 
   // Base64からBufferに変換
   const imageBuffer = Buffer.from(imagePart.inlineData.data, 'base64');
@@ -131,7 +132,7 @@ export async function generateWithGeminiImagen3(
 ): Promise<Buffer> {
   const apiKey = getApiKey();
 
-  console.log('Gemini Imagen 3 generation starting...', {
+  logger.info('Gemini Imagen 3 generation starting', {
     prompt: params.prompt.substring(0, 100),
   });
 
@@ -154,12 +155,13 @@ export async function generateWithGeminiImagen3(
           aspectRatio: params.aspectRatio || '3:4',
         },
       }),
+      signal: AbortSignal.timeout(60000),
     }
   );
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error('Gemini Imagen 3 API error:', {
+    logger.error('Gemini Imagen 3 API error', {
       status: response.status,
       statusText: response.statusText,
       body: errorText,
@@ -180,7 +182,7 @@ export async function generateWithGeminiImagen3(
     throw new Error('Gemini Imagen 3レスポンスに画像データがありません');
   }
 
-  console.log('Gemini Imagen 3 generation complete');
+  logger.info('Gemini Imagen 3 generation complete');
 
   // Base64からBufferに変換
   const imageBuffer = Buffer.from(bytesBase64Encoded, 'base64');
