@@ -7,9 +7,7 @@ import { createRequestLogger } from '@/lib/logger';
 import type { ApiResponse } from '@/types/api';
 import type { User } from '@prisma/client';
 
-export async function POST(
-  req: NextRequest
-): Promise<NextResponse<ApiResponse<User>>> {
+export async function POST(req: NextRequest): Promise<NextResponse<ApiResponse<User>>> {
   try {
     // IDトークンを検証
     const authHeader = req.headers.get('authorization');
@@ -54,16 +52,10 @@ export async function POST(
     });
 
     if (existingUser) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: {
-            code: 'USER_EXISTS',
-            message: 'ユーザーは既に登録されています',
-          },
-        },
-        { status: 409 }
-      );
+      return NextResponse.json({
+        success: true,
+        data: existingUser,
+      });
     }
 
     // ニックネーム重複チェック

@@ -11,10 +11,11 @@ export default function PrivacyPage() {
       <h1 className="mb-8 text-2xl font-bold text-gray-900 dark:text-gray-100">
         プライバシーポリシー
       </h1>
-      <p className="mb-6 text-sm text-gray-500 dark:text-gray-400">最終更新日: 2026年2月12日</p>
+      <p className="mb-6 text-sm text-gray-500 dark:text-gray-400">最終更新日: 2026年2月15日</p>
 
       <p className="mb-4 leading-relaxed text-gray-600 dark:text-gray-300">
-        運営者が提供するArticard（以下「本サービス」）は、ユーザーのプライバシーを尊重し、個人情報の保護に努めます。本プライバシーポリシーは、本サービスにおける個人情報の取り扱いについて説明するものです。
+        個人情報取扱事業者:
+        山根聡展（以下「運営者」）が提供するArticard（以下「本サービス」）は、ユーザーのプライバシーを尊重し、個人情報の保護に努めます。本プライバシーポリシーは、本サービスにおける個人情報の取り扱いについて説明するものです。
       </p>
 
       <h2 className="mb-4 mt-8 text-xl font-semibold text-gray-900 dark:text-gray-100">
@@ -27,6 +28,10 @@ export default function PrivacyPage() {
         <li>
           <strong>アカウント情報:</strong> Firebase
           Authenticationを通じて取得するメールアドレス、表示名、プロフィール画像URL等の認証情報
+        </li>
+        <li>
+          <strong>Googleアカウント情報:</strong>{' '}
+          Googleアカウントでログインした場合、Googleから提供されるメールアドレス、表示名、プロフィール画像を取得します
         </li>
         <li>
           <strong>プロフィール情報:</strong> ユーザーが設定するニックネーム等の情報
@@ -89,7 +94,8 @@ export default function PrivacyPage() {
           <strong>Google Gemini:</strong> カード画像生成
         </li>
         <li>
-          <strong>Stripe:</strong> 決済処理
+          <strong>Stripe:</strong>{' '}
+          決済処理。なお、クレジットカード情報は当サービスのサーバーには保存されず、Stripeが直接処理します。
         </li>
       </ul>
 
@@ -108,15 +114,48 @@ export default function PrivacyPage() {
       </p>
 
       <h2 className="mb-4 mt-8 text-xl font-semibold text-gray-900 dark:text-gray-100">
-        6. データの保管
+        6. データの保管と安全管理
       </h2>
       <p className="mb-4 leading-relaxed text-gray-600 dark:text-gray-300">
         ユーザーのデータは、Google Cloud Platform上のサーバー（東京リージョン:
-        asia-northeast1）に保管されます。適切なセキュリティ対策を講じ、不正アクセス、紛失、破損、漏洩の防止に努めます。アカウント削除後、30日以内に個人データを削除いたします。
+        asia-northeast1）に保管されます。アカウント削除後、30日以内に個人データを削除いたします。
+      </p>
+      <p className="mb-4 leading-relaxed text-gray-600 dark:text-gray-300">
+        当サービスでは、個人情報の安全管理のために以下の措置を講じています。
+      </p>
+      <ul className="mb-4 list-inside list-disc space-y-2 text-gray-600 dark:text-gray-300">
+        <li>すべての通信における暗号化（TLS）の実施</li>
+        <li>データベースおよびサーバーへのアクセス制御</li>
+        <li>定期的なセキュリティ更新およびソフトウェアの保守</li>
+        <li>不正アクセス、紛失、破損、漏洩の防止に向けた継続的な対策</li>
+      </ul>
+
+      <h2 className="mb-4 mt-8 text-xl font-semibold text-gray-900 dark:text-gray-100">
+        7. データの国外移転
+      </h2>
+      <p className="mb-4 leading-relaxed text-gray-600 dark:text-gray-300">
+        本サービスのAI機能を利用する際、ユーザーが入力したテーマや生成指示が、以下のAPIプロバイダーのサーバー（主に米国）に送信されます。
+      </p>
+      <ul className="mb-4 list-inside list-disc space-y-2 text-gray-600 dark:text-gray-300">
+        <li>
+          <strong>OpenAI（米国）:</strong> 記事生成およびカード画像生成（DALL-E）
+        </li>
+        <li>
+          <strong>FLUX / Black Forest Labs（米国）:</strong> カード画像生成
+        </li>
+        <li>
+          <strong>Google Gemini（米国）:</strong> カード画像生成
+        </li>
+        <li>
+          <strong>Stripe（米国）:</strong> 決済データの処理
+        </li>
+      </ul>
+      <p className="mb-4 leading-relaxed text-gray-600 dark:text-gray-300">
+        各プロバイダーは適切なセキュリティ措置を講じており、データは各社のプライバシーポリシーに基づいて取り扱われます。
       </p>
 
       <h2 className="mb-4 mt-8 text-xl font-semibold text-gray-900 dark:text-gray-100">
-        7. ユーザーの権利
+        8. ユーザーの権利
       </h2>
       <p className="mb-4 leading-relaxed text-gray-600 dark:text-gray-300">
         ユーザーは、自己の個人情報について以下の権利を有します。
@@ -132,14 +171,14 @@ export default function PrivacyPage() {
       </p>
 
       <h2 className="mb-4 mt-8 text-xl font-semibold text-gray-900 dark:text-gray-100">
-        8. ポリシーの変更
+        9. ポリシーの変更
       </h2>
       <p className="mb-4 leading-relaxed text-gray-600 dark:text-gray-300">
         本プライバシーポリシーは、必要に応じて変更されることがあります。重要な変更がある場合は、本サービス上で通知します。変更後も本サービスの利用を継続した場合、ユーザーは変更後のポリシーに同意したものとみなします。
       </p>
 
       <h2 className="mb-4 mt-8 text-xl font-semibold text-gray-900 dark:text-gray-100">
-        9. お問い合わせ
+        10. お問い合わせ
       </h2>
       <p className="mb-4 leading-relaxed text-gray-600 dark:text-gray-300">
         プライバシーに関するお問い合わせは、以下の連絡先までお願いいたします。

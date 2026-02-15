@@ -31,7 +31,7 @@ steps:
           --build-arg NEXT_PUBLIC_FIREBASE_APP_ID=$$NEXT_PUBLIC_FIREBASE_APP_ID \
           --build-arg NEXT_PUBLIC_APP_URL=${_APP_URL} \
           --build-arg NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=$$NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY \
-          -t gcr.io/$PROJECT_ID/articard:$SHORT_SHA \
+          -t gcr.io/$PROJECT_ID/articard:${_TAG} \
           -t gcr.io/$PROJECT_ID/articard:latest \
           .
     secretEnv:
@@ -61,7 +61,7 @@ steps:
       - 'run'
       - 'deploy'
       - 'articard'
-      - '--image=gcr.io/$PROJECT_ID/articard:$SHORT_SHA'
+      - '--image=gcr.io/$PROJECT_ID/articard:${_TAG}'
       - '--region=${_REGION}'
       - '--platform=managed'
       - '--allow-unauthenticated'
@@ -124,6 +124,7 @@ steps:
 # Substitutions
 substitutions:
   _REGION: 'asia-northeast1'
+  _TAG: 'latest'
   _APP_URL: 'https://articard.app'
   _CLOUD_SQL_INSTANCE: 'articard-ff673:asia-northeast1:articard-db'
   _GCS_BUCKET: 'articard-cards'

@@ -58,6 +58,8 @@ export function useAuth() {
         } else if (response.status === 404) {
           // User exists in Firebase but not in our DB
           setProfile(null);
+        } else {
+          console.error(`Failed to fetch profile: ${response.status}`);
         }
       } catch (error) {
         console.error('Failed to fetch user profile:', error);
@@ -81,17 +83,18 @@ export function useAuth() {
           await firebaseUser.reload();
         }
 
+        // Fetch profile BEFORE triggering AuthGuard via setUser/setInitialized
+        if (firebaseUser) {
+          await fetchProfileInBackground(firebaseUser);
+        } else {
+          setProfile(null);
+        }
+
         setUser(firebaseUser);
 
         if (!useAuthStore.getState().isInitialized) {
           setInitialized(true);
           setLoading(false);
-        }
-
-        if (firebaseUser) {
-          fetchProfileInBackground(firebaseUser);
-        } else {
-          setProfile(null);
         }
       });
     } catch (error) {
@@ -146,10 +149,14 @@ export function useAuth() {
     if (!user) return false;
     await user.reload();
     await user.getIdToken(true);
-    // Trigger store notification so selectors re-evaluate
+    // Fetch profile BEFORE triggering AuthGuard re-evaluation via setUser
+    if (user.emailVerified) {
+      await fetchProfileInBackground(user);
+    }
+    // Trigger store notification so selectors re-evaluate (AuthGuard will see correct profile)
     setUser(user);
     return user.emailVerified;
-  }, [user, setUser]);
+  }, [user, setUser, fetchProfileInBackground]);
 
   // Login with Google
   const loginWithGoogle = useCallback(async () => {

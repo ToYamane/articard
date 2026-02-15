@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui';
 import { useAuth } from '@/hooks/use-auth';
+import { useAuthStore } from '@/stores/auth-store';
 import { sendVerificationEmail } from '@/lib/firebase/client';
 
 const RESEND_COOLDOWN_SECONDS = 60;
@@ -32,7 +33,8 @@ export function VerifyEmailContent() {
     try {
       const verified = await reloadUser();
       if (verified) {
-        router.push('/setup');
+        const registered = !!useAuthStore.getState().profile;
+        router.push(registered ? '/home' : '/setup');
       } else {
         setError(
           'メールアドレスがまだ認証されていません。メール内のリンクをクリックしてください。'
@@ -84,6 +86,9 @@ export function VerifyEmailContent() {
           <span className="font-medium text-gray-900 dark:text-gray-100">{user?.email}</span>
           <br />
           に認証メールを送信しました。メール内のリンクをクリックして認証を完了してください。
+        </p>
+        <p className="text-center text-xs text-gray-500 dark:text-gray-500">
+          メールが届かない場合は、迷惑メールフォルダもご確認ください。
         </p>
       </div>
 
