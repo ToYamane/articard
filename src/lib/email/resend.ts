@@ -3,12 +3,18 @@ import { createLogger } from '@/lib/logger';
 
 const log = createLogger({ path: 'email' });
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+function getResendClient() {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    throw new Error('RESEND_API_KEY is not set');
+  }
+  return new Resend(apiKey);
+}
 
 const FROM_EMAIL = 'Articard <noreply@articard.app>';
 
 export async function sendVerificationCode(email: string, code: string): Promise<void> {
-  const { error } = await resend.emails.send({
+  const { error } = await getResendClient().emails.send({
     from: FROM_EMAIL,
     to: email,
     subject: '【Articard】メール認証コード',
@@ -36,7 +42,7 @@ export async function sendVerificationCode(email: string, code: string): Promise
 }
 
 export async function sendPasswordResetCode(email: string, code: string): Promise<void> {
-  const { error } = await resend.emails.send({
+  const { error } = await getResendClient().emails.send({
     from: FROM_EMAIL,
     to: email,
     subject: '【Articard】パスワードリセットコード',
