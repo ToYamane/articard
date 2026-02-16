@@ -59,7 +59,7 @@ function createAuthenticatedRequest(
     method,
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
+      Authorization: `Bearer ${token}`,
     },
     body: body && method !== 'GET' ? JSON.stringify(body) : undefined,
   };
@@ -102,7 +102,9 @@ describe('POST /api/auth/register', () => {
     // デフォルトでユーザーが存在しない
     mockFindUnique.mockResolvedValue(null);
     // デフォルトでトランザクション成功
-    mockTransaction.mockImplementation(async (cb: (tx: typeof mockTxPrisma) => Promise<unknown>) => cb(mockTxPrisma));
+    mockTransaction.mockImplementation(async (cb: (tx: typeof mockTxPrisma) => Promise<unknown>) =>
+      cb(mockTxPrisma)
+    );
     mockTxKnowledgeTransactionCreate.mockResolvedValue({});
   });
 
@@ -191,7 +193,7 @@ describe('POST /api/auth/register', () => {
   });
 
   describe('重複チェック', () => {
-    it('ユーザーが既に登録されている場合、409を返す', async () => {
+    it('ユーザーが既に登録されている場合、既存ユーザーを200で返す', async () => {
       mockFindUnique.mockResolvedValue(mockUser); // ユーザーが既に存在
 
       const req = createAuthenticatedRequest('/api/auth/register', {
@@ -202,8 +204,9 @@ describe('POST /api/auth/register', () => {
       const response = await POST(req);
       const data = await response.json();
 
-      expect(response.status).toBe(409);
-      expect(data.error.code).toBe(ERROR_CODES.USER_EXISTS);
+      expect(response.status).toBe(200);
+      expect(data.success).toBe(true);
+      expect(data.data.id).toBe(mockUser.id);
     });
 
     it('ニックネームが既に使用されている場合、409を返す', async () => {
