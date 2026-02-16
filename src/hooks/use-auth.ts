@@ -8,7 +8,6 @@ import {
   signUpWithEmail,
   signInWithGoogle,
   logout,
-  resetPassword,
   getIdToken,
 } from '@/lib/firebase/client';
 import {
@@ -180,19 +179,6 @@ export function useAuth() {
     }
   }, [setLoading, reset, router]);
 
-  // Send password reset email
-  const sendPasswordReset = useCallback(
-    async (email: string) => {
-      setLoading(true);
-      try {
-        await resetPassword(email);
-      } finally {
-        setLoading(false);
-      }
-    },
-    [setLoading]
-  );
-
   // Register user in our database
   const registerUser = useCallback(
     async (nickname: string): Promise<UserProfile> => {
@@ -301,7 +287,6 @@ export function useAuth() {
     registerWithEmail,
     loginWithGoogle,
     signOut,
-    sendPasswordReset,
     registerUser,
     updateProfile,
     deleteAccount,

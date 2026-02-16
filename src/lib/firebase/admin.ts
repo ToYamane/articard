@@ -48,4 +48,28 @@ export async function deleteUser(uid: string) {
   return adminAuth.deleteUser(uid);
 }
 
+/**
+ * Update user's emailVerified status
+ */
+export async function updateUserEmailVerified(uid: string) {
+  const { adminAuth } = getFirebaseAdmin();
+  return adminAuth.updateUser(uid, { emailVerified: true });
+}
+
+/**
+ * Update user's password
+ */
+export async function updateUserPassword(uid: string, newPassword: string) {
+  const { adminAuth } = getFirebaseAdmin();
+  return adminAuth.updateUser(uid, { password: newPassword });
+}
+
+/**
+ * Get user by email
+ */
+export async function getUserByEmail(email: string) {
+  const { adminAuth } = getFirebaseAdmin();
+  return adminAuth.getUserByEmail(email);
+}
+
 export { type DecodedIdToken };

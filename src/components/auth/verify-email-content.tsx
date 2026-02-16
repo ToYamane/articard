@@ -2,18 +2,18 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui';
+import { Button, Input } from '@/components/ui';
 import { useAuth } from '@/hooks/use-auth';
 import { useAuthStore } from '@/stores/auth-store';
-import { sendVerificationEmail } from '@/lib/firebase/client';
 
 const RESEND_COOLDOWN_SECONDS = 60;
 
 export function VerifyEmailContent() {
   const router = useRouter();
-  const { user, reloadUser, signOut } = useAuth();
+  const { user, reloadUser, signOut, getIdToken } = useAuth();
 
-  const [isChecking, setIsChecking] = useState(false);
+  const [code, setCode] = useState('');
+  const [isVerifying, setIsVerifying] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [cooldown, setCooldown] = useState(0);
   const [message, setMessage] = useState('');
@@ -26,42 +26,84 @@ export function VerifyEmailContent() {
     return () => clearTimeout(timer);
   }, [cooldown]);
 
-  const handleCheckVerification = useCallback(async () => {
-    setIsChecking(true);
+  const handleVerifyCode = useCallback(async () => {
+    if (code.length !== 6) {
+      setError('6桁のコードを入力してください');
+      return;
+    }
+
+    setIsVerifying(true);
     setError('');
     setMessage('');
     try {
-      const verified = await reloadUser();
-      if (verified) {
+      const token = await getIdToken();
+      if (!token) {
+        setError('認証情報が見つかりません。再度ログインしてください。');
+        return;
+      }
+
+      const response = await fetch('/api/auth/verify-code', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ code }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Reload Firebase user to reflect emailVerified status
+        await reloadUser();
         const registered = !!useAuthStore.getState().profile;
         router.push(registered ? '/home' : '/setup');
       } else {
-        setError(
-          'メールアドレスがまだ認証されていません。メール内のリンクをクリックしてください。'
-        );
+        setError(data.error?.message || '認証に失敗しました');
       }
     } catch {
       setError('確認中にエラーが発生しました。再度お試しください。');
     } finally {
-      setIsChecking(false);
+      setIsVerifying(false);
     }
-  }, [reloadUser, router]);
+  }, [code, getIdToken, reloadUser, router]);
 
-  const handleResendEmail = useCallback(async () => {
+  const handleResendCode = useCallback(async () => {
     if (!user || cooldown > 0) return;
     setIsResending(true);
     setError('');
     setMessage('');
     try {
-      await sendVerificationEmail(user);
-      setMessage('認証メールを再送信しました。');
-      setCooldown(RESEND_COOLDOWN_SECONDS);
+      const token = await getIdToken();
+      if (!token) {
+        setError('認証情報が見つかりません。');
+        return;
+      }
+
+      const response = await fetch('/api/auth/send-verification', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        setMessage('認証コードを再送信しました。');
+        setCooldown(RESEND_COOLDOWN_SECONDS);
+      } else {
+        setError(data.error?.message || 'メールの送信に失敗しました。');
+      }
     } catch {
       setError('メールの送信に失敗しました。しばらく経ってから再度お試しください。');
     } finally {
       setIsResending(false);
     }
-  }, [user, cooldown]);
+  }, [user, cooldown, getIdToken]);
+
+  const handleCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/\D/g, '').slice(0, 6);
+    setCode(value);
+    setError('');
+  };
 
   return (
     <div className="w-full max-w-md space-y-6">
@@ -85,11 +127,11 @@ export function VerifyEmailContent() {
         <p className="text-center text-sm text-gray-600 dark:text-gray-400">
           <span className="font-medium text-gray-900 dark:text-gray-100">{user?.email}</span>
           <br />
-          に認証メールを送信しました。メール内のリンクをクリックして認証を完了してください。
+          に認証コードを送信しました。メールに届いた6桁のコードを入力してください。
         </p>
-        <p className="text-center text-xs text-gray-500 dark:text-gray-500">
+        <div className="rounded-lg bg-amber-50 px-3 py-2 text-center text-xs text-amber-700 dark:bg-amber-900/20 dark:text-amber-300">
           メールが届かない場合は、迷惑メールフォルダもご確認ください。
-        </p>
+        </div>
       </div>
 
       {error && (
@@ -105,23 +147,35 @@ export function VerifyEmailContent() {
       )}
 
       <div className="space-y-3">
+        <Input
+          label="認証コード"
+          type="text"
+          inputMode="numeric"
+          name="code"
+          value={code}
+          onChange={handleCodeChange}
+          placeholder="6桁のコードを入力"
+          maxLength={6}
+          autoComplete="one-time-code"
+        />
+
         <Button
           className="w-full"
-          onClick={handleCheckVerification}
-          isLoading={isChecking}
-          disabled={isChecking}
+          onClick={handleVerifyCode}
+          isLoading={isVerifying}
+          disabled={isVerifying || code.length !== 6}
         >
-          認証を確認して続ける
+          認証する
         </Button>
 
         <Button
           variant="secondary"
           className="w-full"
-          onClick={handleResendEmail}
+          onClick={handleResendCode}
           isLoading={isResending}
           disabled={isResending || cooldown > 0}
         >
-          {cooldown > 0 ? `認証メールを再送信（${cooldown}秒）` : '認証メールを再送信'}
+          {cooldown > 0 ? `コードを再送信（${cooldown}秒）` : 'コードを再送信'}
         </Button>
       </div>
 

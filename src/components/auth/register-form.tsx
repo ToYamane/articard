@@ -6,12 +6,11 @@ import { useRouter } from 'next/navigation';
 import { Button, Input } from '@/components/ui';
 import { OAuthButtons } from './oauth-buttons';
 import { useAuth } from '@/hooks/use-auth';
-import { sendVerificationEmail } from '@/lib/firebase/client';
 import { signUpSchema, type SignUpInput } from '@/lib/validations/user';
 
 export function RegisterForm() {
   const router = useRouter();
-  const { registerWithEmail, loginWithGoogle, isLoading } = useAuth();
+  const { registerWithEmail, loginWithGoogle, isLoading, getIdToken } = useAuth();
 
   const [formData, setFormData] = useState<SignUpInput>({
     email: '',
@@ -46,8 +45,17 @@ export function RegisterForm() {
     }
 
     try {
-      const credential = await registerWithEmail(formData.email, formData.password);
-      await sendVerificationEmail(credential.user);
+      await registerWithEmail(formData.email, formData.password);
+
+      // Send verification code via our API
+      const token = await getIdToken();
+      if (token) {
+        await fetch('/api/auth/send-verification', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      }
+
       router.push('/verify-email');
     } catch (error: unknown) {
       const firebaseError = error as { code?: string };
@@ -75,6 +83,11 @@ export function RegisterForm() {
       <div className="flex flex-col items-center gap-1">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">新規登録</h1>
         <p className="text-sm text-gray-600 dark:text-gray-400">Articardで学習カードを集めよう</p>
+      </div>
+
+      {/* Google推奨メッセージ */}
+      <div className="rounded-lg bg-blue-50 p-3 text-center text-sm text-blue-700 dark:bg-blue-900/20 dark:text-blue-300">
+        Googleアカウントでの登録がおすすめです（メール認証が不要でかんたん）
       </div>
 
       {/* OAuth Buttons */}

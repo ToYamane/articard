@@ -1,57 +1,20 @@
 import type { Rarity, EmotionalTone } from '@/types/database';
 import { generateCardImageByRarity, type ImageGenerationResult } from '@/lib/image-generation';
-import { RARITY_CONFIG } from '@/lib/constants/rarity-config';
-
-// トーンによるスタイル修飾子（各トーンに複数バリエーション）
-const TONE_MODIFIERS: Record<EmotionalTone, string[]> = {
-  epic: [
-    'epic scale, heroic atmosphere',
-    'grand vista, monumental presence',
-    'sweeping panorama, awe-inspiring',
-    'towering silhouette, legendary aura',
-  ],
-  mysterious: [
-    'ethereal glow, mysterious ambiance',
-    'shrouded in mist, enigmatic',
-    'twilight shadows, arcane energy',
-    'moonlit silhouette, otherworldly',
-  ],
-  scientific: [
-    'technical precision, analytical clarity',
-    'microscopic detail, clinical observation',
-    'schematic elegance, data visualization',
-    'laboratory atmosphere, empirical beauty',
-  ],
-  warm: [
-    'warm colors, friendly atmosphere',
-    'golden hour light, gentle radiance',
-    'soft pastels, cozy intimacy',
-    'sunlit warmth, nostalgic glow',
-  ],
-  dramatic: [
-    'dramatic lighting, intense contrast',
-    'chiaroscuro shadows, powerful tension',
-    'storm-lit scene, raw energy',
-    'bold contrasts, cinematic intensity',
-  ],
-  neutral: [
-    'balanced composition, clean tones',
-    'harmonious arrangement, subtle palette',
-    'even lighting, understated elegance',
-    'refined simplicity, measured balance',
-  ],
-};
 
 // アートスタイルプール（ランダムに選択して視覚的多様性を注入）
 const ART_STYLES = [
-  'digital painting',
-  'concept art',
-  'watercolor illustration',
-  'oil painting style',
-  'cel-shaded art',
-  'ink wash painting',
-  'gouache illustration',
-  'colored pencil art',
+  'photorealistic, cinematic lighting',
+  'oil painting, rich texture',
+  'watercolor illustration, soft edges',
+  'anime style, cel shading',
+  'pixel art, 16-bit retro',
+  'flat vector illustration, minimal',
+  'pencil sketch, hand-drawn',
+  'ukiyo-e style, Japanese woodblock print',
+  'neon-lit illustration, high contrast glow',
+  'fantasy concept art, epic lighting',
+  'art nouveau, ornamental details',
+  'low poly 3D render, geometric',
 ];
 
 function pickRandom<T>(arr: T[]): T {
@@ -76,14 +39,11 @@ export interface CardIllustrationResult {
 
 /**
  * イラスト生成用プロンプトを生成
- * 記事内容（英語）を優先し、固定部分を簡略化
+ * アートスタイルを先頭に置き、画風の違いを明確にする
  */
 export function generateImagePrompt(input: ImageGenerationInput): string {
-  const styleModifier = RARITY_CONFIG[input.rarity].styleModifier;
-  const toneModifier = pickRandom(TONE_MODIFIERS[input.emotionalTone]);
   const artStyle = pickRandom(ART_STYLES);
-
-  return `${input.imageSubject}, ${input.imageScene}, ${input.imageDetails}, ${artStyle}, ${styleModifier}, ${toneModifier}, trading card illustration, high quality`.trim();
+  return `${artStyle} of ${input.imageSubject}, ${input.imageScene}, ${input.imageDetails}`;
 }
 
 /**

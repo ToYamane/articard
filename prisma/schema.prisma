@@ -243,6 +243,21 @@ model FavoriteArticle {
   @@map("favorite_articles")
 }
 
+// メール認証・パスワードリセット用コード
+model EmailVerification {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email     String   @db.VarChar(255)
+  code      String   @db.VarChar(6)
+  purpose   String   @db.VarChar(20) // "email_verify" | "password_reset"
+  expiresAt DateTime @map("expires_at") @db.Timestamptz
+  attempts  Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([email, code, purpose])
+  @@index([expiresAt])
+  @@map("email_verifications")
+}
+
 // Stripe Webhook 冪等性チェック用
 model StripeWebhookEvent {
   id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid

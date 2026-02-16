@@ -100,6 +100,9 @@ SECRETS=(
   "articard-stripe-publishable-key::NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY"
   "articard-stripe-price-plus::STRIPE_PRICE_PLUS"
   "articard-stripe-price-premium::STRIPE_PRICE_PREMIUM"
+
+  # Email (1個)
+  "articard-resend-key::RESEND_API_KEY"
 )
 
 # --- 1. シークレット作成/更新 ---

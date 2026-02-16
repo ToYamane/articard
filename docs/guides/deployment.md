@@ -4,15 +4,15 @@ Articard の本番デプロイ手順。単一 GCP プロジェクト `articard-f
 
 ## 1. インフラ構成
 
-| リソース | 値 |
-|----------|-----|
-| GCP プロジェクト | `articard-ff673` |
-| リージョン | `asia-northeast1` |
-| Cloud Run サービス | `articard` |
-| Cloud SQL | `articard-ff673:asia-northeast1:articard-db` (PostgreSQL) |
-| Cloud Storage | `articard-ff673.appspot.com` |
-| Container Registry | `gcr.io/articard-ff673/articard` |
-| Firebase | `articard-ff673` |
+| リソース           | 値                                                        |
+| ------------------ | --------------------------------------------------------- |
+| GCP プロジェクト   | `articard-ff673`                                          |
+| リージョン         | `asia-northeast1`                                         |
+| Cloud Run サービス | `articard`                                                |
+| Cloud SQL          | `articard-ff673:asia-northeast1:articard-db` (PostgreSQL) |
+| Cloud Storage      | `articard-ff673.appspot.com`                              |
+| Container Registry | `gcr.io/articard-ff673/articard`                          |
+| Firebase           | `articard-ff673`                                          |
 
 ### アーキテクチャ図
 
@@ -60,31 +60,33 @@ Cloud Build (手動 or トリガー)
 
 Cloud Build（ビルド時）と Cloud Run（ランタイム）の両方で使用。
 
-| シークレット名 | .env 変数名 | 用途 |
-|---------------|------------|------|
-| **Database** | | |
-| `articard-database-url` | `DATABASE_URL` | PostgreSQL 接続文字列 |
-| **Firebase Client (6個)** | | |
-| `articard-firebase-api-key` | `NEXT_PUBLIC_FIREBASE_API_KEY` | Firebase API キー |
-| `articard-firebase-auth-domain` | `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` | Firebase Auth ドメイン |
-| `articard-firebase-project-id` | `NEXT_PUBLIC_FIREBASE_PROJECT_ID` | Firebase プロジェクト ID |
-| `articard-firebase-storage-bucket` | `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET` | Firebase Storage バケット |
-| `articard-firebase-messaging-sender-id` | `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID` | FCM Sender ID |
-| `articard-firebase-app-id` | `NEXT_PUBLIC_FIREBASE_APP_ID` | Firebase App ID |
-| **Firebase Admin (3個)** | | |
-| `articard-firebase-admin-project-id` | `FIREBASE_ADMIN_PROJECT_ID` | Admin プロジェクト ID |
-| `articard-firebase-admin-email` | `FIREBASE_ADMIN_CLIENT_EMAIL` | Admin サービスアカウント |
-| `articard-firebase-admin-key` | `FIREBASE_ADMIN_PRIVATE_KEY` | Admin 秘密鍵 |
-| **AI APIs (3個)** | | |
-| `articard-openai-key` | `OPENAI_API_KEY` | OpenAI (記事生成) |
-| `articard-bfl-key` | `BFL_API_KEY` | FLUX (画像生成) |
-| `articard-gemini-key` | `GOOGLE_GEMINI_API_KEY` | Gemini (画像生成) |
-| **Stripe (5個)** | | |
-| `articard-stripe-secret-key` | `STRIPE_SECRET_KEY` | Stripe シークレットキー |
-| `articard-stripe-webhook-secret` | `STRIPE_WEBHOOK_SECRET` | Webhook 署名検証 |
-| `articard-stripe-publishable-key` | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Stripe 公開キー |
-| `articard-stripe-price-plus` | `STRIPE_PRICE_PLUS` | Plus プラン Price ID |
-| `articard-stripe-price-premium` | `STRIPE_PRICE_PREMIUM` | Premium プラン Price ID |
+| シークレット名                          | .env 変数名                                | 用途                      |
+| --------------------------------------- | ------------------------------------------ | ------------------------- |
+| **Database**                            |                                            |                           |
+| `articard-database-url`                 | `DATABASE_URL`                             | PostgreSQL 接続文字列     |
+| **Firebase Client (6個)**               |                                            |                           |
+| `articard-firebase-api-key`             | `NEXT_PUBLIC_FIREBASE_API_KEY`             | Firebase API キー         |
+| `articard-firebase-auth-domain`         | `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`         | Firebase Auth ドメイン    |
+| `articard-firebase-project-id`          | `NEXT_PUBLIC_FIREBASE_PROJECT_ID`          | Firebase プロジェクト ID  |
+| `articard-firebase-storage-bucket`      | `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`      | Firebase Storage バケット |
+| `articard-firebase-messaging-sender-id` | `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID` | FCM Sender ID             |
+| `articard-firebase-app-id`              | `NEXT_PUBLIC_FIREBASE_APP_ID`              | Firebase App ID           |
+| **Firebase Admin (3個)**                |                                            |                           |
+| `articard-firebase-admin-project-id`    | `FIREBASE_ADMIN_PROJECT_ID`                | Admin プロジェクト ID     |
+| `articard-firebase-admin-email`         | `FIREBASE_ADMIN_CLIENT_EMAIL`              | Admin サービスアカウント  |
+| `articard-firebase-admin-key`           | `FIREBASE_ADMIN_PRIVATE_KEY`               | Admin 秘密鍵              |
+| **AI APIs (3個)**                       |                                            |                           |
+| `articard-openai-key`                   | `OPENAI_API_KEY`                           | OpenAI (記事生成)         |
+| `articard-bfl-key`                      | `BFL_API_KEY`                              | FLUX (画像生成)           |
+| `articard-gemini-key`                   | `GOOGLE_GEMINI_API_KEY`                    | Gemini (画像生成)         |
+| **Stripe (5個)**                        |                                            |                           |
+| `articard-stripe-secret-key`            | `STRIPE_SECRET_KEY`                        | Stripe シークレットキー   |
+| `articard-stripe-webhook-secret`        | `STRIPE_WEBHOOK_SECRET`                    | Webhook 署名検証          |
+| `articard-stripe-publishable-key`       | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`       | Stripe 公開キー           |
+| `articard-stripe-price-plus`            | `STRIPE_PRICE_PLUS`                        | Plus プラン Price ID      |
+| `articard-stripe-price-premium`         | `STRIPE_PRICE_PREMIUM`                     | Premium プラン Price ID   |
+| **Email (1個)**                         |                                            |                           |
+| `articard-resend-key`                   | `RESEND_API_KEY`                           | Resend メール送信         |
 
 ### 3.2 セットアップ
 
@@ -118,13 +120,14 @@ gcloud secrets list --project=articard-ff673
 
 マルチステージビルド（3段階）:
 
-| ステージ | 内容 |
-|---------|------|
-| `deps` | `npm ci` で依存関係インストール |
+| ステージ  | 内容                                                               |
+| --------- | ------------------------------------------------------------------ |
+| `deps`    | `npm ci` で依存関係インストール                                    |
 | `builder` | Prisma generate → `npm run build` (NEXT_PUBLIC ARG をビルド時注入) |
-| `runner` | standalone 出力 + prisma + fonts をコピー、非 root ユーザーで実行 |
+| `runner`  | standalone 出力 + prisma + fonts をコピー、非 root ユーザーで実行  |
 
 ビルド時引数（`--build-arg`）:
+
 - `NEXT_PUBLIC_FIREBASE_API_KEY`
 - `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`
 - `NEXT_PUBLIC_FIREBASE_PROJECT_ID`
@@ -149,30 +152,30 @@ bash scripts/docker-build-test.sh .env
 
 ### ステップ
 
-| Step | 名前 | 内容 |
-|------|------|------|
-| 1 | `test` | `npm ci` → `type-check` → `lint` → `test` |
-| 2 | `build` | Docker ビルド（Secret Manager からビルド引数注入） |
-| 3 | `push` | `gcr.io/$PROJECT_ID/articard` に push |
-| 4 | `deploy` | Cloud Run にデプロイ（ランタイムシークレット + 環境変数設定） |
-| 5 | `verify` | `/api/health` へのヘルスチェック（5回リトライ） |
+| Step | 名前     | 内容                                                          |
+| ---- | -------- | ------------------------------------------------------------- |
+| 1    | `test`   | `npm ci` → `type-check` → `lint` → `test`                     |
+| 2    | `build`  | Docker ビルド（Secret Manager からビルド引数注入）            |
+| 3    | `push`   | `gcr.io/$PROJECT_ID/articard` に push                         |
+| 4    | `deploy` | Cloud Run にデプロイ（ランタイムシークレット + 環境変数設定） |
+| 5    | `verify` | `/api/health` へのヘルスチェック（5回リトライ）               |
 
 ### 置換変数
 
-| 変数 | デフォルト値 | 用途 |
-|------|-------------|------|
-| `_REGION` | `asia-northeast1` | デプロイリージョン |
-| `_APP_URL` | `https://articard.app` | アプリ URL |
-| `_CLOUD_SQL_INSTANCE` | `articard-ff673:asia-northeast1:articard-db` | Cloud SQL 接続名 |
-| `_GCS_BUCKET` | `articard-ff673.appspot.com` | GCS バケット |
+| 変数                  | デフォルト値                                 | 用途               |
+| --------------------- | -------------------------------------------- | ------------------ |
+| `_REGION`             | `asia-northeast1`                            | デプロイリージョン |
+| `_APP_URL`            | `https://articard.app`                       | アプリ URL         |
+| `_CLOUD_SQL_INSTANCE` | `articard-ff673:asia-northeast1:articard-db` | Cloud SQL 接続名   |
+| `_GCS_BUCKET`         | `articard-ff673.appspot.com`                 | GCS バケット       |
 
 ### ランタイム環境変数（Cloud Run に直接設定）
 
-| 変数 | 値 |
-|------|-----|
-| `NODE_ENV` | `production` |
-| `NEXT_PUBLIC_APP_URL` | `${_APP_URL}` |
-| `GCS_BUCKET_NAME` | `${_GCS_BUCKET}` |
+| 変数                  | 値               |
+| --------------------- | ---------------- |
+| `NODE_ENV`            | `production`     |
+| `NEXT_PUBLIC_APP_URL` | `${_APP_URL}`    |
+| `GCS_BUCKET_NAME`     | `${_GCS_BUCKET}` |
 
 ## 6. デプロイ手順
 
@@ -296,7 +299,7 @@ echo -n "whsec_xxxxx" | gcloud secrets versions add articard-stripe-webhook-secr
 
 ```yaml
 substitutions:
-  _APP_URL: 'https://your-domain.com'  # ← 更新
+  _APP_URL: 'https://your-domain.com' # ← 更新
 ```
 
 または Cloud Build 実行時に上書き:
@@ -347,6 +350,7 @@ gcloud builds log BUILD_ID
 ### モニタリング
 
 Cloud Console で確認:
+
 - Cloud Run: リクエスト数、レイテンシ (P50/P95/P99)、エラーレート、インスタンス数
 - Cloud SQL: 接続数、CPU/メモリ使用率
 - Secret Manager: アクセスログ

@@ -5,11 +5,18 @@ export {
   signUpWithEmail,
   signInWithGoogle,
   logout,
-  resetPassword,
   getIdToken,
   subscribeToAuthState,
   type User,
 } from './client';
 
 // Server-side exports (use in API routes only)
-export { verifyIdToken, getUserByUid, deleteUser, type DecodedIdToken } from './admin';
+export {
+  verifyIdToken,
+  getUserByUid,
+  deleteUser,
+  updateUserEmailVerified,
+  updateUserPassword,
+  getUserByEmail,
+  type DecodedIdToken,
+} from './admin';

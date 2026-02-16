@@ -87,6 +87,7 @@ steps:
       - '--set-secrets=NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=articard-stripe-publishable-key:latest'
       - '--set-secrets=STRIPE_PRICE_PLUS=articard-stripe-price-plus:latest'
       - '--set-secrets=STRIPE_PRICE_PREMIUM=articard-stripe-price-premium:latest'
+      - '--set-secrets=RESEND_API_KEY=articard-resend-key:latest'
       - '--memory=2Gi'
       - '--cpu=2'
       - '--min-instances=1'

@@ -15,8 +15,6 @@ export interface RarityConfig {
   japaneseName: string;
   /** カード枠線幅 */
   borderWidth: number;
-  /** AI画像生成用スタイル修飾子 */
-  styleModifier: string;
 }
 
 /**
@@ -35,7 +33,6 @@ export const RARITY_CONFIG: Record<Rarity, RarityConfig> = {
     gradient: ['#F59E0B', '#D97706'],
     japaneseName: 'レジェンド',
     borderWidth: 6,
-    styleModifier: 'legendary masterpiece, divine lighting, ultra detailed, golden accents',
   },
   super_rare: {
     threshold: 15,
@@ -43,7 +40,6 @@ export const RARITY_CONFIG: Record<Rarity, RarityConfig> = {
     gradient: ['#8B5CF6', '#7C3AED'],
     japaneseName: 'スーパーレア',
     borderWidth: 5,
-    styleModifier: 'epic fantasy art, cinematic lighting, masterpiece',
   },
   rare: {
     threshold: 40,
@@ -51,7 +47,6 @@ export const RARITY_CONFIG: Record<Rarity, RarityConfig> = {
     gradient: ['#3B82F6', '#2563EB'],
     japaneseName: 'レア',
     borderWidth: 4,
-    styleModifier: 'detailed art, dramatic lighting',
   },
   common: {
     threshold: 100,
@@ -59,7 +54,6 @@ export const RARITY_CONFIG: Record<Rarity, RarityConfig> = {
     gradient: ['#9CA3AF', '#6B7280'],
     japaneseName: 'コモン',
     borderWidth: 4,
-    styleModifier: 'clean illustration, bright colors',
   },
 };
 
