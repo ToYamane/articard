@@ -52,7 +52,7 @@ ENV DATABASE_URL=""
 
 # Stage 3: Runner
 FROM node:20-alpine AS runner
-RUN apk add --no-cache libc6-compat openssl
+RUN apk add --no-cache libc6-compat openssl fontconfig
 
 WORKDIR /app
 
@@ -70,6 +70,9 @@ COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/fonts ./fonts
+
+# fontconfig にフォント設定ファイルの場所を指示
+ENV FONTCONFIG_FILE=/app/fonts/fonts.conf
 
 # Set correct permissions
 RUN chown -R nextjs:nodejs /app
