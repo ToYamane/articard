@@ -1,3 +1,4 @@
+export { ArtStyleSelector, type ArtStyleSelectorProps } from './art-style-selector';
 export { RarityBadge } from './rarity-badge';
 export { RaritySelector, type RaritySelectorProps } from './rarity-selector';
 export { CardDisplay, CardDetailDisplay } from './card-display';

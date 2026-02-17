@@ -33,6 +33,7 @@ export interface CreateCardParams {
   userId: string;
   articleId: string;
   specifiedRarity?: Rarity;
+  specifiedArtStyle?: string;
 }
 
 export interface CardListParams {
@@ -166,7 +167,8 @@ async function generateAndUploadImages(
   cardNumber: number,
   flavorText: string,
   tempCardId: string,
-  createdAt: Date
+  createdAt: Date,
+  artStyle?: string
 ): Promise<{
   images: CardImageUrls;
   imagePrompt: string;
@@ -187,6 +189,7 @@ async function generateAndUploadImages(
     imageDetails: contextAnalysis.imageDetails,
     rarity,
     emotionalTone: contextAnalysis.emotionalTone,
+    artStyle,
   });
 
   logger.info(
@@ -328,6 +331,7 @@ export async function createCard({
   userId,
   articleId,
   specifiedRarity,
+  specifiedArtStyle,
 }: CreateCardParams): Promise<Card> {
   // 1. 検証（コイン残高・記事の存在確認）
   const { article, cost } = await validateCardCreation(userId, articleId);
@@ -356,7 +360,8 @@ export async function createCard({
     cardNumber,
     flavorText,
     tempCardId,
-    createdAt
+    createdAt,
+    specifiedArtStyle
   );
 
   // 6. DB保存 + コイン消費（同一トランザクション）

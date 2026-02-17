@@ -88,7 +88,7 @@ export function useBatchCardGeneration() {
    * バッチ生成を開始（並行処理）
    */
   const startGeneration = useCallback(
-    async (articleId: string, count: number) => {
+    async (articleId: string, count: number, artStyle?: string) => {
       if (state.isGenerating) return;
 
       // 新しいAbortControllerを作成
@@ -116,7 +116,9 @@ export function useBatchCardGeneration() {
       }
 
       // 単一カード生成関数
-      const generateSingleCard = async (index: number): Promise<{ index: number; card?: Card; error?: string }> => {
+      const generateSingleCard = async (
+        index: number
+      ): Promise<{ index: number; card?: Card; error?: string }> => {
         try {
           const response = await fetch('/api/cards', {
             method: 'POST',
@@ -124,7 +126,7 @@ export function useBatchCardGeneration() {
               'Content-Type': 'application/json',
               Authorization: `Bearer ${token}`,
             },
-            body: JSON.stringify({ articleId }),
+            body: JSON.stringify({ articleId, ...(artStyle && { artStyle }) }),
             signal: abortController.signal,
           });
 

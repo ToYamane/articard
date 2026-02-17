@@ -1,9 +1,11 @@
 import { z } from 'zod';
+import { ART_STYLES } from '@/lib/flux/image-generation';
 
 // カード生成リクエストスキーマ
 export const createCardSchema = z.object({
   articleId: z.string().uuid('無効な記事IDです'),
   rarity: z.enum(['common', 'rare', 'super_rare', 'legend']).optional(),
+  artStyle: z.enum(ART_STYLES).optional(),
 });
 
 // カード一覧取得クエリスキーマ

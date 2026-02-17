@@ -2,7 +2,7 @@ import type { Rarity, EmotionalTone } from '@/types/database';
 import { generateCardImageByRarity, type ImageGenerationResult } from '@/lib/image-generation';
 
 // アートスタイルプール（ランダムに選択して視覚的多様性を注入）
-const ART_STYLES = [
+export const ART_STYLES = [
   'photorealistic, cinematic lighting',
   'oil painting, rich texture',
   'watercolor illustration, soft edges',
@@ -15,11 +15,13 @@ const ART_STYLES = [
   'fantasy concept art, epic lighting',
   'art nouveau, ornamental details',
   'low poly 3D render, geometric',
-];
+] as const;
 
-function pickRandom<T>(arr: T[]): T {
+function pickRandom<T>(arr: readonly T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
+
+export type ArtStyle = (typeof ART_STYLES)[number];
 
 export interface ImageGenerationInput {
   imageSubject: string;
@@ -27,6 +29,7 @@ export interface ImageGenerationInput {
   imageDetails: string;
   rarity: Rarity;
   emotionalTone: EmotionalTone;
+  artStyle?: string;
 }
 
 export interface CardIllustrationResult {
@@ -42,7 +45,7 @@ export interface CardIllustrationResult {
  * アートスタイルを先頭に置き、画風の違いを明確にする
  */
 export function generateImagePrompt(input: ImageGenerationInput): string {
-  const artStyle = pickRandom(ART_STYLES);
+  const artStyle = input.artStyle || pickRandom(ART_STYLES);
   return `${artStyle} of ${input.imageSubject}, ${input.imageScene}, ${input.imageDetails}`;
 }
 

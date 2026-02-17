@@ -49,10 +49,7 @@ export default function ArticlePage() {
         setArticle(data.data);
       } catch (error) {
         console.error('Fetch article error:', error);
-        addToast(
-          error instanceof Error ? error.message : '記事の取得に失敗しました',
-          'error'
-        );
+        addToast(error instanceof Error ? error.message : '記事の取得に失敗しました', 'error');
         router.push('/home');
       } finally {
         setIsLoading(false);
@@ -91,10 +88,7 @@ export default function ArticlePage() {
       router.push('/home');
     } catch (error) {
       console.error('Delete article error:', error);
-      addToast(
-        error instanceof Error ? error.message : '記事の削除に失敗しました',
-        'error'
-      );
+      addToast(error instanceof Error ? error.message : '記事の削除に失敗しました', 'error');
     } finally {
       setIsDeleting(false);
       setShowDeleteModal(false);
@@ -131,19 +125,9 @@ export default function ArticlePage() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.2, duration: 0.3 }}
-        className="mt-6 flex flex-col gap-3 sm:flex-row"
+        className="mt-6"
       >
-        <Button
-          onClick={() => router.push(`/articles/${id}/card`)}
-          className="flex-1"
-        >
-          この記事でもう一枚生成する
-        </Button>
-        <Button
-          onClick={() => setShowDeleteModal(true)}
-          variant="danger"
-          className="flex-1"
-        >
+        <Button onClick={() => setShowDeleteModal(true)} variant="danger">
           記事を削除
         </Button>
       </motion.div>

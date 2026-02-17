@@ -1,14 +1,14 @@
 'use client';
 
+import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui';
 import { ArticleView } from './article-view';
 import { CardPackSection, type CardPackState } from '@/components/card';
-import type { Article } from '@prisma/client';
+import type { Article, Card } from '@prisma/client';
 
 interface ArticleResultProps {
   article: Article;
-  onGenerateCard?: () => void;
   onRegenerate: () => void;
   isLoading?: boolean;
   // 自動カード生成用のプロパティ
@@ -17,11 +17,11 @@ interface ArticleResultProps {
   onPackClick?: () => void;
   cardGenError?: string | null;
   onRetryCardGen?: () => void;
+  revealedCard?: Card | null;
 }
 
 export function ArticleResult({
   article,
-  onGenerateCard,
   onRegenerate,
   isLoading,
   autoCardEnabled = false,
@@ -29,6 +29,7 @@ export function ArticleResult({
   onPackClick,
   cardGenError,
   onRetryCardGen,
+  revealedCard,
 }: ArticleResultProps) {
   return (
     <motion.div
@@ -38,8 +39,35 @@ export function ArticleResult({
     >
       <ArticleView article={article} />
 
-      {/* 自動カード生成が有効な場合: カードパックセクションを表示 */}
-      {autoCardEnabled && cardPackState && onPackClick ? (
+      {/* 開封済み: カード画像をインライン表示 */}
+      {autoCardEnabled && revealedCard ? (
+        <>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.4 }}
+            className="mt-8 flex flex-col items-center"
+          >
+            <div className="relative h-80 w-56 overflow-hidden rounded-xl shadow-2xl">
+              <Image
+                src={revealedCard.cardImageUrl}
+                alt={revealedCard.keyword}
+                fill
+                className="object-cover"
+              />
+            </div>
+            <p className="mt-3 text-sm font-medium text-gray-600 dark:text-gray-400">
+              {revealedCard.keyword}
+            </p>
+          </motion.div>
+          <div className="flex justify-center">
+            <Button onClick={onRegenerate} variant="secondary" size="sm" disabled={isLoading}>
+              テーマを変えて再生成
+            </Button>
+          </div>
+        </>
+      ) : autoCardEnabled && cardPackState && onPackClick ? (
+        /* 未開封: カードパックを表示 */
         <>
           <CardPackSection
             state={cardPackState}
@@ -48,12 +76,7 @@ export function ArticleResult({
             onRetry={onRetryCardGen}
           />
           <div className="flex justify-center">
-            <Button
-              onClick={onRegenerate}
-              variant="secondary"
-              size="sm"
-              disabled={isLoading}
-            >
+            <Button onClick={onRegenerate} variant="secondary" size="sm" disabled={isLoading}>
               テーマを変えて再生成
             </Button>
           </div>
@@ -61,11 +84,7 @@ export function ArticleResult({
       ) : (
         /* 記事のみ生成時のアクションボタン */
         <div className="flex justify-center">
-          <Button
-            onClick={onRegenerate}
-            variant="secondary"
-            disabled={isLoading}
-          >
+          <Button onClick={onRegenerate} variant="secondary" disabled={isLoading}>
             テーマを変えて再生成
           </Button>
         </div>

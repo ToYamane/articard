@@ -14,7 +14,6 @@ export interface CardRevealModalProps {
   card: Card | null;
   onClose: () => void;
   onGoHome: () => void;
-  onCreateAnotherFromArticle?: () => void;
   onReadArticle: () => void;
   isGenerating?: boolean;
 }
@@ -33,7 +32,6 @@ export function CardRevealModal({
   card,
   onClose,
   onGoHome,
-  onCreateAnotherFromArticle,
   onReadArticle,
   isGenerating = false,
 }: CardRevealModalProps) {
@@ -97,7 +95,7 @@ export function CardRevealModal({
                   exit={{ opacity: 0 }}
                   transition={{ delay: 0.3 }}
                   onClick={onReadArticle}
-                  className="absolute -top-2 right-0 z-20 rounded-full bg-white/20 p-2 hover:bg-white/30 transition-colors"
+                  className="absolute -top-2 right-0 z-20 rounded-full bg-white/20 p-2 transition-colors hover:bg-white/30"
                 >
                   <svg
                     className="h-5 w-5 text-white"
@@ -121,18 +119,13 @@ export function CardRevealModal({
                   transition={{ delay: 0.2 }}
                   className="text-center"
                 >
-                  <h2 className="text-2xl font-bold text-white">
-                    新しいカードを獲得!
-                  </h2>
+                  <h2 className="text-2xl font-bold text-white">新しいカードを獲得!</h2>
                 </motion.div>
               )}
             </AnimatePresence>
 
             {/* カードフリップ */}
-            <div
-              className="relative"
-              style={{ perspective: '1000px' }}
-            >
+            <div className="relative" style={{ perspective: '1000px' }}>
               <motion.div
                 className="relative h-96 w-64"
                 initial={{ rotateY: 180 }}
@@ -150,10 +143,7 @@ export function CardRevealModal({
                   className="absolute inset-0 overflow-hidden rounded-xl shadow-2xl"
                   style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
                 >
-                  <div className={cn(
-                    'h-full w-full bg-gradient-to-br',
-                    RARITY_COLORS[rarity]
-                  )}>
+                  <div className={cn('h-full w-full bg-gradient-to-br', RARITY_COLORS[rarity])}>
                     <div className="flex h-full items-center justify-center">
                       <div className="text-6xl">?</div>
                     </div>
@@ -177,9 +167,7 @@ export function CardRevealModal({
 
               {/* レアリティエフェクト */}
               <AnimatePresence>
-                {phase === 'revealed' && (
-                  <RarityEffect rarity={rarity} />
-                )}
+                {phase === 'revealed' && <RarityEffect rarity={rarity} />}
               </AnimatePresence>
             </div>
 
@@ -192,9 +180,7 @@ export function CardRevealModal({
                   transition={{ delay: 0.3 }}
                   className="text-center"
                 >
-                  <h3 className="text-xl font-bold text-white">
-                    {card.keyword}
-                  </h3>
+                  <h3 className="text-xl font-bold text-white">{card.keyword}</h3>
                   <RarityBadge rarity={rarity} size="lg" className="mt-2" />
                   <p className="mt-3 max-w-xs text-sm italic text-gray-300">
                     「{card.flavorText}」
@@ -215,11 +201,6 @@ export function CardRevealModal({
                   <Button onClick={onGoHome} variant="secondary" disabled={isGenerating}>
                     トップに戻る
                   </Button>
-                  {onCreateAnotherFromArticle && (
-                    <Button onClick={onCreateAnotherFromArticle} disabled={isGenerating} isLoading={isGenerating}>
-                      この記事でもう一枚生成
-                    </Button>
-                  )}
                 </motion.div>
               )}
             </AnimatePresence>

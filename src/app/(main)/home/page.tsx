@@ -6,7 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ThemeInput, ArticleLoading, ArticleResult } from '@/components/article';
-import { CardGrid, RaritySelector } from '@/components/card';
+import { CardGrid, RaritySelector, ArtStyleSelector } from '@/components/card';
 import {
   CardRevealModal,
   BatchCardRevealModal,
@@ -20,6 +20,7 @@ import { useBatchCardGeneration } from '@/hooks/use-batch-card-generation';
 import { getIdToken } from '@/lib/firebase/client';
 import type { Article, Card } from '@prisma/client';
 import type { Rarity } from '@/types/database';
+import type { ArtStyle } from '@/lib/flux/image-generation';
 import type { ContentType } from '@/types/article';
 
 type PageState = 'input' | 'loading' | 'result';
@@ -47,7 +48,11 @@ export default function HomePage() {
   } = useBatchCardGeneration();
 
   // ユーザー統計
-  const [stats, setStats] = useState<UserStats>({ totalCards: 0, totalArticles: 0, totalKnowledgePoints: 0 });
+  const [stats, setStats] = useState<UserStats>({
+    totalCards: 0,
+    totalArticles: 0,
+    totalKnowledgePoints: 0,
+  });
 
   // 最近のカード
   const [recentCards, setRecentCards] = useState<Card[]>([]);
@@ -61,14 +66,17 @@ export default function HomePage() {
   // カード生成の状態（1枚の場合）
   const [cardCount, setCardCount] = useState(1);
   const [generatedCard, setGeneratedCard] = useState<Card | null>(null);
-  const [cardGenState, setCardGenState] = useState<'idle' | 'generating' | 'ready' | 'opening'>('idle');
+  const [cardGenState, setCardGenState] = useState<
+    'idle' | 'generating' | 'ready' | 'opening' | 'revealed'
+  >('idle');
   const [isRevealModalOpen, setIsRevealModalOpen] = useState(false);
 
   // バッチリビールモーダル
   const [isBatchRevealModalOpen, setIsBatchRevealModalOpen] = useState(false);
 
-  // 開発者モード: レアリティ指定
+  // 開発者モード: レアリティ指定・画風指定
   const [selectedRarity, setSelectedRarity] = useState<Rarity | undefined>(undefined);
+  const [selectedArtStyle, setSelectedArtStyle] = useState<ArtStyle | undefined>(undefined);
 
   // 初期ロード時にbatch eligibilityをチェック
   useEffect(() => {
@@ -134,7 +142,7 @@ export default function HomePage() {
 
   // 1枚のカード生成
   const generateSingleCard = useCallback(
-    async (articleId: string, rarity?: Rarity) => {
+    async (articleId: string, rarity?: Rarity, artStyle?: string) => {
       if (!user) return;
 
       setCardGenState('generating');
@@ -152,7 +160,11 @@ export default function HomePage() {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ articleId, ...(rarity && { rarity }) }),
+          body: JSON.stringify({
+            articleId,
+            ...(rarity && { rarity }),
+            ...(artStyle && { artStyle }),
+          }),
         });
 
         const data = await response.json();
@@ -165,10 +177,7 @@ export default function HomePage() {
         setCardGenState('ready');
       } catch (error) {
         console.error('Card generation error:', error);
-        addToast(
-          error instanceof Error ? error.message : 'カードの生成に失敗しました',
-          'error'
-        );
+        addToast(error instanceof Error ? error.message : 'カードの生成に失敗しました', 'error');
         setCardGenState('idle');
       }
     },
@@ -222,9 +231,9 @@ export default function HomePage() {
 
         // 常にカード生成を実行
         if (requestedCardCount === 1) {
-          generateSingleCard(createdArticle.id, selectedRarity);
+          generateSingleCard(createdArticle.id, selectedRarity, selectedArtStyle);
         } else {
-          startGeneration(createdArticle.id, requestedCardCount);
+          startGeneration(createdArticle.id, requestedCardCount, selectedArtStyle);
         }
       } catch (error) {
         if (error instanceof Error && error.name === 'AbortError') {
@@ -233,16 +242,21 @@ export default function HomePage() {
         }
 
         console.error('Article generation error:', error);
-        addToast(
-          error instanceof Error ? error.message : '記事の生成に失敗しました',
-          'error'
-        );
+        addToast(error instanceof Error ? error.message : '記事の生成に失敗しました', 'error');
         setState('input');
       } finally {
         setAbortController(null);
       }
     },
-    [user, addToast, generateSingleCard, selectedRarity, startGeneration, resetBatch]
+    [
+      user,
+      addToast,
+      generateSingleCard,
+      selectedRarity,
+      selectedArtStyle,
+      startGeneration,
+      resetBatch,
+    ]
   );
 
   // キャンセル
@@ -271,6 +285,7 @@ export default function HomePage() {
 
     setCardGenState('opening');
     setTimeout(() => {
+      setCardGenState('revealed');
       setIsRevealModalOpen(true);
     }, 600);
   }, [cardGenState]);
@@ -369,7 +384,7 @@ export default function HomePage() {
                   transition={{ duration: 0.3 }}
                 >
                   <div className="overflow-hidden rounded-2xl border-2 border-purple-200/60 bg-gradient-to-br from-fuchsia-50 via-purple-50 to-cyan-50 shadow-xl shadow-purple-500/10 dark:border-purple-700/40 dark:from-fuchsia-950/40 dark:via-purple-950/40 dark:to-cyan-950/40">
-                    <div className="h-2 animate-gradient-x bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500" />
+                    <div className="animate-gradient-x h-2 bg-gradient-to-r from-pink-500 via-purple-500 to-cyan-500" />
                     <div className="space-y-4 p-6">
                       <p className="text-center text-lg font-black">
                         <span className="bg-gradient-to-r from-purple-600 via-pink-500 to-cyan-500 bg-clip-text text-transparent dark:from-purple-400 dark:via-pink-400 dark:to-cyan-400">
@@ -382,12 +397,15 @@ export default function HomePage() {
                         isBatchEligible={eligibility?.eligible ?? false}
                         coinBalance={eligibility?.coinBalance ?? 0}
                       />
-                      {/* 開発者モード: レアリティ指定 */}
+                      {/* 開発者モード: レアリティ・画風指定 */}
                       {profile?.isDeveloper && (
-                        <RaritySelector
-                          value={selectedRarity}
-                          onChange={setSelectedRarity}
-                        />
+                        <>
+                          <RaritySelector value={selectedRarity} onChange={setSelectedRarity} />
+                          <ArtStyleSelector
+                            value={selectedArtStyle}
+                            onChange={setSelectedArtStyle}
+                          />
+                        </>
                       )}
                     </div>
                   </div>
@@ -422,6 +440,7 @@ export default function HomePage() {
                     autoCardEnabled={cardCount === 1 && cardGenState !== 'idle'}
                     cardPackState={cardCount === 1 ? getCardPackState() : undefined}
                     onPackClick={handlePackClick}
+                    revealedCard={cardGenState === 'revealed' ? generatedCard : null}
                   />
                 </motion.div>
               )}
@@ -442,12 +461,8 @@ export default function HomePage() {
           >
             <span className="text-3xl drop-shadow-lg">&#x2694;&#xFE0F;</span>
             <div>
-              <div className="text-sm font-bold text-white">
-                チャレンジ
-              </div>
-              <div className="text-xs text-white/80">
-                カードで物語に挑む
-              </div>
+              <div className="text-sm font-bold text-white">チャレンジ</div>
+              <div className="text-xs text-white/80">カードで物語に挑む</div>
             </div>
           </Link>
           <Link
@@ -456,12 +471,8 @@ export default function HomePage() {
           >
             <span className="text-3xl drop-shadow-lg">&#x1F4DA;</span>
             <div>
-              <div className="text-sm font-bold text-white">
-                コレクション
-              </div>
-              <div className="text-xs text-white/80">
-                全カードを閲覧
-              </div>
+              <div className="text-sm font-bold text-white">コレクション</div>
+              <div className="text-xs text-white/80">全カードを閲覧</div>
             </div>
           </Link>
         </motion.div>
@@ -478,17 +489,11 @@ export default function HomePage() {
                 最近のカード
               </span>
               {stats.totalCards > 0 && (
-                <span className="ml-2 text-sm font-normal text-gray-400">
-                  ({stats.totalCards})
-                </span>
+                <span className="ml-2 text-sm font-normal text-gray-400">({stats.totalCards})</span>
               )}
             </h2>
             {recentCards.length > 0 && (
-              <Button
-                onClick={() => router.push('/collection')}
-                variant="ghost"
-                size="sm"
-              >
+              <Button onClick={() => router.push('/collection')} variant="ghost" size="sm">
                 すべて見る
               </Button>
             )}
@@ -499,11 +504,7 @@ export default function HomePage() {
               <LoadingSpinner size="lg" />
             </div>
           ) : recentCards.length > 0 ? (
-            <CardGrid
-              cards={recentCards}
-              variant="home"
-              onCardClick={handleCardClick}
-            />
+            <CardGrid cards={recentCards} variant="home" onCardClick={handleCardClick} />
           ) : (
             /* Step 5: 改善された空の状態 */
             <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-purple-200 via-pink-100 to-blue-200 py-12 dark:from-purple-900/40 dark:via-pink-900/40 dark:to-blue-900/40">

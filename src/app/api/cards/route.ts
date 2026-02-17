@@ -16,17 +16,17 @@ interface CardListResponse {
 export const POST = withAuth<Card>(
   async (authUser, req) => {
     const body = await req.json();
-    const { articleId, rarity } = createCardSchema.parse(body);
+    const { articleId, rarity, artStyle } = createCardSchema.parse(body);
 
-    // レアリティ指定がある場合、開発者権限をチェック
-    if (rarity) {
+    // レアリティ or 画風指定がある場合、開発者権限をチェック
+    if (rarity || artStyle) {
       const user = await prisma.user.findUnique({
         where: { id: authUser.uid },
         select: { isDeveloper: true },
       });
 
       if (!user?.isDeveloper) {
-        throw new ApiError('FORBIDDEN', 'レアリティ指定は開発者のみ利用可能です', 403);
+        throw new ApiError('FORBIDDEN', '開発者モードの機能は開発者のみ利用可能です', 403);
       }
     }
 
@@ -34,6 +34,7 @@ export const POST = withAuth<Card>(
       userId: authUser.uid,
       articleId,
       specifiedRarity: rarity,
+      specifiedArtStyle: artStyle,
     });
   },
   { rateLimit: 'expensive' }
