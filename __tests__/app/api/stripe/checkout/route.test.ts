@@ -32,11 +32,15 @@ jest.mock('@/lib/prisma', () => ({
 
 // Stripeモック
 const mockCustomersCreate = jest.fn();
+const mockCustomersRetrieve = jest.fn();
 const mockCheckoutCreate = jest.fn();
 const mockGetPriceId = jest.fn();
 jest.mock('@/lib/stripe', () => ({
   stripe: {
-    customers: { create: (...args: unknown[]) => mockCustomersCreate(...args) },
+    customers: {
+      create: (...args: unknown[]) => mockCustomersCreate(...args),
+      retrieve: (...args: unknown[]) => mockCustomersRetrieve(...args),
+    },
     checkout: { sessions: { create: (...args: unknown[]) => mockCheckoutCreate(...args) } },
   },
   getPriceIdForTier: (...args: unknown[]) => mockGetPriceId(...args),
@@ -50,6 +54,8 @@ describe('/api/stripe/checkout', () => {
       email: 'test@example.com',
       emailVerified: true,
     });
+    // 既存カスタマーIDは有効として返す（デフォルト）
+    mockCustomersRetrieve.mockResolvedValue({ id: 'cus_existing', deleted: false });
   });
 
   describe('POST /api/stripe/checkout', () => {
