@@ -69,46 +69,43 @@ export function useSubscription() {
   }, [profile, fetchData]);
 
   // Start subscription checkout (redirects to Stripe)
-  const startSubscriptionCheckout = useCallback(
-    async (tier: 'plus' | 'premium') => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const token = await getIdToken();
-        if (!token) throw new Error('認証が必要です');
+  const startSubscriptionCheckout = useCallback(async (tier: 'plus' | 'premium') => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const token = await getIdToken();
+      if (!token) throw new Error('認証が必要です');
 
-        // Create Stripe Checkout session
-        const response = await fetch('/api/stripe/checkout', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ tier }),
-        });
+      // Create Stripe Checkout session
+      const response = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ tier }),
+      });
 
-        const data = await response.json();
+      const data = await response.json();
 
-        if (!data.success) {
-          throw new Error(data.error?.message || 'チェックアウトの開始に失敗しました');
-        }
-
-        // Redirect to Stripe Checkout URL
-        if (data.data.url) {
-          window.location.href = data.data.url;
-        } else {
-          throw new Error('決済ページのURLが取得できませんでした');
-        }
-      } catch (err) {
-        const message = err instanceof Error ? err.message : '不明なエラーが発生しました';
-        setError(message);
-        throw err;
-      } finally {
-        setIsLoading(false);
+      if (!data.success) {
+        throw new Error(data.error?.message || 'チェックアウトの開始に失敗しました');
       }
-    },
-    []
-  );
+
+      // Redirect to Stripe Checkout URL
+      if (data.data.url) {
+        window.location.href = data.data.url;
+      } else {
+        throw new Error('決済ページのURLが取得できませんでした');
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '不明なエラーが発生しました';
+      setError(message);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   // Legacy: Direct subscription activation (for dev/testing)
   const activateSubscription = useCallback(
@@ -170,10 +167,13 @@ export function useSubscription() {
         throw new Error(data.error?.message || 'サブスクリプションの解約に失敗しました');
       }
 
-      // Refresh data after cancellation
-      await fetchData();
+      // cancelAt があれば期間終了時解約（データはリフレッシュしない＝プラン表示を維持）
+      // cancelAt が null なら即時解約（開発者直接有効化のケース）
+      if (!data.data.cancelAt) {
+        await fetchData();
+      }
 
-      return data.data;
+      return data.data as { message: string; cancelAt: string | null };
     } catch (err) {
       const message = err instanceof Error ? err.message : '不明なエラーが発生しました';
       setError(message);
@@ -183,44 +183,43 @@ export function useSubscription() {
     }
   }, [fetchData]);
 
-  // Purchase coins
-  const purchaseCoins = useCallback(
-    async (packageId: string) => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const token = await getIdToken();
-        if (!token) throw new Error('認証が必要です');
+  // Purchase coins (redirects to Stripe Checkout)
+  const purchaseCoins = useCallback(async (packageId: string) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const token = await getIdToken();
+      if (!token) throw new Error('認証が必要です');
 
-        const response = await fetch('/api/coins/purchase', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ packageId }),
-        });
+      const response = await fetch('/api/stripe/coin-checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ packageId }),
+      });
 
-        const data = await response.json();
+      const data = await response.json();
 
-        if (!data.success) {
-          throw new Error(data.error?.message || 'コインの購入に失敗しました');
-        }
-
-        // Refresh data after purchase
-        await fetchData();
-
-        return data.data;
-      } catch (err) {
-        const message = err instanceof Error ? err.message : '不明なエラーが発生しました';
-        setError(message);
-        throw err;
-      } finally {
-        setIsLoading(false);
+      if (!data.success) {
+        throw new Error(data.error?.message || 'コインの購入に失敗しました');
       }
-    },
-    [fetchData]
-  );
+
+      // Redirect to Stripe Checkout URL
+      if (data.data.url) {
+        window.location.href = data.data.url;
+      } else {
+        throw new Error('決済ページのURLが取得できませんでした');
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : '不明なエラーが発生しました';
+      setError(message);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   // Dev charge coins (developer only)
   const devChargeCoins = useCallback(

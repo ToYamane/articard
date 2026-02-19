@@ -40,18 +40,27 @@ export default function SettingsPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [processingAction, setProcessingAction] = useState<string | null>(null);
   const [customChargeAmount, setCustomChargeAmount] = useState('');
+  const [cancelAt, setCancelAt] = useState<string | null>(null);
 
   // Handle Stripe redirect results
   useEffect(() => {
     const subscriptionStatus = searchParams.get('subscription');
     if (subscriptionStatus === 'success') {
       success('サブスクリプションの登録が完了しました！');
-      // Refresh data to show updated subscription
       fetchData();
-      // Remove query params from URL
       window.history.replaceState({}, '', '/settings');
     } else if (subscriptionStatus === 'canceled') {
       showError('サブスクリプションの登録がキャンセルされました');
+      window.history.replaceState({}, '', '/settings');
+    }
+
+    const coinsStatus = searchParams.get('coins');
+    if (coinsStatus === 'success') {
+      success('コインの購入が完了しました！');
+      fetchData();
+      window.history.replaceState({}, '', '/settings');
+    } else if (coinsStatus === 'canceled') {
+      showError('コインの購入がキャンセルされました');
       window.history.replaceState({}, '', '/settings');
     }
   }, [searchParams, success, showError, fetchData]);
@@ -132,8 +141,15 @@ export default function SettingsPage() {
   const handleCancelSubscription = async () => {
     setProcessingAction('cancel');
     try {
-      await cancelSubscription();
-      success('サブスクリプションを解約しました');
+      const result = await cancelSubscription();
+      if (result.cancelAt) {
+        setCancelAt(result.cancelAt);
+        success(
+          `サブスクリプションの解約を予約しました（${new Date(result.cancelAt).toLocaleDateString('ja-JP')}まで利用可能）`
+        );
+      } else {
+        success('サブスクリプションを解約しました');
+      }
     } catch (err) {
       showError(err instanceof Error ? err.message : 'サブスクリプションの解約に失敗しました');
     } finally {
@@ -144,8 +160,8 @@ export default function SettingsPage() {
   const handlePurchaseCoins = async (packageId: string) => {
     setProcessingAction(`purchase-${packageId}`);
     try {
-      const result = await purchaseCoins(packageId);
-      success(`${result.coins} コインを購入しました！`);
+      await purchaseCoins(packageId);
+      // Stripe Checkoutにリダイレクトするのでここには到達しない
     } catch (err) {
       showError(err instanceof Error ? err.message : 'コインの購入に失敗しました');
     } finally {
@@ -342,7 +358,7 @@ export default function SettingsPage() {
           >
             {subscription?.tier === 'premium' ? 'プレミアム加入中' : 'プレミアムに加入 (¥2,980/月)'}
           </Button>
-          {subscription?.tier && (
+          {subscription?.tier && !cancelAt && (
             <Button
               onClick={handleCancelSubscription}
               disabled={isSubscriptionLoading || processingAction !== null}
@@ -353,6 +369,16 @@ export default function SettingsPage() {
             </Button>
           )}
         </div>
+
+        {/* Cancellation Pending Notice */}
+        {cancelAt && (
+          <div className="mt-3 rounded-lg border border-yellow-300 bg-yellow-50 p-3 dark:border-yellow-700 dark:bg-yellow-950/30">
+            <p className="text-sm text-yellow-700 dark:text-yellow-400">
+              {new Date(cancelAt).toLocaleDateString('ja-JP')}
+              に解約予定です。それまで現在のプランをご利用いただけます。
+            </p>
+          </div>
+        )}
 
         {/* Developer Only: Direct Activation (Skip Stripe) */}
         {profile?.isDeveloper && (
@@ -393,12 +419,12 @@ export default function SettingsPage() {
       </SectionContainer>
 
       {/* Coin Purchase Section */}
-      <SectionContainer variant="warning" title="コイン購入" delay={0.3}>
+      <SectionContainer variant="default" title="コイン購入" delay={0.3}>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           {packages.map((pkg) => (
             <div
               key={pkg.id}
-              className="rounded-lg border border-yellow-200 bg-white p-4 dark:border-yellow-800 dark:bg-black"
+              className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-black"
             >
               <h3 className="mb-2 text-center font-semibold text-gray-900 dark:text-gray-100">
                 {pkg.name}

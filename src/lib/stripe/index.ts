@@ -1,5 +1,6 @@
 import Stripe from 'stripe';
 import type { SubscriptionTier } from '@prisma/client';
+import type { CoinPackageId } from '@/lib/constants/coins';
 
 if (!process.env.STRIPE_SECRET_KEY) {
   throw new Error('STRIPE_SECRET_KEY is not set');
@@ -26,4 +27,25 @@ export function getPriceIdForTier(tier: SubscriptionTier): string {
     return process.env.STRIPE_PRICE_PLUS || '';
   }
   return process.env.STRIPE_PRICE_PREMIUM || '';
+}
+
+/**
+ * Stripe Price IDとコインパッケージIDのマッピング
+ */
+export const STRIPE_PRICE_TO_COIN_PACKAGE: Record<string, CoinPackageId> = {
+  [process.env.STRIPE_PRICE_COIN_STANDARD || '']: 'standard',
+  [process.env.STRIPE_PRICE_COIN_VALUE || '']: 'value',
+  [process.env.STRIPE_PRICE_COIN_MEGA || '']: 'mega',
+};
+
+/**
+ * コインパッケージIDからStripe Price IDを取得
+ */
+export function getPriceIdForCoinPackage(packageId: CoinPackageId): string {
+  const map: Record<CoinPackageId, string> = {
+    standard: process.env.STRIPE_PRICE_COIN_STANDARD || '',
+    value: process.env.STRIPE_PRICE_COIN_VALUE || '',
+    mega: process.env.STRIPE_PRICE_COIN_MEGA || '',
+  };
+  return map[packageId];
 }

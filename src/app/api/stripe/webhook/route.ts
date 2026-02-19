@@ -7,6 +7,7 @@ import { stripe, STRIPE_PRICE_TO_TIER } from '@/lib/stripe';
 import { prisma } from '@/lib/prisma';
 import { activateSubscription, cancelSubscription } from '@/lib/services/subscription-service';
 import { createRequestLogger } from '@/lib/logger';
+import { COIN_PACKAGES, type CoinPackageId } from '@/lib/constants/coins';
 
 // Webhookのbodyを生で取得するために必要
 export const dynamic = 'force-dynamic';
@@ -113,6 +114,13 @@ async function handleCheckoutCompleted(
   session: Stripe.Checkout.Session,
   log: ReturnType<typeof createRequestLogger>
 ) {
+  // コイン購入の場合
+  if (session.metadata?.type === 'coin_purchase') {
+    await handleCoinPurchaseCompleted(session, log);
+    return;
+  }
+
+  // サブスクリプション購入の場合
   const userId = session.metadata?.userId;
   const tier = session.metadata?.tier as SubscriptionTier | undefined;
 
@@ -133,6 +141,59 @@ async function handleCheckoutCompleted(
   await activateSubscription(userId, tier);
 
   log.info(`Subscription activated for user ${userId}: ${tier}`);
+}
+
+/**
+ * コイン購入Checkout完了時の処理
+ */
+async function handleCoinPurchaseCompleted(
+  session: Stripe.Checkout.Session,
+  log: ReturnType<typeof createRequestLogger>
+) {
+  const userId = session.metadata?.userId;
+  const packageId = session.metadata?.packageId as CoinPackageId | undefined;
+
+  if (!userId || !packageId) {
+    log.error('Missing metadata in coin purchase session', { sessionId: session.id });
+    return;
+  }
+
+  const pkg = COIN_PACKAGES[packageId];
+  if (!pkg) {
+    log.error('Invalid packageId in coin purchase session', { sessionId: session.id, packageId });
+    return;
+  }
+
+  // コイン付与（トランザクション）
+  await prisma.$transaction(async (tx) => {
+    const user = await tx.user.findUnique({
+      where: { id: userId },
+      select: { knowledgeBalance: true, dailyFreeCoins: true },
+    });
+
+    if (!user) {
+      throw new Error(`User not found: ${userId}`);
+    }
+
+    const newBalance = user.knowledgeBalance + pkg.coins;
+
+    await tx.user.update({
+      where: { id: userId },
+      data: { knowledgeBalance: newBalance },
+    });
+
+    await tx.knowledgeTransaction.create({
+      data: {
+        userId,
+        amount: pkg.coins,
+        transactionType: 'purchase',
+        description: `${pkg.name}パッケージ購入（${pkg.coins}コイン）`,
+        balanceAfter: user.dailyFreeCoins + newBalance,
+      },
+    });
+  });
+
+  log.info(`Coin purchase completed for user ${userId}: ${packageId} (${pkg.coins} coins)`);
 }
 
 /**

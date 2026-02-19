@@ -94,12 +94,15 @@ SECRETS=(
   "articard-bfl-key::BFL_API_KEY"
   "articard-gemini-key::GOOGLE_GEMINI_API_KEY"
 
-  # Stripe (5個)
+  # Stripe (8個)
   "articard-stripe-secret-key::STRIPE_SECRET_KEY"
   "articard-stripe-webhook-secret::STRIPE_WEBHOOK_SECRET"
   "articard-stripe-publishable-key::NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY"
   "articard-stripe-price-plus::STRIPE_PRICE_PLUS"
   "articard-stripe-price-premium::STRIPE_PRICE_PREMIUM"
+  "articard-stripe-price-coin-standard::STRIPE_PRICE_COIN_STANDARD"
+  "articard-stripe-price-coin-value::STRIPE_PRICE_COIN_VALUE"
+  "articard-stripe-price-coin-mega::STRIPE_PRICE_COIN_MEGA"
 
   # Email (1個)
   "articard-resend-key::RESEND_API_KEY"

@@ -6,10 +6,7 @@ import { handleApiError } from '@/lib/errors';
 import { parseBody } from '@/lib/api';
 import { subscriptionTierSchema } from '@/lib/validations/subscription';
 import { createRequestLogger } from '@/lib/logger';
-import {
-  activateSubscription,
-  cancelSubscription,
-} from '@/lib/services/subscription-service';
+import { activateSubscription, cancelSubscription } from '@/lib/services/subscription-service';
 import type { ApiResponse } from '@/types/api';
 
 // POST /api/subscription - サブスク有効化（開発者のみ）
@@ -64,7 +61,7 @@ export async function POST(
 // DELETE /api/subscription - サブスク解約
 export async function DELETE(
   req: NextRequest
-): Promise<NextResponse<ApiResponse<{ message: string }>>> {
+): Promise<NextResponse<ApiResponse<{ message: string; cancelAt: string | null }>>> {
   try {
     const authUser = await verifyAuth(req);
     if (!authUser) {
@@ -74,25 +71,34 @@ export async function DELETE(
       );
     }
 
-    // Stripe サブスクリプションがあればキャンセル
+    // Stripe サブスクリプションがあれば期間終了時に解約予約
     const user = await prisma.user.findUnique({
       where: { id: authUser.uid },
-      select: { stripeSubscriptionId: true },
+      select: { stripeSubscriptionId: true, subscriptionTier: true },
     });
 
     if (user?.stripeSubscriptionId) {
-      await stripe.subscriptions.cancel(user.stripeSubscriptionId);
-      await prisma.user.update({
-        where: { id: authUser.uid },
-        data: { stripeSubscriptionId: null },
+      const subscription = await stripe.subscriptions.update(user.stripeSubscriptionId, {
+        cancel_at_period_end: true,
+      });
+
+      // 解約予定日をレスポンスに含める（cancel_at_period_end設定時にStripeが自動でcancel_atをセット）
+      const cancelAt = subscription.cancel_at
+        ? new Date(subscription.cancel_at * 1000).toISOString()
+        : null;
+
+      return NextResponse.json({
+        success: true,
+        data: { message: 'サブスクリプションの解約を予約しました', cancelAt },
       });
     }
 
+    // Stripeサブスクなし（開発者直接有効化など）の場合は即時解約
     await cancelSubscription(authUser.uid);
 
     return NextResponse.json({
       success: true,
-      data: { message: 'サブスクリプションを解約しました' },
+      data: { message: 'サブスクリプションを解約しました', cancelAt: null },
     });
   } catch (error) {
     const requestId = req.headers.get('x-request-id') || '';

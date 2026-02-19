@@ -65,9 +65,9 @@ model User {
 }
 ```
 
-| フィールド | 説明 |
-|-----------|------|
-| stripeCustomerId | StripeのCustomer ID（`cus_xxx`） |
+| フィールド           | 説明                                 |
+| -------------------- | ------------------------------------ |
+| stripeCustomerId     | StripeのCustomer ID（`cus_xxx`）     |
 | stripeSubscriptionId | StripeのSubscription ID（`sub_xxx`） |
 
 ## 14.5 API設計
@@ -77,6 +77,7 @@ model User {
 Stripe Checkout Sessionを作成し、決済ページURLを返す。
 
 **リクエスト**
+
 ```json
 {
   "tier": "plus" | "premium"
@@ -84,6 +85,7 @@ Stripe Checkout Sessionを作成し、決済ページURLを返す。
 ```
 
 **レスポンス**
+
 ```json
 {
   "success": true,
@@ -100,20 +102,20 @@ Stripeからのイベント通知を処理する。
 
 **処理するイベント**
 
-| イベント | 処理内容 |
-|----------|----------|
-| `checkout.session.completed` | サブスク有効化、ボーナスコイン付与 |
-| `customer.subscription.updated` | プラン変更の反映 |
-| `customer.subscription.deleted` | サブスク解約処理 |
-| `invoice.payment_failed` | 支払い失敗のログ記録 |
+| イベント                        | 処理内容                           |
+| ------------------------------- | ---------------------------------- |
+| `checkout.session.completed`    | サブスク有効化、ボーナスコイン付与 |
+| `customer.subscription.updated` | プラン変更の反映                   |
+| `customer.subscription.deleted` | サブスク解約処理                   |
+| `invoice.paid`                  | 定期支払い成功の記録               |
+| `invoice.payment_failed`        | 支払い失敗のログ記録               |
 
 ## 14.6 ファイル構成
 
 ```
 src/
 ├── lib/stripe/
-│   ├── index.ts          # Stripeサーバー設定
-│   └── client.ts         # Stripeクライアント設定
+│   └── index.ts          # Stripeサーバー設定
 ├── app/api/stripe/
 │   ├── checkout/route.ts # Checkout Session API
 │   └── webhook/route.ts  # Webhook処理API
@@ -143,36 +145,156 @@ stripe listen --forward-to localhost:3000/api/stripe/webhook
 
 ### テスト用カード番号
 
-| カード番号 | 結果 |
-|-----------|------|
-| `4242 4242 4242 4242` | 成功 |
-| `4000 0000 0000 0002` | 拒否 |
+| カード番号            | 結果           |
+| --------------------- | -------------- |
+| `4242 4242 4242 4242` | 成功           |
+| `4000 0000 0000 0002` | 拒否           |
 | `4000 0000 0000 3220` | 3Dセキュア認証 |
 
 有効期限: 未来の任意の日付、CVC: 任意の3桁
 
 ## 14.8 本番環境への移行
 
-### 1. Stripeダッシュボードで本番モードに切り替え
+### 前提知識: テストモードと本番モードの違い
 
-- 右上のトグルで「本番環境」に切り替え
-- 本番用の商品・価格を作成
-- 本番用APIキーを取得
+Stripeのテストモードと本番モードは**完全に独立した環境**である。以下のデータはテスト→本番に引き継がれない:
 
-### 2. 環境変数を本番用に更新
+- **商品・価格**: 本番で新規作成が必要
+- **顧客（Customer）**: テストの `cus_test_xxx` は本番に存在しない
+- **サブスクリプション**: テストの `sub_xxx` は本番で無効
+- **APIキー**: `sk_test_` / `pk_test_` は本番では使用不可
+- **Webhookシークレット**: 本番エンドポイント用に新規発行される
 
-```env
-STRIPE_SECRET_KEY=sk_live_xxxxx
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_xxxxx
-STRIPE_PRICE_PLUS=price_xxxxx  # 本番用Price ID
-STRIPE_PRICE_PREMIUM=price_xxxxx
+唯一共有されるのはアカウント設定（ビジネス情報、ブランディング等）のみ。
+
+### Step 1: Stripeダッシュボードで商品・価格を作成
+
+Stripeダッシュボード（https://dashboard.stripe.com）で右上のトグルを「本番環境」に切り替え、以下の商品を作成する。
+
+**プラスプラン**
+
+| 項目   | 値                         |
+| ------ | -------------------------- |
+| 商品名 | Articard プラス            |
+| 説明   | 月間コイン増量・広告非表示 |
+| 価格   | ¥980 / 月（定期）          |
+| 通貨   | JPY                        |
+
+**プレミアムプラン**
+
+| 項目   | 値                             |
+| ------ | ------------------------------ |
+| 商品名 | Articard プレミアム            |
+| 説明   | 全機能アクセス・最大コイン付与 |
+| 価格   | ¥2,980 / 月（定期）            |
+| 通貨   | JPY                            |
+
+作成後、各価格の `price_xxxxx` IDをメモする（環境変数に使用）。
+
+### Step 2: 本番用APIキーの取得
+
+ダッシュボードの「開発者 > APIキー」から以下を取得:
+
+| キー             | 形式            | 用途                                        |
+| ---------------- | --------------- | ------------------------------------------- |
+| シークレットキー | `sk_live_xxxxx` | サーバーサイドAPI呼び出し                   |
+| 公開可能キー     | `pk_live_xxxxx` | クライアントサイド（Checkout リダイレクト） |
+
+> **注意**: シークレットキーは作成時に一度だけ表示される。安全な場所に保管すること。
+
+### Step 3: Webhookエンドポイント登録
+
+ダッシュボードの「開発者 > Webhook」で新規エンドポイントを追加:
+
+- **エンドポイントURL**: `https://articard.app/api/stripe/webhook`
+- **受信するイベント**:
+
+| イベント                        | 必須 | 説明                          |
+| ------------------------------- | ---- | ----------------------------- |
+| `checkout.session.completed`    | Yes  | 初回決済完了 → サブスク有効化 |
+| `customer.subscription.updated` | Yes  | プラン変更の反映              |
+| `customer.subscription.deleted` | Yes  | 解約処理                      |
+| `invoice.paid`                  | Yes  | 定期支払い成功の記録          |
+| `invoice.payment_failed`        | Yes  | 支払い失敗のログ記録          |
+
+登録後に表示される **署名シークレット**（`whsec_xxxxx`）をメモする。
+
+### Step 4: GCP Secret Managerの更新
+
+本番用の値を `.env.production` に記入し、`setup-secrets.sh` で Secret Manager に登録する:
+
+```bash
+# 1. 本番用の .env ファイルを用意
+cp .env .env.production
+
+# 2. .env.production の Stripe 関連を本番値に書き換え
+#    STRIPE_SECRET_KEY=sk_live_xxxxx
+#    NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_xxxxx
+#    STRIPE_WEBHOOK_SECRET=whsec_xxxxx        ← Step 3 で取得
+#    STRIPE_PRICE_PLUS=price_xxxxx            ← Step 1 で作成
+#    STRIPE_PRICE_PREMIUM=price_xxxxx         ← Step 1 で作成
+
+# 3. Secret Manager に登録（冪等: 既存シークレットは新バージョン追加）
+./scripts/setup-secrets.sh .env.production
 ```
 
-### 3. Webhookエンドポイントを登録
+スクリプトが更新する Stripe 関連シークレット:
 
-Stripeダッシュボード > 開発者 > Webhook で本番URLを登録:
-- URL: `https://your-domain.com/api/stripe/webhook`
-- イベント: `checkout.session.completed`, `customer.subscription.*`, `invoice.payment_failed`
+| Secret Manager 名                 | 環境変数                             |
+| --------------------------------- | ------------------------------------ |
+| `articard-stripe-secret-key`      | `STRIPE_SECRET_KEY`                  |
+| `articard-stripe-webhook-secret`  | `STRIPE_WEBHOOK_SECRET`              |
+| `articard-stripe-publishable-key` | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` |
+| `articard-stripe-price-plus`      | `STRIPE_PRICE_PLUS`                  |
+| `articard-stripe-price-premium`   | `STRIPE_PRICE_PREMIUM`               |
+
+### Step 5: デプロイ
+
+Cloud Build でプロダクションデプロイを実行:
+
+```bash
+gcloud builds submit \
+  --config=cloudbuild.production.yaml \
+  --project=articard-ff673
+```
+
+デプロイフローは自動で以下を実行する:
+
+1. テスト（type-check, lint, test）
+2. Docker イメージビルド（Secret Manager から `NEXT_PUBLIC_*` を注入）
+3. GCR にプッシュ
+4. Cloud Run にデプロイ（Secret Manager から全環境変数をマウント）
+5. ヘルスチェック（`/api/health` に最大5回リトライ）
+
+### Step 6: 動作確認チェックリスト
+
+デプロイ完了後、以下を順に確認する:
+
+- [ ] `https://articard.app` にアクセスできる
+- [ ] ヘルスチェック: `curl https://articard.app/api/health` が 200 を返す
+- [ ] 設定ページで「プラスに加入」をクリック → Stripe Checkout（本番）にリダイレクトされる
+- [ ] Stripe Checkout の金額が ¥980 であること（テスト用カードは本番では使えないため、確認のみ）
+- [ ] Stripeダッシュボード（本番）の「Webhook > エンドポイント」で配信ログが表示される
+- [ ] 実際に決済完了後、設定ページでプランが更新される
+- [ ] 解約フローが正常に動作する
+
+### 切り戻し手順
+
+問題が発生した場合:
+
+1. **Stripe側**: ダッシュボードでWebhookエンドポイントを無効化
+2. **アプリ側**: Secret Manager のシークレットをテスト用の値に戻す
+   ```bash
+   # テスト用の .env で再登録
+   ./scripts/setup-secrets.sh .env
+   ```
+3. **再デプロイ**: Cloud Build を再実行
+   ```bash
+   gcloud builds submit \
+     --config=cloudbuild.production.yaml \
+     --project=articard-ff673
+   ```
+4. **影響確認**: 切り戻し中に決済を試みたユーザーがいないかStripeダッシュボードで確認
 
 ## 14.9 セキュリティ
 
@@ -181,11 +303,7 @@ Stripeダッシュボード > 開発者 > Webhook で本番URLを登録:
 すべてのWebhookリクエストは署名検証を行う:
 
 ```typescript
-const event = stripe.webhooks.constructEvent(
-  body,
-  signature,
-  webhookSecret
-);
+const event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
 ```
 
 ### 認証
