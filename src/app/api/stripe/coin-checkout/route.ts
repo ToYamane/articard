@@ -61,6 +61,20 @@ export async function POST(
 
     // Stripeカスタマーを取得または作成
     let customerId = user.stripeCustomerId;
+
+    // 既存の顧客IDの有効性を確認（テスト/ライブモード不一致等に対応）
+    if (customerId) {
+      try {
+        const existing = await stripe.customers.retrieve(customerId);
+        if (existing.deleted) {
+          customerId = null;
+        }
+      } catch {
+        log.warn('Stripe customer not found, will re-create', { oldCustomerId: customerId });
+        customerId = null;
+      }
+    }
+
     if (!customerId) {
       const customer = await stripe.customers.create({
         metadata: {

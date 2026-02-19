@@ -14,9 +14,7 @@ interface CheckoutResponse {
 }
 
 // POST /api/stripe/checkout - Checkoutセッション作成
-export async function POST(
-  req: NextRequest
-): Promise<NextResponse<ApiResponse<CheckoutResponse>>> {
+export async function POST(req: NextRequest): Promise<NextResponse<ApiResponse<CheckoutResponse>>> {
   try {
     const authUser = await verifyAuth(req);
     if (!authUser) {
@@ -54,13 +52,30 @@ export async function POST(
     // 既にサブスク中の場合はエラー
     if (user.subscriptionTier) {
       return NextResponse.json(
-        { success: false, error: { code: 'ALREADY_SUBSCRIBED', message: '既にサブスクリプション中です' } },
+        {
+          success: false,
+          error: { code: 'ALREADY_SUBSCRIBED', message: '既にサブスクリプション中です' },
+        },
         { status: 400 }
       );
     }
 
     // Stripeカスタマーを取得または作成（アトミック補償付き）
     let customerId = user.stripeCustomerId;
+
+    // 既存の顧客IDの有効性を確認（テスト/ライブモード不一致等に対応）
+    if (customerId) {
+      try {
+        const existing = await stripe.customers.retrieve(customerId);
+        if (existing.deleted) {
+          customerId = null;
+        }
+      } catch {
+        log.warn('Stripe customer not found, will re-create', { oldCustomerId: customerId });
+        customerId = null;
+      }
+    }
+
     if (!customerId) {
       const customer = await stripe.customers.create({
         metadata: {
