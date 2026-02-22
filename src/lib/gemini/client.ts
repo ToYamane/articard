@@ -54,9 +54,9 @@ export async function generateWithNanoBanana(params: GeminiImageGenerationParams
     aspectRatio: params.aspectRatio || '3:4',
   });
 
-  // Gemini 2.0 Flash Image Generation (gemini-2.0-flash-exp with image generation)
+  // Gemini 2.5 Flash Image - Nano Banana画像生成
   const response = await fetch(
-    `${GEMINI_API_BASE_URL}/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`,
+    `${GEMINI_API_BASE_URL}/models/gemini-2.5-flash-image:generateContent?key=${apiKey}`,
     {
       method: 'POST',
       headers: {
@@ -74,7 +74,6 @@ export async function generateWithNanoBanana(params: GeminiImageGenerationParams
         ],
         generationConfig: {
           responseModalities: ['IMAGE', 'TEXT'],
-          responseMimeType: 'image/png',
         },
       }),
       signal: AbortSignal.timeout(60000),
