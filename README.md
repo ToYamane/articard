@@ -1,10 +1,46 @@
-# Articard
+<p align="center">
+  <img src="image/logo/ArtiCard_logo_transparent.png" alt="Articard Logo" width="120">
+</p>
 
-AIを活用した学習記事生成とコレクタブルカード生成アプリケーション
+<h1 align="center">Articard</h1>
+
+<p align="center">
+  AIを活用した学習記事生成 × コレクタブルカード生成アプリケーション
+</p>
+
+<p align="center">
+  <strong>🏆 AWS 地域創生・社会課題解決 AI プログラミングコンテスト 仙台大会 最優秀賞</strong>
+</p>
 
 ## コンセプト
 
-ユーザーが入力したテーマから学習記事をAI生成し、記事内のキーワードから世界に1枚だけのユニークなカードを生成するサービス。
+ユーザーが入力したテーマから学習記事をAI生成し、記事内のキーワードから世界に1枚だけのユニークなカードを生成するサービス。「学ぶ楽しさ」と「集める楽しさ」を融合し、子どもから大人まで楽しみながら学べるプラットフォームを目指しています。
+
+## スクリーンショット
+
+<table>
+  <tr>
+    <td align="center" width="33%">
+      <img src="image/promo/article-generation.png" alt="記事生成" width="280"><br>
+      <strong>記事生成</strong><br>
+      テーマを入力するとAIが学習記事を生成
+    </td>
+    <td align="center" width="33%">
+      <img src="image/promo/card-battle.png" alt="カード選択" width="280"><br>
+      <strong>カード選択</strong><br>
+      AIとの対話で記事からユニークなカードを生成
+    </td>
+    <td align="center" width="33%">
+      <img src="image/promo/card-result.png" alt="カード結果" width="280"><br>
+      <strong>カード結果</strong><br>
+      適合度・レア度が計算されたコレクタブルカード
+    </td>
+  </tr>
+</table>
+
+<p align="center">
+  <img src="image/promo/026495f1-3d50-455c-916c-4e5da1e224d8_card.webp" alt="カードサンプル" width="200">
+</p>
 
 ## 主要機能
 
@@ -12,6 +48,14 @@ AIを活用した学習記事生成とコレクタブルカード生成アプリ
 2. **カード生成** - 記事からキーワードを抽出し、文脈に応じたレア度・イラスト・テキストのカードを生成
 3. **コレクション** - 生成したカードを図鑑形式で管理・検索・フィルター
 4. **SNS共有** - カードを画像としてSNSに共有（X, LINE対応）
+
+## 開発規模
+
+- **84 コミット** / conventional commits 形式（`feat:`, `fix:`, `refactor:`）
+- **422 ファイル** / フルスタック構成
+- **135 件のユニットテスト**（Jest + React Testing Library）
+- **CI/CD**: GCP Cloud Build → Docker → Cloud Run 自動デプロイ
+- **11本の仕様書** による設計ドキュメント完備
 
 ## 技術スタック
 
