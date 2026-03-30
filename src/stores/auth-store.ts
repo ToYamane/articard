@@ -5,7 +5,8 @@ import type { User } from 'firebase/auth';
 export interface UserProfile {
   id: string;
   nickname: string;
-  knowledgeBalance: number;
+  coinBalance: number;
+  isGuest: boolean;
   isPremium: boolean;
   isDeveloper: boolean;
   premiumExpiresAt: string | null;
@@ -61,8 +62,10 @@ export const useAuthStore = create<AuthState>()(
 // Selectors
 export const selectIsAuthenticated = (state: AuthState) => !!state.user;
 export const selectIsRegistered = (state: AuthState) => !!state.profile;
+export const selectIsGuest = (state: AuthState) => !!state.profile?.isGuest;
 export const selectNeedsSetup = (state: AuthState) => !!state.user && !state.profile;
 export const selectNeedsEmailVerification = (state: AuthState) =>
   !!state.user &&
+  !state.profile?.isGuest &&
   state.user.providerData[0]?.providerId === 'password' &&
   !state.user.emailVerified;

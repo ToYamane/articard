@@ -10,6 +10,7 @@ import { ERROR_MESSAGES } from '@/lib/errors';
 import { useToast } from '@/hooks/use-toast';
 import { useFavorites } from '@/hooks/use-favorites';
 import { useAuthStore } from '@/stores/auth-store';
+import { apiUrl } from '@/lib/api/client';
 import { getIdToken } from '@/lib/firebase/client';
 import type { CardWithArticle } from '@/lib/services/card-service';
 import type { Rarity } from '@/types/database';
@@ -40,7 +41,7 @@ export default function CardPage() {
           throw new Error('認証トークンの取得に失敗しました');
         }
 
-        const response = await fetch(`/api/cards/${id}`, {
+        const response = await fetch(apiUrl(`/api/cards/${id}`), {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -77,7 +78,7 @@ export default function CardPage() {
         throw new Error('認証トークンの取得に失敗しました');
       }
 
-      const response = await fetch(`/api/cards/${id}`, {
+      const response = await fetch(apiUrl(`/api/cards/${id}`), {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${token}`,

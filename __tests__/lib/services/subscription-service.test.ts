@@ -21,7 +21,7 @@ jest.mock('@/lib/prisma', () => ({
       findUnique: (...args: unknown[]) => mockUserFindUnique(...args),
       update: (...args: unknown[]) => mockUserUpdate(...args),
     },
-    knowledgeTransaction: {
+    coinTransaction: {
       create: (...args: unknown[]) => mockTxnCreate(...args),
     },
     $transaction: (...args: unknown[]) => mockTransaction(...args),
@@ -37,20 +37,22 @@ describe('subscription-service', () => {
   describe('activateSubscription', () => {
     const mockTx = {
       user: { findUnique: jest.fn(), update: jest.fn() },
-      knowledgeTransaction: { create: jest.fn() },
+      coinTransaction: { create: jest.fn() },
     };
 
     beforeEach(() => {
-      mockTransaction.mockImplementation(async (cb: (tx: typeof mockTx) => Promise<unknown>) => cb(mockTx));
+      mockTransaction.mockImplementation(async (cb: (tx: typeof mockTx) => Promise<unknown>) =>
+        cb(mockTx)
+      );
       mockTx.user.findUnique.mockReset();
       mockTx.user.update.mockReset();
-      mockTx.knowledgeTransaction.create.mockReset();
+      mockTx.coinTransaction.create.mockReset();
     });
 
     it('plusプランを有効化できる（初回ボーナスあり）', async () => {
       mockTx.user.findUnique.mockResolvedValue({
         subscriptionBonusReceived: false,
-        knowledgeBalance: 100,
+        coinBalance: 100,
         dailyFreeCoins: 90,
       });
 
@@ -69,14 +71,14 @@ describe('subscription-service', () => {
             subscriptionTier: 'plus',
             isPremium: true,
             subscriptionBonusReceived: true,
-            knowledgeBalance: 400, // 100 + 300
+            coinBalance: 400, // 100 + 300
             dailyFreeCoins: 150, // Math.max(90, 150)
           }),
         })
       );
 
       // ボーナストランザクション記録
-      expect(mockTx.knowledgeTransaction.create).toHaveBeenCalledWith(
+      expect(mockTx.coinTransaction.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
             userId: 'user-1',
@@ -91,7 +93,7 @@ describe('subscription-service', () => {
     it('premiumプランを有効化できる（初回ボーナスあり）', async () => {
       mockTx.user.findUnique.mockResolvedValue({
         subscriptionBonusReceived: false,
-        knowledgeBalance: 50,
+        coinBalance: 50,
         dailyFreeCoins: 90,
       });
 
@@ -105,7 +107,7 @@ describe('subscription-service', () => {
         expect.objectContaining({
           data: expect.objectContaining({
             subscriptionTier: 'premium',
-            knowledgeBalance: 950, // 50 + 900
+            coinBalance: 950, // 50 + 900
             dailyFreeCoins: 300, // Math.max(90, 300)
           }),
         })
@@ -115,7 +117,7 @@ describe('subscription-service', () => {
     it('2回目以降もボーナスが毎回付与される', async () => {
       mockTx.user.findUnique.mockResolvedValue({
         subscriptionBonusReceived: true,
-        knowledgeBalance: 100,
+        coinBalance: 100,
         dailyFreeCoins: 90,
       });
 
@@ -127,13 +129,13 @@ describe('subscription-service', () => {
       expect(mockTx.user.update).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
-            knowledgeBalance: 400, // 100 + 300
+            coinBalance: 400, // 100 + 300
           }),
         })
       );
 
       // ボーナストランザクションが作成される
-      expect(mockTx.knowledgeTransaction.create).toHaveBeenCalledWith(
+      expect(mockTx.coinTransaction.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
             userId: 'user-1',
@@ -148,7 +150,7 @@ describe('subscription-service', () => {
     it('既存のdailyFreeCoinsがプランより多い場合は維持される', async () => {
       mockTx.user.findUnique.mockResolvedValue({
         subscriptionBonusReceived: true,
-        knowledgeBalance: 100,
+        coinBalance: 100,
         dailyFreeCoins: 200, // plus plan's 150 より多い
       });
 
@@ -157,7 +159,7 @@ describe('subscription-service', () => {
       expect(mockTx.user.update).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
-            knowledgeBalance: 400, // 100 + 300（毎回ボーナス付与）
+            coinBalance: 400, // 100 + 300（毎回ボーナス付与）
             dailyFreeCoins: 200, // Math.max(200, 150) = 200
           }),
         })
@@ -167,14 +169,15 @@ describe('subscription-service', () => {
     it('ユーザーが見つからない場合はエラーをスローする', async () => {
       mockTx.user.findUnique.mockResolvedValue(null);
 
-      await expect(activateSubscription('non-existent', 'plus'))
-        .rejects.toThrow('ユーザーが見つかりません');
+      await expect(activateSubscription('non-existent', 'plus')).rejects.toThrow(
+        'ユーザーが見つかりません'
+      );
     });
 
     it('無効なプランの場合はエラーをスローする', async () => {
-      await expect(
-        activateSubscription('user-1', 'invalid' as 'plus')
-      ).rejects.toThrow('無効なプランです');
+      await expect(activateSubscription('user-1', 'invalid' as 'plus')).rejects.toThrow(
+        '無効なプランです'
+      );
 
       // $transaction は呼ばれない
       expect(mockTransaction).not.toHaveBeenCalled();
@@ -182,7 +185,7 @@ describe('subscription-service', () => {
 
     it('有効期限が約1ヶ月後に設定される', async () => {
       mockTx.user.findUnique.mockResolvedValue({
-        knowledgeBalance: 100,
+        coinBalance: 100,
         dailyFreeCoins: 90,
       });
 
@@ -253,8 +256,9 @@ describe('subscription-service', () => {
     it('ユーザーが見つからない場合はエラーをスローする', async () => {
       mockUserFindUnique.mockResolvedValue(null);
 
-      await expect(getSubscriptionStatus('non-existent'))
-        .rejects.toThrow('ユーザーが見つかりません');
+      await expect(getSubscriptionStatus('non-existent')).rejects.toThrow(
+        'ユーザーが見つかりません'
+      );
     });
   });
 

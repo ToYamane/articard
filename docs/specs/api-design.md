@@ -166,7 +166,7 @@ Firebase認証後、アプリケーションDBにユーザーを登録。
   data: {
     id: string;
     nickname: string;
-    knowledgeBalance: number;
+    coinBalance: number;
     isPremium: boolean;
     createdAt: string;
   }
@@ -185,7 +185,7 @@ Firebase認証後、アプリケーションDBにユーザーを登録。
   data: {
     id: string;
     nickname: string;
-    knowledgeBalance: number;
+    coinBalance: number;
     isPremium: boolean;
     premiumExpiresAt: string | null;
     createdAt: string;

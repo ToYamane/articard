@@ -101,7 +101,7 @@ All API routes use Bearer token auth and return consistent responses:
 - **User**: Firebase UID, nickname, premium status, isDeveloper flag
 - **Article**: Theme, content, OpenAI model/token usage
 - **Card**: Keyword, rarity (common/rare/super_rare/legend), images, flavor text. articleId is nullable (SetNull on article deletion)
-- **KnowledgeTransaction**: In-app currency tracking
+- **CoinTransaction**: In-app currency tracking
 - **FavoriteCard / FavoriteArticle**: User bookmark (many-to-many)
 - **StripeWebhookEvent**: Webhook idempotency check
 

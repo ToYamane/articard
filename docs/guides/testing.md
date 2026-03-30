@@ -7,24 +7,24 @@
 
 **現在の規模:**
 
-| 指標 | 値 |
-|------|-----|
-| テストファイル数 | 36 |
-| テスト数 | 528（526 passing / 2 failing） |
-| 実行時間 | 約 9 秒 |
+| 指標             | 値                             |
+| ---------------- | ------------------------------ |
+| テストファイル数 | 36                             |
+| テスト数         | 528（526 passing / 2 failing） |
+| 実行時間         | 約 9 秒                        |
 
 ## 9.2 テスト対象
 
 ### カバレッジ状況
 
-| カテゴリ | ファイル数 | 主な対象 |
-|---------|-----------|---------|
-| API ルートテスト | 22 | articles, cards, challenge, coins, stripe, subscription, auth, stats, users |
-| サービステスト | 5 | article, card, challenge, coin, subscription |
-| チャレンジロジック | 3 | game-state, rewards, scenarios |
-| バリデーション | 3 | article, card, user |
-| エラーハンドリング | 2 | api-error, error-messages |
-| カードロジック | 1 | rarity |
+| カテゴリ           | ファイル数 | 主な対象                                                                    |
+| ------------------ | ---------- | --------------------------------------------------------------------------- |
+| API ルートテスト   | 22         | articles, cards, challenge, coins, stripe, subscription, auth, stats, users |
+| サービステスト     | 5          | article, card, challenge, coin, subscription                                |
+| チャレンジロジック | 3          | game-state, rewards, scenarios                                              |
+| バリデーション     | 3          | article, card, user                                                         |
+| エラーハンドリング | 2          | api-error, error-messages                                                   |
+| カードロジック     | 1          | rarity                                                                      |
 
 ### 未テスト
 
@@ -122,7 +122,9 @@ describe('CardService', () => {
   beforeEach(() => jest.clearAllMocks());
 
   it('ユーザーのカード一覧を取得できる', async () => {
-    (mockPrisma.card.findMany as jest.Mock).mockResolvedValue([/* ... */]);
+    (mockPrisma.card.findMany as jest.Mock).mockResolvedValue([
+      /* ... */
+    ]);
     const result = await cardService.getCards('user-id');
     expect(result).toHaveLength(1);
   });
@@ -134,11 +136,9 @@ describe('CardService', () => {
 ```typescript
 const mockTxPrisma = {
   card: { create: jest.fn() },
-  knowledgeTransaction: { create: jest.fn() },
+  coinTransaction: { create: jest.fn() },
 };
-(mockPrisma.$transaction as jest.Mock).mockImplementation(
-  async (cb) => cb(mockTxPrisma)
-);
+(mockPrisma.$transaction as jest.Mock).mockImplementation(async (cb) => cb(mockTxPrisma));
 ```
 
 ### 9.5.2 API ルートテスト
@@ -178,10 +178,9 @@ describe('GET /api/articles', () => {
 ```typescript
 import { DELETE } from '@/app/api/cards/[id]/route';
 
-const response = await DELETE(
-  createAuthenticatedRequest('DELETE'),
-  { params: Promise.resolve({ id: 'card-id' }) }
-);
+const response = await DELETE(createAuthenticatedRequest('DELETE'), {
+  params: Promise.resolve({ id: 'card-id' }),
+});
 ```
 
 ### 9.5.3 純関数テスト
@@ -205,21 +204,21 @@ describe('scenarios', () => {
 
 ### 外部サービスモック（`__tests__/__mocks__/`）
 
-| ファイル | モック対象 | 主なエクスポート |
-|---------|----------|---------------|
-| `firebase.ts` | `@/lib/firebase/admin` | `adminAuth.verifyIdToken` 等 |
-| `openai.ts` | `@/lib/openai/*` | `generateArticle`, `extractKeywords`, `generateFlavorText` |
-| `flux.ts` | `@/lib/flux` | `generateIllustration` |
-| `stripe.ts` | `stripe` パッケージ | `Stripe` コンストラクタ |
-| `next/server.ts` | `next/server` | `NextRequest`, `NextResponse` の互換実装 |
+| ファイル         | モック対象             | 主なエクスポート                                           |
+| ---------------- | ---------------------- | ---------------------------------------------------------- |
+| `firebase.ts`    | `@/lib/firebase/admin` | `adminAuth.verifyIdToken` 等                               |
+| `openai.ts`      | `@/lib/openai/*`       | `generateArticle`, `extractKeywords`, `generateFlavorText` |
+| `flux.ts`        | `@/lib/flux`           | `generateIllustration`                                     |
+| `stripe.ts`      | `stripe` パッケージ    | `Stripe` コンストラクタ                                    |
+| `next/server.ts` | `next/server`          | `NextRequest`, `NextResponse` の互換実装                   |
 
 ### テストヘルパー（`__tests__/helpers/`）
 
-| ファイル | 用途 |
-|---------|------|
+| ファイル              | 用途                                                                              |
+| --------------------- | --------------------------------------------------------------------------------- |
 | `api-test-helpers.ts` | `createAuthenticatedRequest(method, options)` — Bearer トークン付きリクエスト生成 |
-| `db-helpers.ts` | Prisma モック生成ヘルパー、テスト用データファクトリ |
-| `coin-test-data.ts` | コイン残高・トランザクションのテストデータ |
+| `db-helpers.ts`       | Prisma モック生成ヘルパー、テスト用データファクトリ                               |
+| `coin-test-data.ts`   | コイン残高・トランザクションのテストデータ                                        |
 
 ### モックリセット
 
@@ -287,7 +286,7 @@ npm test -- --verbose
 
 ## 9.9 既知の問題
 
-| ファイル | 問題 | 備考 |
-|---------|------|------|
+| ファイル                                   | 問題         | 備考                                                                                      |
+| ------------------------------------------ | ------------ | ----------------------------------------------------------------------------------------- |
 | `__tests__/app/api/users/me/route.test.ts` | 2 テスト失敗 | テストが `USER_NOT_FOUND` を期待するが実際は `NOT_FOUND` を返す。エラーコードの統一が必要 |
-| `suggested-theme-service` | テスト未作成 | サービス 6 件中唯一の未テスト |
+| `suggested-theme-service`                  | テスト未作成 | サービス 6 件中唯一の未テスト                                                             |

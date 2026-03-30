@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from 'react';
 import { useInfiniteScroll } from './use-infinite-scroll';
+import { apiUrl } from '@/lib/api/client';
 import { getIdToken } from '@/lib/firebase/client';
 import type { Card } from '@prisma/client';
 import type { FilterState } from '@/components/collection';
@@ -44,7 +45,7 @@ export function useCollection(options: UseCollectionOptions = {}) {
       }
       params.append('limit', '20');
 
-      const response = await fetch(`/api/cards?${params.toString()}`, {
+      const response = await fetch(apiUrl(`/api/cards?${params.toString()}`), {
         headers: {
           Authorization: `Bearer ${token}`,
         },

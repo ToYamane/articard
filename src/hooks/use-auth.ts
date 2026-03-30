@@ -7,13 +7,18 @@ import {
   signInWithEmail,
   signUpWithEmail,
   signInWithGoogle,
+  signInAsGuest as firebaseSignInAsGuest,
+  linkWithEmail as firebaseLinkWithEmail,
+  linkWithGoogle as firebaseLinkWithGoogle,
   logout,
   getIdToken,
 } from '@/lib/firebase/client';
+import { apiUrl } from '@/lib/api/client';
 import {
   useAuthStore,
   selectIsAuthenticated,
   selectIsRegistered,
+  selectIsGuest,
   selectNeedsSetup,
   selectNeedsEmailVerification,
   type UserProfile,
@@ -35,6 +40,7 @@ export function useAuth() {
 
   const isAuthenticated = useAuthStore(selectIsAuthenticated);
   const isRegistered = useAuthStore(selectIsRegistered);
+  const isGuest = useAuthStore(selectIsGuest);
   const needsSetup = useAuthStore(selectNeedsSetup);
   const needsEmailVerification = useAuthStore(selectNeedsEmailVerification);
 
@@ -43,7 +49,7 @@ export function useAuth() {
     async (firebaseUser: NonNullable<typeof user>) => {
       try {
         const token = await firebaseUser.getIdToken();
-        const response = await fetch('/api/users/me', {
+        const response = await fetch(apiUrl('/api/users/me'), {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -74,8 +80,10 @@ export function useAuth() {
 
     try {
       unsubscribe = subscribeToAuthState(async (firebaseUser) => {
+        // 匿名ユーザー（ゲスト）の場合はメール確認 reload をスキップ
         if (
           firebaseUser &&
+          !firebaseUser.isAnonymous &&
           firebaseUser.providerData[0]?.providerId === 'password' &&
           !firebaseUser.emailVerified
         ) {
@@ -187,7 +195,7 @@ export function useAuth() {
         const token = await getIdToken();
         if (!token) throw new Error('Not authenticated');
 
-        const response = await fetch('/api/auth/register', {
+        const response = await fetch(apiUrl('/api/auth/register'), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -219,7 +227,7 @@ export function useAuth() {
         const token = await getIdToken();
         if (!token) throw new Error('Not authenticated');
 
-        const response = await fetch('/api/users/me', {
+        const response = await fetch(apiUrl('/api/users/me'), {
           method: 'PATCH',
           headers: {
             'Content-Type': 'application/json',
@@ -243,6 +251,74 @@ export function useAuth() {
     [setLoading, setProfile]
   );
 
+  // Sign in as guest (anonymous)
+  const signInAsGuestUser = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { user: guestUser } = await firebaseSignInAsGuest();
+      const token = await guestUser.getIdToken();
+
+      const response = await fetch(apiUrl('/api/auth/guest-register'), {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+      if (!data.success) {
+        throw new Error(data.error?.message || 'Guest registration failed');
+      }
+
+      setProfile(data.data);
+    } finally {
+      setLoading(false);
+    }
+  }, [setLoading, setProfile]);
+
+  // Upgrade guest account (link credentials + register)
+  const upgradeGuestAccount = useCallback(
+    async (
+      method: 'email' | 'google',
+      nickname: string,
+      credentials?: { email: string; password: string }
+    ): Promise<UserProfile> => {
+      setLoading(true);
+      try {
+        // 1. Link Firebase credentials
+        if (method === 'email' && credentials) {
+          await firebaseLinkWithEmail(credentials.email, credentials.password);
+        } else if (method === 'google') {
+          await firebaseLinkWithGoogle();
+        }
+
+        // 2. Upgrade in our DB (reuse register endpoint)
+        const token = await getIdToken();
+        if (!token) throw new Error('Not authenticated');
+
+        const response = await fetch(apiUrl('/api/auth/register'), {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ nickname }),
+        });
+
+        const data = await response.json();
+        if (!data.success) {
+          throw new Error(data.error?.message || 'Account upgrade failed');
+        }
+
+        setProfile(data.data);
+        return data.data;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [setLoading, setProfile]
+  );
+
   // Delete account
   const deleteAccount = useCallback(async () => {
     setLoading(true);
@@ -250,7 +326,7 @@ export function useAuth() {
       const token = await getIdToken();
       if (!token) throw new Error('Not authenticated');
 
-      const response = await fetch('/api/users/me', {
+      const response = await fetch(apiUrl('/api/users/me'), {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -279,6 +355,7 @@ export function useAuth() {
     isInitialized,
     isAuthenticated,
     isRegistered,
+    isGuest,
     needsSetup,
     needsEmailVerification,
 
@@ -286,6 +363,8 @@ export function useAuth() {
     loginWithEmail,
     registerWithEmail,
     loginWithGoogle,
+    signInAsGuestUser,
+    upgradeGuestAccount,
     signOut,
     registerUser,
     updateProfile,

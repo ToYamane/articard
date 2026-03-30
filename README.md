@@ -1,53 +1,49 @@
 <p align="center">
-  <img src="image/logo/ArtiCard_logo_transparent.png" alt="Articard Logo" width="120">
-</p>
-
-<h1 align="center">Articard</h1>
-
-<p align="center">
-  AIを活用した学習記事生成 × コレクタブルカード生成アプリケーション
+  <img src="public/logo/icon.webp" alt="Articard Logo" width="80" />
+  <img src="public/logo/text.webp" alt="Articard" width="200" />
 </p>
 
 <p align="center">
-  <strong>🏆 AWS 地域創生・社会課題解決 AI プログラミングコンテスト 仙台大会 最優秀賞</strong>
+  テーマを入力するだけで学習記事とコレクタブルカードをAI生成する、フルスタック学習プラットフォーム
 </p>
+
+<p align="center">
+  <a href="https://articard.app"><strong>ランディングページ</strong></a>&nbsp;&nbsp;|&nbsp;&nbsp;
+  <a href="https://articard.app/register"><strong>新規登録</strong></a>&nbsp;&nbsp;|&nbsp;&nbsp;
+  <a href="docs/ArtiCard紹介.pdf">紹介資料 (PDF)</a>
+</p>
+
+---
 
 ## コンセプト
 
-ユーザーが入力したテーマから学習記事をAI生成し、記事内のキーワードから世界に1枚だけのユニークなカードを生成するサービス。「学ぶ楽しさ」と「集める楽しさ」を融合し、子どもから大人まで楽しみながら学べるプラットフォームを目指しています。
+ユーザーが入力したテーマからAIが学習記事を生成し、記事内のキーワードから**世界に1枚だけのユニークなカード**を生成するサービスです。カードにはレア度があり、レア度に応じて異なるAIモデルがイラストを生成します。
 
 ## スクリーンショット
 
-<table>
-  <tr>
-    <td align="center" width="33%">
-      <img src="image/promo/article-generation.png" alt="記事生成" width="280"><br>
-      <strong>記事生成</strong><br>
-      テーマを入力するとAIが学習記事を生成
-    </td>
-    <td align="center" width="33%">
-      <img src="image/promo/card-battle.png" alt="カード選択" width="280"><br>
-      <strong>カード選択</strong><br>
-      AIとの対話で記事からユニークなカードを生成
-    </td>
-    <td align="center" width="33%">
-      <img src="image/promo/card-result.png" alt="カード結果" width="280"><br>
-      <strong>カード結果</strong><br>
-      適合度・レア度が計算されたコレクタブルカード
-    </td>
-  </tr>
-</table>
+### カードレア度（Rare / Super Rare / Legend）
 
 <p align="center">
-  <img src="image/promo/026495f1-3d50-455c-916c-4e5da1e224d8_card.webp" alt="カードサンプル" width="200">
+  <img src="public/promo/card-rare.webp" alt="Rare Card" width="200" />
+  <img src="public/promo/card-super-rare.webp" alt="Super Rare Card" width="200" />
+  <img src="public/promo/card-legend.webp" alt="Legend Card" width="200" />
+</p>
+
+### 記事生成 ＆ チャレンジモード
+
+<p align="center">
+  <img src="public/promo/screenshot-article.webp" alt="Article Generation" width="340" />
+  <img src="public/promo/screenshot-challenge.webp" alt="Challenge Mode" width="340" />
 </p>
 
 ## 主要機能
 
-1. **学習記事生成** - テーマを入力すると800文字の学習記事を生成
-2. **カード生成** - 記事からキーワードを抽出し、文脈に応じたレア度・イラスト・テキストのカードを生成
+1. **学習記事生成** - テーマを入力するとAIが800文字の学習記事を生成
+2. **カード生成** - 記事からキーワードを抽出し、レア度・イラスト・テキスト付きのユニークなカードを生成
 3. **コレクション** - 生成したカードを図鑑形式で管理・検索・フィルター
-4. **SNS共有** - カードを画像としてSNSに共有（X, LINE対応）
+4. **SNS共有** - カード画像をX・LINEで共有、画像ダウンロード対応
+5. **チャレンジモード** - 手持ちカードでAI対戦型クイズに挑戦。正解数に応じてコイン報酬を獲得
+6. **コインシステム** - アプリ内通貨でカード生成。Stripe決済によるコイン購入にも対応
 
 ## 開発規模
 
@@ -59,17 +55,27 @@
 
 ## 技術スタック
 
-| レイヤー | 技術 |
-|---------|------|
+| レイヤー       | 技術                                                          |
+| -------------- | ------------------------------------------------------------- |
 | フロントエンド | Next.js 14, React 18, TypeScript, Tailwind CSS, Framer Motion |
-| バックエンド | Next.js API Routes |
-| データベース | PostgreSQL (Prisma ORM) |
-| 認証 | Firebase Authentication |
-| ストレージ | Google Cloud Storage |
-| 記事生成AI | OpenAI API (GPT-4o-mini) |
-| 画像生成AI | FLUX API (Black Forest Labs) |
-| 状態管理 | Zustand, TanStack Query |
-| インフラ | Google Cloud Platform (Cloud Run) |
+| バックエンド   | Next.js API Routes                                            |
+| データベース   | PostgreSQL (Prisma ORM)                                       |
+| 認証           | Firebase Authentication                                       |
+| ストレージ     | Google Cloud Storage                                          |
+| 記事生成AI     | OpenAI API (GPT-4o-mini)                                      |
+| 画像生成AI     | FLUX (BFL), Google Gemini, DALL-E 3                           |
+| 決済           | Stripe (Checkout Session)                                     |
+| 状態管理       | Zustand, TanStack Query                                       |
+| インフラ       | Google Cloud Platform (Cloud Run)                             |
+
+## 技術的なこだわり
+
+- **レア度別マルチモデル画像生成** - Common(FLUX 1.1 Pro) / Rare(Gemini) / Super Rare(FLUX 2 Pro) / Legend(DALL-E 3 HD) と、レア度に応じて異なるAIモデルを切り替え
+- **Canvas API によるカード画像合成** - テンプレート画像・イラスト・テキストをサーバーサイドで合成し、1枚のカード画像を生成
+- **Firebase Auth + Bearer トークン認証** - Firebase IDトークンを検証する統一認証ミドルウェア (`withAuth` / `withAuthParams`)
+- **Zod バリデーション + 統一エラーハンドリング** - 全APIルートで入力検証と `{ success, data }` / `{ success, error }` の一貫したレスポンス形式
+- **Upstash Redis レートリミット** - APIエンドポイント毎にfail-open設計のレート制限
+- **560+ ユニットテスト** - サービス層・APIルート・バリデーション・ビジネスロジックを網羅（38テストスイート）
 
 ## プロジェクト構造
 
@@ -92,6 +98,7 @@ articard/
 │   │   ├── services/                 # ビジネスロジック
 │   │   ├── openai/                   # OpenAI連携
 │   │   ├── flux/                     # FLUX API連携
+│   │   ├── gemini/                   # Gemini画像生成
 │   │   ├── firebase/                 # Firebase Auth
 │   │   ├── gcs/                      # Cloud Storage
 │   │   ├── card/                     # カード生成ロジック (rarity, image-composer)
@@ -107,7 +114,8 @@ articard/
 └── docs/                             # 仕様書
 ```
 
-## セットアップ
+<details>
+<summary>セットアップ（ローカル開発環境）</summary>
 
 ### 前提条件
 
@@ -193,62 +201,52 @@ npm run dev
 
 アプリケーションは http://localhost:3000 で起動します。
 
-## 利用可能なコマンド
+### 利用可能なコマンド
 
-| コマンド | 説明 |
-|---------|------|
-| `npm run dev` | 開発サーバー起動 |
-| `npm run build` | プロダクションビルド |
-| `npm run start` | プロダクション起動 |
-| `npm run lint` | ESLint実行 |
-| `npm run type-check` | 型チェック |
-| `npm run test` | テスト実行 |
-| `npm run db:generate` | Prisma クライアント生成 |
-| `npm run db:push` | スキーマをDBに反映 |
-| `npm run db:studio` | Prisma Studio（DBビューア） |
+| コマンド              | 説明                        |
+| --------------------- | --------------------------- |
+| `npm run dev`         | 開発サーバー起動            |
+| `npm run build`       | プロダクションビルド        |
+| `npm run start`       | プロダクション起動          |
+| `npm run lint`        | ESLint実行                  |
+| `npm run type-check`  | 型チェック                  |
+| `npm run test`        | テスト実行                  |
+| `npm run db:generate` | Prisma クライアント生成     |
+| `npm run db:push`     | スキーマをDBに反映          |
+| `npm run db:studio`   | Prisma Studio（DBビューア） |
 
-## 実装状況
+</details>
 
-### Phase 1: MVP
+## 実装済み機能
 
-| フェーズ | ステータス |
-|---------|-----------|
-| Phase 1-A: プロジェクト基盤構築 | ✅ 完了 |
-| Phase 1-B: 認証機能 | ✅ 完了 |
-| Phase 1-C: 記事生成機能 | ✅ 完了 |
-| Phase 1-D: カード生成機能 | ✅ 完了 |
-| Phase 1-E: コレクション機能 | ✅ 完了 |
-| Phase 1-F: 共有機能 | ✅ 完了 |
-| Phase 1-G: 削除機能・UI仕上げ | ✅ 完了 |
-| Phase 1-H: テスト・デプロイ準備 | 🔄 進行中 |
-
-### 実装済み機能
-
-- **認証**: Google OAuth、メール/パスワード認証
-- **記事生成**: OpenAI GPT-4o-miniによるテーマベースの記事生成
-- **カード生成**: キーワード抽出、レア度計算、FLUX APIによるイラスト生成
+- **認証**: Google OAuth、メール/パスワード認証、パスワードリセット
+- **記事生成**: OpenAI GPT-4o-miniによるテーマベースの記事生成、バッチ生成対応
+- **カード生成**: キーワード抽出、確率ベースのレア度計算、マルチモデルイラスト生成
 - **コレクション**: 無限スクロール、レア度フィルター、検索、ソート
 - **共有**: SNS共有（X, LINE）、画像ダウンロード、公開ページ
+- **チャレンジモード**: AI対戦型クイズ、デッキ構築、スコアランキング
+- **コインシステム**: アプリ内通貨、チャレンジ報酬、Stripe決済によるコイン購入
 - **削除**: カード削除、記事削除、アカウント削除（確認モーダル付き）
-- **テスト**: 135件のユニットテスト
+- **テスト**: 560件のユニットテスト（38スイート）
 
 ## 仕様書
 
-```
-docs/
-├── 01_overview.md          # システム概要・技術スタック詳細
-├── 02_article_generation.md # 記事生成機能
-├── 03_card_generation.md    # カード生成機能
-├── 04_collection.md         # コレクション機能
-├── 05_user_auth.md          # 認証・ユーザー管理
-├── 06_database.md           # データベース設計（ER図）
-├── 07_api_design.md         # API設計
-├── 08_screen_flow.md        # 画面遷移図
-├── 09_testing.md            # テスト方針
-├── 10_local_dev.md          # ローカル開発
-└── 11_deployment.md         # デプロイフロー
-```
+| ファイル                                                        | 内容                           |
+| --------------------------------------------------------------- | ------------------------------ |
+| [system-overview.md](docs/specs/system-overview.md)             | システム概要・技術スタック詳細 |
+| [article-generation.md](docs/specs/article-generation.md)       | 記事生成機能                   |
+| [card-generation.md](docs/specs/card-generation.md)             | カード生成機能                 |
+| [batch-card-generation.md](docs/specs/batch-card-generation.md) | バッチカード生成               |
+| [collection.md](docs/specs/collection.md)                       | コレクション機能               |
+| [user-auth.md](docs/specs/user-auth.md)                         | 認証・ユーザー管理             |
+| [database.md](docs/specs/database.md)                           | データベース設計               |
+| [api-design.md](docs/specs/api-design.md)                       | API設計                        |
+| [coin-system.md](docs/specs/coin-system.md)                     | コインシステム                 |
+| [challenge-mode.md](docs/specs/challenge-mode.md)               | チャレンジモード               |
+| [rarity-image-models.md](docs/specs/rarity-image-models.md)     | レア度別画像生成モデル         |
+| [screen-flow.md](docs/specs/screen-flow.md)                     | 画面遷移図                     |
+| [content-style.md](docs/specs/content-style.md)                 | コンテンツスタイル             |
 
 ## ライセンス
 
-Private - All rights reserved
+MIT License - 詳細は [LICENSE](LICENSE) を参照

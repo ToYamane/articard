@@ -10,7 +10,7 @@ const mockUpdate = jest.fn();
 const mockTxCreate = jest.fn();
 const mockTxFindUnique = jest.fn();
 const mockTxUpdate = jest.fn();
-const mockTxKnowledgeCreate = jest.fn();
+const mockTxCoinCreate = jest.fn();
 const mockTransaction = jest.fn();
 
 jest.mock('@/lib/prisma', () => ({
@@ -23,8 +23,8 @@ jest.mock('@/lib/prisma', () => ({
       findUnique: (...args: unknown[]) => mockFindUnique(...args),
       update: (...args: unknown[]) => mockUpdate(...args),
     },
-    knowledgeTransaction: {
-      create: (...args: unknown[]) => mockTxKnowledgeCreate(...args),
+    coinTransaction: {
+      create: (...args: unknown[]) => mockTxCoinCreate(...args),
     },
     $transaction: (...args: unknown[]) => mockTransaction(...args),
   },
@@ -50,8 +50,8 @@ beforeEach(() => {
         findUnique: (...args: unknown[]) => mockTxFindUnique(...args),
         update: (...args: unknown[]) => mockTxUpdate(...args),
       },
-      knowledgeTransaction: {
-        create: (...args: unknown[]) => mockTxKnowledgeCreate(...args),
+      coinTransaction: {
+        create: (...args: unknown[]) => mockTxCoinCreate(...args),
       },
     };
     return callback(tx);
@@ -123,7 +123,7 @@ describe('rewards', () => {
 
     it('新規Bランク達成時にコインを付与する', async () => {
       mockFindMany.mockResolvedValue([]); // 既存の達成なし
-      mockTxFindUnique.mockResolvedValue({ knowledgeBalance: 100 });
+      mockTxFindUnique.mockResolvedValue({ coinBalance: 100 });
 
       const result = await processAchievementRewards(userId, scenarioId, 260);
 
@@ -151,24 +151,24 @@ describe('rewards', () => {
 
     it('複数ランクを同時に達成した場合、累積報酬を付与する', async () => {
       mockFindMany.mockResolvedValue([]); // 既存の達成なし
-      mockTxFindUnique.mockResolvedValue({ knowledgeBalance: 100 });
+      mockTxFindUnique.mockResolvedValue({ coinBalance: 100 });
 
       const result = await processAchievementRewards(userId, scenarioId, 460);
 
       // B, A, S全て新規達成
-      const newAchievements = result.achievements.filter(a => a.isNew);
+      const newAchievements = result.achievements.filter((a) => a.isNew);
       expect(newAchievements).toHaveLength(3);
       expect(result.totalCoinsAwarded).toBe(90); // 30 + 30 + 30
     });
 
     it('一部のランクが既に達成済みの場合、新規のみ報酬付与', async () => {
       mockFindMany.mockResolvedValue([{ rank: 'B' }]); // Bのみ達成済み
-      mockTxFindUnique.mockResolvedValue({ knowledgeBalance: 100 });
+      mockTxFindUnique.mockResolvedValue({ coinBalance: 100 });
 
       const result = await processAchievementRewards(userId, scenarioId, 460);
 
-      const newAchievements = result.achievements.filter(a => a.isNew);
-      const existingAchievements = result.achievements.filter(a => !a.isNew);
+      const newAchievements = result.achievements.filter((a) => a.isNew);
+      const existingAchievements = result.achievements.filter((a) => !a.isNew);
       expect(newAchievements).toHaveLength(2); // A, S
       expect(existingAchievements).toHaveLength(1); // B
       expect(result.totalCoinsAwarded).toBe(60); // A(30) + S(30)
@@ -176,7 +176,7 @@ describe('rewards', () => {
 
     it('ランク順にソートされる（B < A < S）', async () => {
       mockFindMany.mockResolvedValue([]); // 既存の達成なし
-      mockTxFindUnique.mockResolvedValue({ knowledgeBalance: 100 });
+      mockTxFindUnique.mockResolvedValue({ coinBalance: 100 });
 
       const result = await processAchievementRewards(userId, scenarioId, 460);
 
@@ -187,7 +187,7 @@ describe('rewards', () => {
 
     it('ユーザーの残高が正しく更新される', async () => {
       mockFindMany.mockResolvedValue([]); // 既存の達成なし
-      mockTxFindUnique.mockResolvedValue({ knowledgeBalance: 100 });
+      mockTxFindUnique.mockResolvedValue({ coinBalance: 100 });
 
       await processAchievementRewards(userId, scenarioId, 260);
 
@@ -195,18 +195,18 @@ describe('rewards', () => {
       expect(mockTxUpdate).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: userId },
-          data: { knowledgeBalance: 130 }, // 100 + 30
+          data: { coinBalance: 130 }, // 100 + 30
         })
       );
     });
 
     it('トランザクション履歴が記録される', async () => {
       mockFindMany.mockResolvedValue([]);
-      mockTxFindUnique.mockResolvedValue({ knowledgeBalance: 100 });
+      mockTxFindUnique.mockResolvedValue({ coinBalance: 100 });
 
       await processAchievementRewards(userId, scenarioId, 260);
 
-      expect(mockTxKnowledgeCreate).toHaveBeenCalledWith(
+      expect(mockTxCoinCreate).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
             userId,

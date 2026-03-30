@@ -48,11 +48,12 @@ enum SubscriptionTier {
 model User {
   id                      String    @id @db.VarChar(128)
   nickname                String    @unique @db.VarChar(20)
-  knowledgeBalance        Int       @default(0) @map("knowledge_balance") // 永続コイン
+  coinBalance             Int       @default(0) @map("coin_balance") // 永続コイン
   dailyFreeCoins          Int       @default(90) @map("daily_free_coins") // 当日無料コイン
   dailyCoinsResetAt       DateTime? @map("daily_coins_reset_at") @db.Timestamptz
   dailyChallengeCount     Int       @default(0) @map("daily_challenge_count")
   dailyChallengeResetAt   DateTime? @map("daily_challenge_reset_at") @db.Timestamptz
+  isGuest                 Boolean   @default(false) @map("is_guest")
   isPremium               Boolean   @default(false) @map("is_premium")
   isDeveloper             Boolean   @default(false) @map("is_developer")
   premiumExpiresAt        DateTime? @map("premium_expires_at") @db.Timestamptz
@@ -66,7 +67,7 @@ model User {
 
   articles              Article[]
   cards                 Card[]
-  knowledgeTransactions KnowledgeTransaction[]
+  coinTransactions CoinTransaction[]
   challengeSessions     ChallengeSession[]
   challengeHighScores   ChallengeHighScore[]
   challengeAchievements ChallengeAchievement[]
@@ -74,6 +75,7 @@ model User {
   favoriteArticles      FavoriteArticle[]
 
   @@index([createdAt])
+  @@index([isGuest, lastActiveAt])
   @@map("users")
 }
 
@@ -129,7 +131,7 @@ model Card {
   @@map("cards")
 }
 
-model KnowledgeTransaction {
+model CoinTransaction {
   id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId          String   @map("user_id") @db.VarChar(128)
   amount          Int
@@ -143,7 +145,7 @@ model KnowledgeTransaction {
   @@index([userId])
   @@index([createdAt])
   @@index([userId, createdAt(sort: Desc)])
-  @@map("knowledge_transactions")
+  @@map("coin_transactions")
 }
 
 model SuggestedTheme {

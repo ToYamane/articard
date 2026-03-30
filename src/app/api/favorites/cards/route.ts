@@ -1,9 +1,18 @@
 import { withAuth } from '@/lib/api';
 import { toggleFavoriteCardSchema } from '@/lib/validations/favorite';
 import { toggleFavoriteCard, getFavoriteCardIds } from '@/lib/services/favorite-service';
+import { prisma } from '@/lib/prisma';
+import { ApiError } from '@/lib/errors';
 
 // お気に入りカードをトグル
 export const POST = withAuth<{ isFavorite: boolean }>(async (authUser, req) => {
+  const user = await prisma.user.findUnique({
+    where: { id: authUser.uid },
+    select: { isGuest: true },
+  });
+  if (user?.isGuest) {
+    throw new ApiError('GUEST_RESTRICTED', 'お気に入り機能はアカウント登録が必要です', 403);
+  }
   const body = await req.json();
   const { cardId } = toggleFavoriteCardSchema.parse(body);
   return toggleFavoriteCard(authUser.uid, cardId);

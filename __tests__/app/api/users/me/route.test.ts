@@ -16,7 +16,7 @@ import {
 const mockUser = {
   id: 'test-user-id-123',
   nickname: 'testuser',
-  knowledgeBalance: 100,
+  coinBalance: 100,
   isPremium: false,
   createdAt: new Date('2026-01-01T00:00:00Z'),
   updatedAt: new Date('2026-01-01T00:00:00Z'),
@@ -45,7 +45,7 @@ jest.mock('@/lib/prisma', () => ({
     article: {
       deleteMany: (...args: unknown[]) => mockDeleteMany(...args),
     },
-    knowledgeTransaction: {
+    coinTransaction: {
       deleteMany: (...args: unknown[]) => mockDeleteMany(...args),
     },
     $transaction: (callback: (tx: unknown) => Promise<unknown>) => mockTransaction(callback),
@@ -83,7 +83,7 @@ describe('/api/users/me', () => {
       callback({
         card: { deleteMany: mockDeleteMany },
         article: { deleteMany: mockDeleteMany },
-        knowledgeTransaction: { deleteMany: mockDeleteMany },
+        coinTransaction: { deleteMany: mockDeleteMany },
         user: { delete: mockDelete },
       })
     );
@@ -112,7 +112,7 @@ describe('/api/users/me', () => {
 
         expect(data.id).toBe(mockUser.id);
         expect(data.nickname).toBe(mockUser.nickname);
-        expect(data.knowledgeBalance).toBe(mockUser.knowledgeBalance);
+        expect(data.coinBalance).toBe(mockUser.coinBalance);
       });
 
       it('ユーザーが見つからない場合、404を返す', async () => {

@@ -34,7 +34,7 @@ export const mockPrisma = {
     count: jest.fn(),
     groupBy: jest.fn(),
   },
-  knowledgeTransaction: {
+  coinTransaction: {
     findMany: jest.fn(),
     create: jest.fn(),
     deleteMany: jest.fn(),
@@ -101,7 +101,7 @@ export const mockPrisma = {
     count: jest.Mock;
     groupBy: jest.Mock;
   };
-  knowledgeTransaction: {
+  coinTransaction: {
     findMany: jest.Mock;
     create: jest.Mock;
     deleteMany: jest.Mock;
@@ -141,7 +141,7 @@ export const mockPrisma = {
 export const mockUser = {
   id: 'test-user-id-123',
   nickname: 'testuser',
-  knowledgeBalance: 100,
+  coinBalance: 100,
   isPremium: false,
   createdAt: new Date('2026-01-01T00:00:00Z'),
   updatedAt: new Date('2026-01-01T00:00:00Z'),
@@ -239,7 +239,7 @@ export const mockChallengeAchievement = {
 export const mockOtherUser = {
   id: 'other-user-id-456',
   nickname: 'otheruser',
-  knowledgeBalance: 50,
+  coinBalance: 50,
   isPremium: false,
   createdAt: new Date('2026-01-01T00:00:00Z'),
   updatedAt: new Date('2026-01-01T00:00:00Z'),
@@ -290,10 +290,10 @@ export function resetPrismaMock() {
   mockPrisma.card.count.mockReset();
   mockPrisma.card.groupBy.mockReset();
 
-  // KnowledgeTransaction
-  mockPrisma.knowledgeTransaction.findMany.mockReset();
-  mockPrisma.knowledgeTransaction.create.mockReset();
-  mockPrisma.knowledgeTransaction.deleteMany.mockReset();
+  // CoinTransaction
+  mockPrisma.coinTransaction.findMany.mockReset();
+  mockPrisma.coinTransaction.create.mockReset();
+  mockPrisma.coinTransaction.deleteMany.mockReset();
 
   // ChallengeSession
   mockPrisma.challengeSession.findUnique.mockReset();

@@ -14,7 +14,7 @@ import {
 const mockUser = {
   id: 'test-user-id-123',
   nickname: 'testuser',
-  knowledgeBalance: 100,
+  coinBalance: 100,
   isPremium: false,
   createdAt: new Date('2026-01-01T00:00:00Z'),
   updatedAt: new Date('2026-01-01T00:00:00Z'),

@@ -25,7 +25,7 @@ export const GET = withAuth<StatsResponse>(async (authUser) => {
         rarity: true,
       },
     }),
-    prisma.knowledgeTransaction.aggregate({
+    prisma.coinTransaction.aggregate({
       where: { userId: authUser.uid },
       _sum: {
         amount: true,

@@ -1,4 +1,24 @@
 User-agent: *
 Allow: /
+Allow: /terms
+Allow: /privacy
+Allow: /commerce
+Allow: /contact
+Allow: /share/
+
+# Protected pages (require authentication)
+Disallow: /home
+Disallow: /articles
+Disallow: /cards
+Disallow: /collection
+Disallow: /challenge
+Disallow: /settings
+Disallow: /setup
+Disallow: /upgrade
+Disallow: /verify-email
+
+# API and auth routes
 Disallow: /api/
-Disallow: /(auth)/
+Disallow: /login
+Disallow: /register
+Disallow: /forgot-password

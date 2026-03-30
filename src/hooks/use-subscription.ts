@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
+import { apiUrl } from '@/lib/api/client';
 import { getIdToken } from '@/lib/firebase/client';
 import { useAuthStore } from '@/stores/auth-store';
 
@@ -44,7 +45,7 @@ export function useSubscription() {
       const token = await getIdToken();
       if (!token) return;
 
-      const response = await fetch('/api/coins', {
+      const response = await fetch(apiUrl('/api/coins'), {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -77,7 +78,7 @@ export function useSubscription() {
       if (!token) throw new Error('認証が必要です');
 
       // Create Stripe Checkout session
-      const response = await fetch('/api/stripe/checkout', {
+      const response = await fetch(apiUrl('/api/stripe/checkout'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -116,7 +117,7 @@ export function useSubscription() {
         const token = await getIdToken();
         if (!token) throw new Error('認証が必要です');
 
-        const response = await fetch('/api/subscription', {
+        const response = await fetch(apiUrl('/api/subscription'), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -154,7 +155,7 @@ export function useSubscription() {
       const token = await getIdToken();
       if (!token) throw new Error('認証が必要です');
 
-      const response = await fetch('/api/subscription', {
+      const response = await fetch(apiUrl('/api/subscription'), {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -191,7 +192,7 @@ export function useSubscription() {
       const token = await getIdToken();
       if (!token) throw new Error('認証が必要です');
 
-      const response = await fetch('/api/stripe/coin-checkout', {
+      const response = await fetch(apiUrl('/api/stripe/coin-checkout'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -230,7 +231,7 @@ export function useSubscription() {
         const token = await getIdToken();
         if (!token) throw new Error('認証が必要です');
 
-        const response = await fetch('/api/coins/dev-charge', {
+        const response = await fetch(apiUrl('/api/coins/dev-charge'), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

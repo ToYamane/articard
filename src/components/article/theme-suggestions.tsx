@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { apiUrl } from '@/lib/api/client';
 import { Button, LoadingSpinner } from '@/components/ui';
 
 interface SuggestedTheme {
@@ -25,7 +26,7 @@ export function ThemeSuggestions({ onSelectTheme, disabled }: ThemeSuggestionsPr
     setError(null);
 
     try {
-      const response = await fetch('/api/suggested-themes?count=10');
+      const response = await fetch(apiUrl('/api/suggested-themes?count=10'));
       const data = await response.json();
 
       if (!data.success) {

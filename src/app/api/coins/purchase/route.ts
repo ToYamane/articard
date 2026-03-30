@@ -10,7 +10,7 @@ export const POST = withAuth(async (authUser, req) => {
   // 開発者チェック
   const user = await prisma.user.findUnique({
     where: { id: authUser.uid },
-    select: { isDeveloper: true, knowledgeBalance: true, dailyFreeCoins: true },
+    select: { isDeveloper: true, coinBalance: true, dailyFreeCoins: true },
   });
 
   if (!user?.isDeveloper) {
@@ -35,14 +35,14 @@ export const POST = withAuth(async (authUser, req) => {
 
   // コイン付与
   const result = await prisma.$transaction(async (tx) => {
-    const newBalance = user.knowledgeBalance + pkg.coins;
+    const newBalance = user.coinBalance + pkg.coins;
 
     await tx.user.update({
       where: { id: authUser.uid },
-      data: { knowledgeBalance: newBalance },
+      data: { coinBalance: newBalance },
     });
 
-    await tx.knowledgeTransaction.create({
+    await tx.coinTransaction.create({
       data: {
         userId: authUser.uid,
         amount: pkg.coins,

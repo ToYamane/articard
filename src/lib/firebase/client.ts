@@ -4,6 +4,10 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signInWithPopup,
+  signInAnonymously,
+  linkWithCredential,
+  linkWithPopup,
+  EmailAuthProvider,
   GoogleAuthProvider,
   signOut,
   onAuthStateChanged,
@@ -51,6 +55,28 @@ export async function signUpWithEmail(email: string, password: string) {
  */
 export async function signInWithGoogle() {
   return signInWithPopup(auth, googleProvider);
+}
+
+/**
+ * Sign in anonymously (guest mode)
+ */
+export async function signInAsGuest() {
+  return signInAnonymously(auth);
+}
+
+/**
+ * Link anonymous account with email/password
+ */
+export async function linkWithEmail(email: string, password: string) {
+  const credential = EmailAuthProvider.credential(email, password);
+  return linkWithCredential(auth.currentUser!, credential);
+}
+
+/**
+ * Link anonymous account with Google
+ */
+export async function linkWithGoogle() {
+  return linkWithPopup(auth.currentUser!, googleProvider);
 }
 
 /**

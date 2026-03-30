@@ -59,7 +59,7 @@ describe('/api/coins/purchase', () => {
       it('開発者でない場合、403を返す', async () => {
         mockUserFindUnique.mockResolvedValue({
           isDeveloper: false,
-          knowledgeBalance: 100,
+          coinBalance: 100,
           dailyFreeCoins: 90,
         });
 
@@ -89,7 +89,7 @@ describe('/api/coins/purchase', () => {
       it('packageIdがない場合、400を返す', async () => {
         mockUserFindUnique.mockResolvedValue({
           isDeveloper: true,
-          knowledgeBalance: 100,
+          coinBalance: 100,
           dailyFreeCoins: 90,
         });
 
@@ -105,7 +105,7 @@ describe('/api/coins/purchase', () => {
       it('無効なpackageIdの場合、400を返す', async () => {
         mockUserFindUnique.mockResolvedValue({
           isDeveloper: true,
-          knowledgeBalance: 100,
+          coinBalance: 100,
           dailyFreeCoins: 90,
         });
 
@@ -123,7 +123,7 @@ describe('/api/coins/purchase', () => {
       it('standardパッケージを購入できる', async () => {
         mockUserFindUnique.mockResolvedValue({
           isDeveloper: true,
-          knowledgeBalance: 100,
+          coinBalance: 100,
           dailyFreeCoins: 90,
         });
         mockTransaction.mockResolvedValue({ newBalance: 700 }); // 100 + 600
@@ -142,7 +142,7 @@ describe('/api/coins/purchase', () => {
       it('valueパッケージを購入できる', async () => {
         mockUserFindUnique.mockResolvedValue({
           isDeveloper: true,
-          knowledgeBalance: 0,
+          coinBalance: 0,
           dailyFreeCoins: 90,
         });
         mockTransaction.mockResolvedValue({ newBalance: 2100 });
@@ -161,7 +161,7 @@ describe('/api/coins/purchase', () => {
       it('megaパッケージを購入できる', async () => {
         mockUserFindUnique.mockResolvedValue({
           isDeveloper: true,
-          knowledgeBalance: 1000,
+          coinBalance: 1000,
           dailyFreeCoins: 90,
         });
         mockTransaction.mockResolvedValue({ newBalance: 7000 });
@@ -182,7 +182,7 @@ describe('/api/coins/purchase', () => {
       it('トランザクションエラーの場合、500を返す', async () => {
         mockUserFindUnique.mockResolvedValue({
           isDeveloper: true,
-          knowledgeBalance: 100,
+          coinBalance: 100,
           dailyFreeCoins: 90,
         });
         mockTransaction.mockRejectedValue(new Error('Transaction error'));

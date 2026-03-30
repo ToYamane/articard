@@ -18,6 +18,16 @@ export const GET = withAuth<User>(async (authUser) => {
     throw ApiError.notFound('ユーザーが見つかりません');
   }
 
+  // lastActiveAt を更新（ゲストクリーンアップ用、fire-and-forget）
+  try {
+    void prisma.user.update({
+      where: { id: authUser.uid },
+      data: { lastActiveAt: new Date() },
+    });
+  } catch {
+    // 更新失敗は無視
+  }
+
   return user;
 });
 
@@ -75,8 +85,8 @@ export const DELETE = withAuth<{ message: string }>(async (authUser) => {
 
   // トランザクションで削除（関連データも含む）
   await prisma.$transaction(async (tx) => {
-    // カードに関連するKnowledgeTransactionを削除
-    await tx.knowledgeTransaction.deleteMany({
+    // カードに関連するCoinTransactionを削除
+    await tx.coinTransaction.deleteMany({
       where: { userId: user.id },
     });
 

@@ -99,19 +99,19 @@ export async function processAchievementRewards(
         // 現在の残高を取得
         const user = await tx.user.findUnique({
           where: { id: userId },
-          select: { knowledgeBalance: true },
+          select: { coinBalance: true },
         });
 
-        const newBalance = (user?.knowledgeBalance || 0) + coins;
+        const newBalance = (user?.coinBalance || 0) + coins;
 
         // 永続コインを付与
         await tx.user.update({
           where: { id: userId },
-          data: { knowledgeBalance: newBalance },
+          data: { coinBalance: newBalance },
         });
 
         // トランザクション履歴を記録
-        await tx.knowledgeTransaction.create({
+        await tx.coinTransaction.create({
           data: {
             userId,
             amount: coins,

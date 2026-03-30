@@ -52,6 +52,54 @@ export async function POST(req: NextRequest): Promise<NextResponse<ApiResponse<U
     });
 
     if (existingUser) {
+      // ゲスト → 正規ユーザーへ昇格
+      if (existingUser.isGuest) {
+        // ニックネーム重複チェック（昇格時も必要）
+        const existingNickname = await prisma.user.findUnique({
+          where: { nickname },
+        });
+        if (existingNickname && existingNickname.id !== existingUser.id) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: {
+                code: 'NICKNAME_EXISTS',
+                message: 'このニックネームは既に使用されています',
+              },
+            },
+            { status: 409 }
+          );
+        }
+
+        const upgraded = await prisma.$transaction(async (tx) => {
+          const user = await tx.user.update({
+            where: { id: existingUser.id },
+            data: {
+              isGuest: false,
+              nickname,
+              coinBalance: existingUser.coinBalance + COIN_REWARDS.WELCOME_BONUS,
+            },
+          });
+
+          await tx.coinTransaction.create({
+            data: {
+              userId: user.id,
+              amount: COIN_REWARDS.WELCOME_BONUS,
+              transactionType: 'bonus',
+              description: '新規登録ボーナス',
+              balanceAfter: user.coinBalance,
+            },
+          });
+
+          return user;
+        });
+
+        return NextResponse.json({
+          success: true,
+          data: upgraded,
+        });
+      }
+
       return NextResponse.json({
         success: true,
         data: existingUser,
@@ -82,11 +130,11 @@ export async function POST(req: NextRequest): Promise<NextResponse<ApiResponse<U
         data: {
           id: decodedToken.uid,
           nickname,
-          knowledgeBalance: COIN_REWARDS.WELCOME_BONUS,
+          coinBalance: COIN_REWARDS.WELCOME_BONUS,
         },
       });
 
-      await tx.knowledgeTransaction.create({
+      await tx.coinTransaction.create({
         data: {
           userId: newUser.id,
           amount: COIN_REWARDS.WELCOME_BONUS,

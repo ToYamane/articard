@@ -12,9 +12,9 @@ Articardのアプリ内通貨システム。ユーザーはコインを消費し
 
 ## 13.2 コイン種別
 
-| 種別 | 説明 | 付与方法 | 有効期限 |
-|------|------|----------|----------|
-| 無料コイン | 毎日自動付与 | 日本時間0時に90コイン | 当日24時まで |
+| 種別       | 説明           | 付与方法               | 有効期限     |
+| ---------- | -------------- | ---------------------- | ------------ |
+| 無料コイン | 毎日自動付与   | 日本時間0時に90コイン  | 当日24時まで |
 | 永続コイン | 達成報酬・購入 | チャレンジランク達成時 | なし（永続） |
 
 ### 消費優先順位
@@ -26,17 +26,17 @@ Articardのアプリ内通貨システム。ユーザーはコインを消費し
 
 ### 消費
 
-| 機能 | コスト | 備考 |
-|------|--------|------|
-| 記事生成 | 無料 | 制限なし |
-| カード生成 | 30コイン | 全レアリティ共通 |
-| チャレンジ 1-3回目/日 | 無料 | 毎日リセット（無料ユーザー） |
-| チャレンジ 4回目以降 | 10コイン | プランにより無料回数変動 |
+| 機能                  | コスト   | 備考                         |
+| --------------------- | -------- | ---------------------------- |
+| 記事生成              | 無料     | 制限なし                     |
+| カード生成            | 30コイン | 全レアリティ共通             |
+| チャレンジ 1-3回目/日 | 無料     | 毎日リセット（無料ユーザー） |
+| チャレンジ 4回目以降  | 10コイン | プランにより無料回数変動     |
 
 ### 報酬（チャレンジ達成）
 
-| ランク | 条件 | 報酬 | 備考 |
-|--------|------|------|------|
+| ランク  | 条件          | 報酬     | 備考     |
+| ------- | ------------- | -------- | -------- |
 | Bランク | スコア250以上 | 30コイン | 初回のみ |
 | Aランク | スコア350以上 | 30コイン | 初回のみ |
 | Sランク | スコア450以上 | 30コイン | 初回のみ |
@@ -74,10 +74,10 @@ Articardのアプリ内通貨システム。ユーザーはコインを消費し
 
 ### リセット対象
 
-| 項目 | リセット内容 |
-|------|-------------|
-| 無料コイン | 90コインに回復 |
-| チャレンジ回数 | 0回にリセット |
+| 項目           | リセット内容   |
+| -------------- | -------------- |
+| 無料コイン     | 90コインに回復 |
+| チャレンジ回数 | 0回にリセット  |
 
 ### リセットタイミング
 
@@ -105,7 +105,7 @@ function isSameJSTDay(date1: Date, date2: Date): boolean {
 ```prisma
 model User {
   // 既存フィールド...
-  knowledgeBalance      Int       @default(0) @map("knowledge_balance")      // 永続コイン
+  coinBalance           Int       @default(0) @map("coin_balance")            // 永続コイン
   dailyFreeCoins        Int       @default(90) @map("daily_free_coins")      // 当日無料コイン
   dailyCoinsResetAt     DateTime? @map("daily_coins_reset_at") @db.Timestamptz
   dailyChallengeCount   Int       @default(0) @map("daily_challenge_count")
@@ -113,7 +113,7 @@ model User {
 }
 ```
 
-> **Note**: `knowledge_balance` は「永続コイン」を表します。データベースカラム名は歴史的経緯で維持していますが、UI上では「永続コイン」と表示されます。
+> **Note**: `coin_balance` は「永続コイン」を表します。データベースカラム名は歴史的経緯で維持していますが、UI上では「永続コイン」と表示されます。
 
 ### ChallengeAchievementテーブル（新規）
 
@@ -141,7 +141,7 @@ model ChallengeAchievement {
 │      users      │       │  challenge_achievements │
 ├─────────────────┤       ├─────────────────────────┤
 │ id              │───┐   │ id                      │
-│ knowledge_balance│   │   │ user_id            FK  │───┘
+│ coin_balance    │   │   │ user_id            FK  │───┘
 │ daily_free_coins│   └──▶│ scenario_id            │
 │ daily_coins_reset_at│   │ rank                   │
 │ daily_challenge_count│  │ coins_awarded          │
@@ -156,12 +156,14 @@ model ChallengeAchievement {
 コイン残高とチャレンジ回数情報を取得。
 
 **リクエスト**
+
 ```
 GET /api/coins
 Authorization: Bearer <token>
 ```
 
 **レスポンス**
+
 ```json
 {
   "success": true,
@@ -181,35 +183,35 @@ Authorization: Bearer <token>
 
 ### エラーコード
 
-| コード | 説明 | HTTPステータス |
-|--------|------|----------------|
-| INSUFFICIENT_COINS | コイン不足 | 400 |
+| コード             | 説明       | HTTPステータス |
+| ------------------ | ---------- | -------------- |
+| INSUFFICIENT_COINS | コイン不足 | 400            |
 
 ## 13.7 サービス層
 
 ### coin-service.ts
 
-| 関数 | 説明 |
-|------|------|
-| `checkAndResetDaily(userId)` | 日次リセットチェック・実行 |
-| `getBalances(userId)` | 両残高取得（リセット含む） |
-| `getBalance(userId)` | 合計残高取得（後方互換） |
-| `consumeCoins(userId, amount, description)` | コイン消費（無料優先） |
-| `addPermanentCoins(userId, amount, type, description)` | 永続コイン追加 |
-| `hasEnoughCoins(userId, amount)` | 残高チェック |
-| `checkChallengeLimit(userId)` | チャレンジ回数確認 |
-| `incrementChallengeCount(userId)` | チャレンジ回数インクリメント |
-| `getTransactions(userId, options)` | 履歴取得 |
+| 関数                                                   | 説明                         |
+| ------------------------------------------------------ | ---------------------------- |
+| `checkAndResetDaily(userId)`                           | 日次リセットチェック・実行   |
+| `getBalances(userId)`                                  | 両残高取得（リセット含む）   |
+| `getBalance(userId)`                                   | 合計残高取得（後方互換）     |
+| `consumeCoins(userId, amount, description)`            | コイン消費（無料優先）       |
+| `addPermanentCoins(userId, amount, type, description)` | 永続コイン追加               |
+| `hasEnoughCoins(userId, amount)`                       | 残高チェック                 |
+| `checkChallengeLimit(userId)`                          | チャレンジ回数確認           |
+| `incrementChallengeCount(userId)`                      | チャレンジ回数インクリメント |
+| `getTransactions(userId, options)`                     | 履歴取得                     |
 
 ### rewards.ts
 
-| 関数 | 説明 |
-|------|------|
-| `getAchievableRanks(score)` | スコアから達成可能ランク取得 |
-| `getRewardAmount(rank)` | ランク別報酬額取得 |
-| `processAchievementRewards(userId, scenarioId, score)` | 達成報酬処理 |
-| `getScenarioAchievements(userId, scenarioId)` | シナリオ別達成状況取得 |
-| `getUserAchievements(userId)` | 全達成状況取得 |
+| 関数                                                   | 説明                         |
+| ------------------------------------------------------ | ---------------------------- |
+| `getAchievableRanks(score)`                            | スコアから達成可能ランク取得 |
+| `getRewardAmount(rank)`                                | ランク別報酬額取得           |
+| `processAchievementRewards(userId, scenarioId, score)` | 達成報酬処理                 |
+| `getScenarioAchievements(userId, scenarioId)`          | シナリオ別達成状況取得       |
+| `getUserAchievements(userId)`                          | 全達成状況取得               |
 
 ## 13.8 フロントエンド
 
@@ -259,21 +261,21 @@ Authorization: Bearer <token>
 ```typescript
 // 消費コスト
 export const COIN_COSTS = {
-  CARD_GENERATION: 30,    // カード生成
-  CHALLENGE_EXTRA: 10,    // 無料回数超過後のチャレンジ
+  CARD_GENERATION: 30, // カード生成
+  CHALLENGE_EXTRA: 10, // 無料回数超過後のチャレンジ
 } as const;
 
 // 報酬
 export const COIN_REWARDS = {
-  DAILY_FREE: 90,         // 毎日の無料コイン（無料ユーザー）
-  CHALLENGE_RANK_B: 30,   // Bランク達成
-  CHALLENGE_RANK_A: 30,   // Aランク達成
-  CHALLENGE_RANK_S: 30,   // Sランク達成
+  DAILY_FREE: 90, // 毎日の無料コイン（無料ユーザー）
+  CHALLENGE_RANK_B: 30, // Bランク達成
+  CHALLENGE_RANK_A: 30, // Aランク達成
+  CHALLENGE_RANK_S: 30, // Sランク達成
 } as const;
 
 // 日次制限（無料ユーザー）
 export const DAILY_LIMITS = {
-  FREE_CHALLENGES: 3,     // 無料チャレンジ回数
+  FREE_CHALLENGES: 3, // 無料チャレンジ回数
 } as const;
 
 // ランク閾値
@@ -313,21 +315,21 @@ export const COIN_PACKAGES = {
 
 ## 13.10 修正ファイル一覧
 
-| ファイル | 変更内容 |
-|---------|---------|
-| `prisma/schema.prisma` | User拡張、ChallengeAchievement追加 |
-| `src/lib/constants/coins.ts` | 新規作成 |
-| `src/lib/services/coin-service.ts` | 大幅拡張 |
-| `src/lib/challenge/rewards.ts` | 新規作成 |
-| `src/app/api/coins/route.ts` | 両残高返却 |
-| `src/lib/services/card-service.ts` | コイン消費追加 |
-| `src/lib/services/challenge-service.ts` | 回数制限・報酬追加 |
-| `src/types/api.ts` | INSUFFICIENT_COINSエラーコード追加 |
-| `src/lib/errors/api-error.ts` | insufficientCoins静的メソッド追加 |
-| `src/components/layout/header.tsx` | 両残高表示 |
-| `src/app/(main)/challenge/page.tsx` | 回数・コスト表示 |
-| `src/components/challenge/challenge-complete.tsx` | 報酬表示追加 |
-| `src/app/(main)/challenge/[sessionId]/page.tsx` | 報酬データ受け渡し |
+| ファイル                                          | 変更内容                           |
+| ------------------------------------------------- | ---------------------------------- |
+| `prisma/schema.prisma`                            | User拡張、ChallengeAchievement追加 |
+| `src/lib/constants/coins.ts`                      | 新規作成                           |
+| `src/lib/services/coin-service.ts`                | 大幅拡張                           |
+| `src/lib/challenge/rewards.ts`                    | 新規作成                           |
+| `src/app/api/coins/route.ts`                      | 両残高返却                         |
+| `src/lib/services/card-service.ts`                | コイン消費追加                     |
+| `src/lib/services/challenge-service.ts`           | 回数制限・報酬追加                 |
+| `src/types/api.ts`                                | INSUFFICIENT_COINSエラーコード追加 |
+| `src/lib/errors/api-error.ts`                     | insufficientCoins静的メソッド追加  |
+| `src/components/layout/header.tsx`                | 両残高表示                         |
+| `src/app/(main)/challenge/page.tsx`               | 回数・コスト表示                   |
+| `src/components/challenge/challenge-complete.tsx` | 報酬表示追加                       |
+| `src/app/(main)/challenge/[sessionId]/page.tsx`   | 報酬データ受け渡し                 |
 
 ## 13.11 今後の拡張予定
 
@@ -343,15 +345,16 @@ export const COIN_PACKAGES = {
 
 ### プラン比較
 
-| 項目 | 無料 | プラス (¥980/月) | プレミアム (¥2,980/月) |
-|------|------|------------------|----------------------|
-| 毎日コイン | 90 | 150 | 300 |
-| 永続コイン付与 | - | 初回300 | 初回900 |
-| チャレンジ無料 | 3回/日 | 10回/日 | 無制限 |
+| 項目           | 無料   | プラス (¥980/月) | プレミアム (¥2,980/月) |
+| -------------- | ------ | ---------------- | ---------------------- |
+| 毎日コイン     | 90     | 150              | 300                    |
+| 永続コイン付与 | -      | 初回300          | 初回900                |
+| チャレンジ無料 | 3回/日 | 10回/日          | 無制限                 |
 
 ### 初回ボーナス
 
 サブスクリプション開始時に永続コインを1回のみ付与。
+
 - プラス: 300コイン
 - プレミアム: 900コイン
 
@@ -361,11 +364,11 @@ export const COIN_PACKAGES = {
 
 ### パッケージ一覧
 
-| パッケージ | コイン数 | 価格 | 単価 |
-|-----------|---------|------|------|
-| スタンダード | 600 | ¥980 | ¥1.63 |
-| バリュー | 2,100 | ¥2,980 | ¥1.42 |
-| プレミアム | 6,000 | ¥6,980 | ¥1.16 |
+| パッケージ   | コイン数 | 価格   | 単価  |
+| ------------ | -------- | ------ | ----- |
+| スタンダード | 600      | ¥980   | ¥1.63 |
+| バリュー     | 2,100    | ¥2,980 | ¥1.42 |
+| プレミアム   | 6,000    | ¥6,980 | ¥1.16 |
 
 ### 購入制限
 
@@ -374,11 +377,11 @@ export const COIN_PACKAGES = {
 
 ## 13.14 サービス層（subscription-service.ts）
 
-| 関数 | 説明 |
-|------|------|
+| 関数                                 | 説明                               |
+| ------------------------------------ | ---------------------------------- |
 | `activateSubscription(userId, tier)` | サブスク有効化（ボーナス付与含む） |
-| `getSubscriptionStatus(userId)` | サブスク状態取得 |
-| `cancelSubscription(userId)` | サブスク解約 |
+| `getSubscriptionStatus(userId)`      | サブスク状態取得                   |
+| `cancelSubscription(userId)`         | サブスク解約                       |
 
 ### 有効化処理フロー
 

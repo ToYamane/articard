@@ -8,6 +8,7 @@ import { Button, LoadingSpinner, ConfirmModal } from '@/components/ui';
 import { ERROR_MESSAGES } from '@/lib/errors';
 import { useToast } from '@/hooks/use-toast';
 import { useAuthStore } from '@/stores/auth-store';
+import { apiUrl } from '@/lib/api/client';
 import { getIdToken } from '@/lib/firebase/client';
 import type { Article } from '@prisma/client';
 
@@ -34,7 +35,7 @@ export default function ArticlePage() {
           throw new Error('認証トークンの取得に失敗しました');
         }
 
-        const response = await fetch(`/api/articles/${id}`, {
+        const response = await fetch(apiUrl(`/api/articles/${id}`), {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -71,7 +72,7 @@ export default function ArticlePage() {
         throw new Error('認証トークンの取得に失敗しました');
       }
 
-      const response = await fetch(`/api/articles/${id}`, {
+      const response = await fetch(apiUrl(`/api/articles/${id}`), {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${token}`,

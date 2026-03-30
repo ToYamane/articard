@@ -168,21 +168,21 @@ async function handleCoinPurchaseCompleted(
   await prisma.$transaction(async (tx) => {
     const user = await tx.user.findUnique({
       where: { id: userId },
-      select: { knowledgeBalance: true, dailyFreeCoins: true },
+      select: { coinBalance: true, dailyFreeCoins: true },
     });
 
     if (!user) {
       throw new Error(`User not found: ${userId}`);
     }
 
-    const newBalance = user.knowledgeBalance + pkg.coins;
+    const newBalance = user.coinBalance + pkg.coins;
 
     await tx.user.update({
       where: { id: userId },
-      data: { knowledgeBalance: newBalance },
+      data: { coinBalance: newBalance },
     });
 
-    await tx.knowledgeTransaction.create({
+    await tx.coinTransaction.create({
       data: {
         userId,
         amount: pkg.coins,

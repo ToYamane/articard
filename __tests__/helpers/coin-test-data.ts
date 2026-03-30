@@ -4,7 +4,7 @@
 export const mockCoinUser = {
   id: 'test-user-id-123',
   nickname: 'testuser',
-  knowledgeBalance: 100,
+  coinBalance: 100,
   dailyFreeCoins: 90,
   dailyCoinsResetAt: new Date('2026-01-15T00:00:00Z'),
   dailyChallengeCount: 0,
@@ -44,7 +44,7 @@ export const mockPremiumUser = {
   subscriptionTier: 'premium' as const,
   subscriptionBonusReceived: true,
   dailyFreeCoins: 300,
-  knowledgeBalance: 500,
+  coinBalance: 500,
   stripeCustomerId: 'cus_premium_test',
   stripeSubscriptionId: 'sub_premium_test',
   premiumExpiresAt: new Date('2026-12-31T23:59:59Z'),
@@ -63,7 +63,7 @@ export const mockBrokeUser = {
   ...mockCoinUser,
   id: 'test-broke-user-id',
   nickname: 'brokeuser',
-  knowledgeBalance: 0,
+  coinBalance: 0,
   dailyFreeCoins: 0,
 };
 

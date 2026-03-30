@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button, Input } from '@/components/ui';
 import { OAuthButtons } from './oauth-buttons';
+import { apiUrl } from '@/lib/api/client';
 import { useAuth } from '@/hooks/use-auth';
 import { signUpSchema, type SignUpInput } from '@/lib/validations/user';
 
@@ -50,7 +51,7 @@ export function RegisterForm() {
       // Send verification code via our API
       const token = await getIdToken();
       if (token) {
-        await fetch('/api/auth/send-verification', {
+        await fetch(apiUrl('/api/auth/send-verification'), {
           method: 'POST',
           headers: { Authorization: `Bearer ${token}` },
         });

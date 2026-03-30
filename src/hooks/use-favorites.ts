@@ -1,11 +1,13 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { apiUrl } from '@/lib/api/client';
 import { getIdToken } from '@/lib/firebase/client';
 import { useAuthStore } from '@/stores/auth-store';
 
 export function useFavorites(type: 'cards' | 'articles') {
-  const { user } = useAuthStore();
+  const { user, profile } = useAuthStore();
+  const isGuest = profile?.isGuest ?? false;
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
   const isTogglingRef = useRef(false);
@@ -24,7 +26,7 @@ export function useFavorites(type: 'cards' | 'articles') {
         const token = await getIdToken();
         if (!token) return;
 
-        const response = await fetch(`/api/favorites/${type}`, {
+        const response = await fetch(apiUrl(`/api/favorites/${type}`), {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -46,6 +48,7 @@ export function useFavorites(type: 'cards' | 'articles') {
 
   const toggleFavorite = useCallback(
     async (id: string) => {
+      if (isGuest) return; // ゲストはお気に入り登録不可
       isTogglingRef.current = true;
       // 楽観的更新
       setFavoriteIds((prev) => {
@@ -63,7 +66,7 @@ export function useFavorites(type: 'cards' | 'articles') {
         if (!token) return;
 
         const bodyKey = type === 'cards' ? 'cardId' : 'articleId';
-        const response = await fetch(`/api/favorites/${type}`, {
+        const response = await fetch(apiUrl(`/api/favorites/${type}`), {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${token}`,
@@ -100,7 +103,7 @@ export function useFavorites(type: 'cards' | 'articles') {
         isTogglingRef.current = false;
       }
     },
-    [type]
+    [type, isGuest]
   );
 
   return {
@@ -108,5 +111,6 @@ export function useFavorites(type: 'cards' | 'articles') {
     isFavorite,
     toggleFavorite,
     isLoading,
+    isGuest,
   };
 }

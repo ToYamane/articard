@@ -73,7 +73,7 @@ await prisma.$transaction(async (tx) => {
   for (const rank of newRanks) {
     await tx.challengeAchievement.create({...});
     await tx.user.update({...});
-    await tx.knowledgeTransaction.create({...});
+    await tx.coinTransaction.create({...});
   }
 });
 ```
@@ -203,7 +203,7 @@ model Card {
 User (1)
   ├── (多) Article ──── (多) Card  [onDelete: SetNull]
   ├── (多) Card
-  ├── (多) KnowledgeTransaction
+  ├── (多) CoinTransaction
   ├── (多) ChallengeSession      // 進行中のゲーム状態のみ
   │         └── Index: [userId, status]
   ├── (多) ChallengeHighScore    // ハイスコア記録

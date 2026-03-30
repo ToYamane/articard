@@ -135,7 +135,8 @@ export async function checkAndResetDaily(userId: string): Promise<{
 
   // リセットが必要かチェック
   const needsCoinsReset = !user.dailyCoinsResetAt || !isSameJSTDay(user.dailyCoinsResetAt, now);
-  const needsChallengeReset = !user.dailyChallengeResetAt || !isSameJSTDay(user.dailyChallengeResetAt, now);
+  const needsChallengeReset =
+    !user.dailyChallengeResetAt || !isSameJSTDay(user.dailyChallengeResetAt, now);
 
   // 必要な場合のみ1回のUPDATEで実行
   if (needsCoinsReset || needsChallengeReset) {
@@ -170,7 +171,7 @@ export async function getBalances(userId: string): Promise<CoinBalances> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
-      knowledgeBalance: true,
+      coinBalance: true,
       dailyFreeCoins: true,
     },
   });
@@ -181,8 +182,8 @@ export async function getBalances(userId: string): Promise<CoinBalances> {
 
   return {
     freeCoins: user.dailyFreeCoins,
-    permanentCoins: user.knowledgeBalance,
-    totalAvailable: user.dailyFreeCoins + user.knowledgeBalance,
+    permanentCoins: user.coinBalance,
+    totalAvailable: user.dailyFreeCoins + user.coinBalance,
   };
 }
 
@@ -213,7 +214,7 @@ export async function consumeCoins(
     const user = await tx.user.findUnique({
       where: { id: userId },
       select: {
-        knowledgeBalance: true,
+        coinBalance: true,
         dailyFreeCoins: true,
       },
     });
@@ -222,7 +223,7 @@ export async function consumeCoins(
       throw ApiError.notFound('ユーザーが見つかりません');
     }
 
-    const totalAvailable = user.dailyFreeCoins + user.knowledgeBalance;
+    const totalAvailable = user.dailyFreeCoins + user.coinBalance;
 
     if (totalAvailable < amount) {
       throw ApiError.insufficientCoins(
@@ -242,19 +243,19 @@ export async function consumeCoins(
     }
 
     const newFreeBalance = user.dailyFreeCoins - freeCoinsUsed;
-    const newPermanentBalance = user.knowledgeBalance - permanentCoinsUsed;
+    const newPermanentBalance = user.coinBalance - permanentCoinsUsed;
 
     // 残高を更新
     await tx.user.update({
       where: { id: userId },
       data: {
         dailyFreeCoins: newFreeBalance,
-        knowledgeBalance: newPermanentBalance,
+        coinBalance: newPermanentBalance,
       },
     });
 
     // トランザクション履歴を記録
-    await tx.knowledgeTransaction.create({
+    await tx.coinTransaction.create({
       data: {
         userId,
         amount: -amount,
@@ -290,7 +291,7 @@ export async function addPermanentCoins(
     const user = await tx.user.findUnique({
       where: { id: userId },
       select: {
-        knowledgeBalance: true,
+        coinBalance: true,
         dailyFreeCoins: true,
       },
     });
@@ -299,14 +300,14 @@ export async function addPermanentCoins(
       throw ApiError.notFound('ユーザーが見つかりません');
     }
 
-    const newBalance = user.knowledgeBalance + amount;
+    const newBalance = user.coinBalance + amount;
 
     await tx.user.update({
       where: { id: userId },
-      data: { knowledgeBalance: newBalance },
+      data: { coinBalance: newBalance },
     });
 
-    await tx.knowledgeTransaction.create({
+    await tx.coinTransaction.create({
       data: {
         userId,
         amount,
@@ -335,10 +336,7 @@ export async function addCoins(
 /**
  * 残高が足りるかチェック
  */
-export async function hasEnoughCoins(
-  userId: string,
-  amount: number
-): Promise<boolean> {
+export async function hasEnoughCoins(userId: string, amount: number): Promise<boolean> {
   const balances = await getBalances(userId);
   return balances.totalAvailable >= amount;
 }
@@ -346,9 +344,7 @@ export async function hasEnoughCoins(
 /**
  * チャレンジ回数制限をチェック
  */
-export async function checkChallengeLimit(
-  userId: string
-): Promise<ChallengeLimitInfo> {
+export async function checkChallengeLimit(userId: string): Promise<ChallengeLimitInfo> {
   // 日次リセットを先に実行
   await checkAndResetDaily(userId);
 
@@ -370,9 +366,8 @@ export async function checkChallengeLimit(
   // プレミアムは無制限
   const isFree = freeChallenges === Infinity || count < freeChallenges;
   const cost = isFree ? 0 : COIN_COSTS.CHALLENGE_EXTRA;
-  const remainingFree = freeChallenges === Infinity
-    ? Infinity
-    : Math.max(0, freeChallenges - count);
+  const remainingFree =
+    freeChallenges === Infinity ? Infinity : Math.max(0, freeChallenges - count);
 
   return { count, isFree, cost, remainingFree };
 }
@@ -406,7 +401,7 @@ export async function getTransactions(
   const limit = options?.limit ?? DEFAULT_PAGE_SIZE;
   const cursor = options?.cursor;
 
-  const transactions = await prisma.knowledgeTransaction.findMany({
+  const transactions = await prisma.coinTransaction.findMany({
     where: { userId },
     orderBy: { createdAt: 'desc' },
     take: limit + 1,

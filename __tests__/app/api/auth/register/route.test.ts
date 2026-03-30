@@ -8,7 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 const mockVerifyIdToken = jest.fn();
 const mockFindUnique = jest.fn();
 const mockTxUserCreate = jest.fn();
-const mockTxKnowledgeTransactionCreate = jest.fn();
+const mockTxCoinTransactionCreate = jest.fn();
 const mockTransaction = jest.fn();
 
 // モックをセットアップ
@@ -32,7 +32,7 @@ import { POST } from '@/app/api/auth/register/route';
 const mockUser = {
   id: 'test-user-id-123',
   nickname: 'testuser',
-  knowledgeBalance: 300,
+  coinBalance: 300,
   isPremium: false,
   createdAt: new Date('2026-01-01T00:00:00Z'),
   updatedAt: new Date('2026-01-01T00:00:00Z'),
@@ -43,8 +43,8 @@ const mockTxPrisma = {
   user: {
     create: (...args: unknown[]) => mockTxUserCreate(...args),
   },
-  knowledgeTransaction: {
-    create: (...args: unknown[]) => mockTxKnowledgeTransactionCreate(...args),
+  coinTransaction: {
+    create: (...args: unknown[]) => mockTxCoinTransactionCreate(...args),
   },
 };
 
@@ -105,7 +105,7 @@ describe('POST /api/auth/register', () => {
     mockTransaction.mockImplementation(async (cb: (tx: typeof mockTxPrisma) => Promise<unknown>) =>
       cb(mockTxPrisma)
     );
-    mockTxKnowledgeTransactionCreate.mockResolvedValue({});
+    mockTxCoinTransactionCreate.mockResolvedValue({});
   });
 
   describe('認証チェック', () => {
@@ -249,7 +249,7 @@ describe('POST /api/auth/register', () => {
         data: {
           id: 'test-user-id-123',
           nickname: 'newuser',
-          knowledgeBalance: 300,
+          coinBalance: 300,
         },
       });
     });

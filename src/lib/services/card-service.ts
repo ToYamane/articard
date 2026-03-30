@@ -272,14 +272,14 @@ async function saveCard(
     // コイン消費（カード保存と同一トランザクション内で実行）
     const user = await tx.user.findUnique({
       where: { id: userId },
-      select: { knowledgeBalance: true, dailyFreeCoins: true },
+      select: { coinBalance: true, dailyFreeCoins: true },
     });
 
     if (!user) {
       throw new ApiError('NOT_FOUND', 'ユーザーが見つかりません', 404);
     }
 
-    const totalAvailable = user.dailyFreeCoins + user.knowledgeBalance;
+    const totalAvailable = user.dailyFreeCoins + user.coinBalance;
     if (totalAvailable < cost) {
       throw new ApiError(
         'INSUFFICIENT_COINS',
@@ -300,17 +300,17 @@ async function saveCard(
     }
 
     const newFreeBalance = user.dailyFreeCoins - freeCoinsUsed;
-    const newPermanentBalance = user.knowledgeBalance - permanentCoinsUsed;
+    const newPermanentBalance = user.coinBalance - permanentCoinsUsed;
 
     await tx.user.update({
       where: { id: userId },
       data: {
         dailyFreeCoins: newFreeBalance,
-        knowledgeBalance: newPermanentBalance,
+        coinBalance: newPermanentBalance,
       },
     });
 
-    await tx.knowledgeTransaction.create({
+    await tx.coinTransaction.create({
       data: {
         userId,
         amount: -cost,

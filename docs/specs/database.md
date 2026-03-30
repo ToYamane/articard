@@ -13,7 +13,7 @@ erDiagram
     users ||--o{ articles : "creates"
     users ||--o{ cards : "owns"
     articles ||--o{ cards : "generates"
-    users ||--o{ knowledge_transactions : "has"
+    users ||--o{ coin_transactions : "has"
     users ||--o{ challenge_sessions : "plays"
     users ||--o{ challenge_high_scores : "records"
     users ||--o{ challenge_achievements : "earns"
@@ -25,7 +25,7 @@ erDiagram
     users {
         varchar(128) id PK "Firebase UID"
         varchar(20) nickname "ニックネーム"
-        int knowledge_balance "永続コイン残高"
+        int coin_balance "永続コイン残高"
         int daily_free_coins "当日無料コイン"
         timestamp daily_coins_reset_at "コインリセット日時"
         int daily_challenge_count "当日チャレンジ回数"
@@ -71,7 +71,7 @@ erDiagram
         timestamp created_at
     }
 
-    knowledge_transactions {
+    coin_transactions {
         uuid id PK
         varchar(128) user_id FK
         int amount "増減量"
@@ -145,7 +145,7 @@ erDiagram
 CREATE TABLE users (
     id VARCHAR(128) PRIMARY KEY,  -- Firebase UID
     nickname VARCHAR(20) NOT NULL UNIQUE,
-    knowledge_balance INT NOT NULL DEFAULT 0,           -- 永続コイン
+    coin_balance INT NOT NULL DEFAULT 0,           -- 永続コイン
     daily_free_coins INT NOT NULL DEFAULT 90,           -- 当日無料コイン
     daily_coins_reset_at TIMESTAMP WITH TIME ZONE,      -- コインリセット日時
     daily_challenge_count INT NOT NULL DEFAULT 0,       -- 当日チャレンジ回数
@@ -226,12 +226,12 @@ CREATE INDEX idx_cards_keyword ON cards(keyword);
 CREATE INDEX idx_cards_keyword_gin ON cards USING gin(to_tsvector('simple', keyword));
 ```
 
-### knowledge_transactions テーブル
+### coin_transactions テーブル
 
 コインの増減履歴を管理。
 
 ```sql
-CREATE TABLE knowledge_transactions (
+CREATE TABLE coin_transactions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     amount INT NOT NULL,  -- 正:増加, 負:減少
@@ -242,9 +242,9 @@ CREATE TABLE knowledge_transactions (
 );
 
 -- インデックス
-CREATE INDEX idx_kt_user_id ON knowledge_transactions(user_id);
-CREATE INDEX idx_kt_created_at ON knowledge_transactions(created_at);
-CREATE INDEX idx_kt_type ON knowledge_transactions(transaction_type);
+CREATE INDEX idx_kt_user_id ON coin_transactions(user_id);
+CREATE INDEX idx_kt_created_at ON coin_transactions(created_at);
+CREATE INDEX idx_kt_type ON coin_transactions(transaction_type);
 ```
 
 ### challenge_achievements テーブル
@@ -422,7 +422,7 @@ enum SubscriptionTier {
 model User {
   id                        String    @id @db.VarChar(128)
   nickname                  String    @unique @db.VarChar(20)
-  knowledgeBalance          Int       @default(0) @map("knowledge_balance")
+  coinBalance               Int       @default(0) @map("coin_balance")
   dailyFreeCoins            Int       @default(90) @map("daily_free_coins")
   dailyCoinsResetAt         DateTime? @map("daily_coins_reset_at") @db.Timestamptz
   dailyChallengeCount       Int       @default(0) @map("daily_challenge_count")
@@ -440,7 +440,7 @@ model User {
 
   articles              Article[]
   cards                 Card[]
-  knowledgeTransactions KnowledgeTransaction[]
+  coinTransactions      CoinTransaction[]
   challengeSessions     ChallengeSession[]
   challengeHighScores   ChallengeHighScore[]
   challengeAchievements ChallengeAchievement[]
@@ -503,7 +503,7 @@ model Card {
   @@map("cards")
 }
 
-model KnowledgeTransaction {
+model CoinTransaction {
   id              String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId          String          @map("user_id") @db.VarChar(128)
   amount          Int
@@ -517,7 +517,7 @@ model KnowledgeTransaction {
   @@index([userId])
   @@index([createdAt])
   @@index([userId, createdAt(sort: Desc)])
-  @@map("knowledge_transactions")
+  @@map("coin_transactions")
 }
 
 model SuggestedTheme {
@@ -701,13 +701,13 @@ gcloud sql backups create --instance=INSTANCE_NAME
 
 ### 想定データ量（1年後）
 
-| テーブル               | レコード数 | サイズ     |
-| ---------------------- | ---------- | ---------- |
-| users                  | 10,000     | ~5MB       |
-| articles               | 50,000     | ~100MB     |
-| cards                  | 50,000     | ~50MB      |
-| knowledge_transactions | 100,000    | ~20MB      |
-| **合計**               | -          | **~200MB** |
+| テーブル          | レコード数 | サイズ     |
+| ----------------- | ---------- | ---------- |
+| users             | 10,000     | ~5MB       |
+| articles          | 50,000     | ~100MB     |
+| cards             | 50,000     | ~50MB      |
+| coin_transactions | 100,000    | ~20MB      |
+| **合計**          | -          | **~200MB** |
 
 ### スケーリング計画
 

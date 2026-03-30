@@ -17,6 +17,7 @@ import { Button, LoadingSpinner } from '@/components/ui';
 import { useAuthStore } from '@/stores/auth-store';
 import { useToast } from '@/hooks/use-toast';
 import { useBatchCardGeneration } from '@/hooks/use-batch-card-generation';
+import { apiUrl } from '@/lib/api/client';
 import { getIdToken } from '@/lib/firebase/client';
 import type { Article, Card } from '@prisma/client';
 import type { Rarity } from '@/types/database';
@@ -78,12 +79,14 @@ export default function HomePage() {
   const [selectedRarity, setSelectedRarity] = useState<Rarity | undefined>(undefined);
   const [selectedArtStyle, setSelectedArtStyle] = useState<ArtStyle | undefined>(undefined);
 
-  // 初期ロード時にbatch eligibilityをチェック
+  const isGuest = profile?.isGuest ?? false;
+
+  // 初期ロード時にbatch eligibilityをチェック（ゲストはスキップ）
   useEffect(() => {
-    if (user) {
+    if (user && !profile?.isGuest) {
       checkEligibility();
     }
-  }, [user, checkEligibility]);
+  }, [user, profile?.isGuest, checkEligibility]);
 
   // ユーザー統計と最近のカードを取得
   useEffect(() => {
@@ -97,10 +100,10 @@ export default function HomePage() {
         }
 
         const [cardsResponse, statsResponse] = await Promise.all([
-          fetch('/api/cards?limit=6&sortBy=createdAt&sortOrder=desc', {
+          fetch(apiUrl('/api/cards?limit=6&sortBy=createdAt&sortOrder=desc'), {
             headers: { Authorization: `Bearer ${token}` },
           }),
-          fetch('/api/stats', {
+          fetch(apiUrl('/api/stats'), {
             headers: { Authorization: `Bearer ${token}` },
           }),
         ]);
@@ -154,7 +157,7 @@ export default function HomePage() {
           throw new Error('認証トークンの取得に失敗しました');
         }
 
-        const response = await fetch('/api/cards', {
+        const response = await fetch(apiUrl('/api/cards'), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -207,7 +210,7 @@ export default function HomePage() {
           throw new Error('認証トークンの取得に失敗しました');
         }
 
-        const response = await fetch('/api/articles', {
+        const response = await fetch(apiUrl('/api/articles'), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -352,6 +355,32 @@ export default function HomePage() {
         transition={{ duration: 0.4 }}
         className="py-6"
       >
+        {/* ゲスト昇格バナー */}
+        {isGuest && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-4 overflow-hidden rounded-xl border border-purple-200 bg-gradient-to-r from-purple-50 to-blue-50 p-4 shadow-sm dark:border-purple-800/40 dark:from-purple-950/40 dark:to-blue-950/40"
+          >
+            <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-between">
+              <div className="text-center sm:text-left">
+                <p className="text-sm font-bold text-purple-800 dark:text-purple-300">
+                  アカウント登録で300コインボーナス + 全機能アンロック!
+                </p>
+                <p className="mt-0.5 text-xs text-purple-600/70 dark:text-purple-400/60">
+                  ゲストモードでは一部機能が制限されています
+                </p>
+              </div>
+              <Link
+                href="/upgrade"
+                className="shrink-0 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 px-5 py-2 text-xs font-bold text-white shadow-sm transition hover:shadow-md"
+              >
+                今すぐ登録
+              </Link>
+            </div>
+          </motion.div>
+        )}
+
         {/* ウェルカムヘッダー */}
         <motion.div
           initial={{ opacity: 0 }}
@@ -394,7 +423,7 @@ export default function HomePage() {
                       <ThemeInput
                         onSubmit={handleSubmit}
                         isLoading={isLoadingEligibility}
-                        isBatchEligible={eligibility?.eligible ?? false}
+                        isBatchEligible={isGuest ? false : (eligibility?.eligible ?? false)}
                         coinBalance={eligibility?.coinBalance ?? 0}
                       />
                       {/* 開発者モード: レアリティ・画風指定 */}

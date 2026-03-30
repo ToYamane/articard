@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Input } from '@/components/ui';
+import { apiUrl } from '@/lib/api/client';
 import { useAuth } from '@/hooks/use-auth';
 import { useAuthStore } from '@/stores/auth-store';
 
@@ -42,7 +43,7 @@ export function VerifyEmailContent() {
         return;
       }
 
-      const response = await fetch('/api/auth/verify-code', {
+      const response = await fetch(apiUrl('/api/auth/verify-code'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -80,7 +81,7 @@ export function VerifyEmailContent() {
         return;
       }
 
-      const response = await fetch('/api/auth/send-verification', {
+      const response = await fetch(apiUrl('/api/auth/send-verification'), {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       });

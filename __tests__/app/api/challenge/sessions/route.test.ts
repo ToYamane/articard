@@ -19,6 +19,16 @@ jest.mock('@/lib/auth', () => ({
   verifyAuth: (...args: unknown[]) => mockVerifyAuth(...args),
 }));
 
+// Prisma モック（ゲストチェック用）
+const mockUserFindUnique = jest.fn();
+jest.mock('@/lib/prisma', () => ({
+  prisma: {
+    user: {
+      findUnique: (...args: unknown[]) => mockUserFindUnique(...args),
+    },
+  },
+}));
+
 // Challenge service モック
 const mockCreateSession = jest.fn();
 const mockGetUserSessions = jest.fn();
@@ -35,6 +45,8 @@ describe('/api/challenge/sessions', () => {
       email: 'test@example.com',
       emailVerified: true,
     });
+    // ゲストチェック: デフォルトは正規ユーザー
+    mockUserFindUnique.mockResolvedValue({ isGuest: false });
   });
 
   // ==================== POST ====================
@@ -88,10 +100,7 @@ describe('/api/challenge/sessions', () => {
 
       expect(data.id).toBe('session-id-001');
       expect(data.scenarioId).toBe('space_exploration');
-      expect(mockCreateSession).toHaveBeenCalledWith(
-        'test-user-id-123',
-        'space_exploration'
-      );
+      expect(mockCreateSession).toHaveBeenCalledWith('test-user-id-123', 'space_exploration');
     });
 
     it('サービスエラーの場合、500を返す', async () => {
@@ -148,11 +157,7 @@ describe('/api/challenge/sessions', () => {
       const response = await GET(req);
 
       await expectSuccessResponse(response, 200);
-      expect(mockGetUserSessions).toHaveBeenCalledWith(
-        'test-user-id-123',
-        'completed',
-        10
-      );
+      expect(mockGetUserSessions).toHaveBeenCalledWith('test-user-id-123', 'completed', 10);
     });
 
     it('limitパラメータが正しく渡される', async () => {
@@ -164,11 +169,7 @@ describe('/api/challenge/sessions', () => {
       const response = await GET(req);
 
       await expectSuccessResponse(response, 200);
-      expect(mockGetUserSessions).toHaveBeenCalledWith(
-        'test-user-id-123',
-        undefined,
-        5
-      );
+      expect(mockGetUserSessions).toHaveBeenCalledWith('test-user-id-123', undefined, 5);
     });
   });
 });

@@ -25,12 +25,13 @@ const publicRoutes = [
 ];
 
 // Routes that require authentication but NOT setup
-const authOnlyRoutes = ['/setup', '/verify-email'];
+const authOnlyRoutes = ['/setup', '/verify-email', '/upgrade'];
 
 export function AuthGuard({ children, requireAuth = true, requireSetup = true }: AuthGuardProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const { isAuthenticated, isRegistered, isInitialized, needsEmailVerification } = useAuth();
+  const { isAuthenticated, isRegistered, isGuest, isInitialized, needsEmailVerification } =
+    useAuth();
 
   useEffect(() => {
     if (!isInitialized) return;
@@ -51,7 +52,9 @@ export function AuthGuard({ children, requireAuth = true, requireSetup = true }:
       isAuthenticated &&
       (pathname === '/login' || pathname === '/register' || pathname === '/')
     ) {
-      if (needsEmailVerification) {
+      if (isGuest) {
+        router.push('/home');
+      } else if (needsEmailVerification) {
         router.push('/verify-email');
       } else if (isRegistered) {
         router.push('/home');
@@ -62,7 +65,8 @@ export function AuthGuard({ children, requireAuth = true, requireSetup = true }:
     }
 
     // 3. If user is authenticated but email not verified (redirect to verify-email)
-    if (isAuthenticated && needsEmailVerification && pathname !== '/verify-email') {
+    // Skip for guest users (anonymous auth has no email)
+    if (isAuthenticated && !isGuest && needsEmailVerification && pathname !== '/verify-email') {
       router.push('/verify-email');
       return;
     }
@@ -78,11 +82,13 @@ export function AuthGuard({ children, requireAuth = true, requireSetup = true }:
     }
 
     // 5. If user is authenticated but not registered (needs setup)
+    // Skip for guest users (they are registered with isGuest=true)
     if (
       requireAuth &&
       requireSetup &&
       isAuthenticated &&
       !isRegistered &&
+      !isGuest &&
       !isAuthOnlyRoute &&
       !isPublicRoute
     ) {
@@ -99,6 +105,7 @@ export function AuthGuard({ children, requireAuth = true, requireSetup = true }:
     isInitialized,
     isAuthenticated,
     isRegistered,
+    isGuest,
     needsEmailVerification,
     pathname,
     router,

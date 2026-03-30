@@ -1,13 +1,9 @@
 import { withAuth } from '@/lib/api/with-auth';
 import { parseBody, parseQuery } from '@/lib/api/validation';
-import {
-  createSessionSchema,
-  getSessionsQuerySchema,
-} from '@/lib/validations/challenge';
-import {
-  createSession,
-  getUserSessions,
-} from '@/lib/services/challenge-service';
+import { createSessionSchema, getSessionsQuerySchema } from '@/lib/validations/challenge';
+import { createSession, getUserSessions } from '@/lib/services/challenge-service';
+import { prisma } from '@/lib/prisma';
+import { ApiError } from '@/lib/errors';
 import type { ChallengeSessionStatus } from '@/types/challenge';
 
 interface SessionResponse {
@@ -27,23 +23,30 @@ interface SessionListItem {
 }
 
 // セッション作成
-export const POST = withAuth<SessionResponse>(async (authUser, req) => {
-  const { data, error } = await parseBody(req, createSessionSchema);
-  if (error) return error;
+export const POST = withAuth<SessionResponse>(
+  async (authUser, req) => {
+    const user = await prisma.user.findUnique({
+      where: { id: authUser.uid },
+      select: { isGuest: true },
+    });
+    if (user?.isGuest) {
+      throw new ApiError('GUEST_RESTRICTED', 'チャレンジモードはアカウント登録が必要です', 403);
+    }
 
-  return createSession(authUser.uid, data.scenarioId);
-}, { rateLimit: 'standard' });
+    const { data, error } = await parseBody(req, createSessionSchema);
+    if (error) return error;
+
+    return createSession(authUser.uid, data.scenarioId);
+  },
+  { rateLimit: 'standard' }
+);
 
 // セッション一覧取得
 export const GET = withAuth<{ sessions: SessionListItem[] }>(async (authUser, req) => {
   const { data, error } = parseQuery(req, getSessionsQuerySchema);
   if (error) return error;
 
-  const sessions = await getUserSessions(
-    authUser.uid,
-    data.status,
-    data.limit
-  );
+  const sessions = await getUserSessions(authUser.uid, data.status, data.limit);
 
   return { sessions };
 });

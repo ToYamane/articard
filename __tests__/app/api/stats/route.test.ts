@@ -28,7 +28,7 @@ jest.mock('@/lib/prisma', () => {
     article: {
       count: (...args: unknown[]) => mockArticleCount(...args),
     },
-    knowledgeTransaction: {
+    coinTransaction: {
       aggregate: (...args: unknown[]) => mockAggregate(...args),
     },
   };

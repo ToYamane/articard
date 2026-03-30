@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Button, Input } from '@/components/ui';
+import { apiUrl } from '@/lib/api/client';
 import { emailSchema, passwordSchema } from '@/lib/validations/user';
 
 type Step = 'email' | 'code' | 'done';
@@ -37,7 +38,7 @@ export function ForgotPasswordContent() {
 
     setIsLoading(true);
     try {
-      const response = await fetch('/api/auth/send-password-reset', {
+      const response = await fetch(apiUrl('/api/auth/send-password-reset'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
@@ -62,7 +63,7 @@ export function ForgotPasswordContent() {
     setError('');
     setIsLoading(true);
     try {
-      const response = await fetch('/api/auth/send-password-reset', {
+      const response = await fetch(apiUrl('/api/auth/send-password-reset'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
@@ -102,7 +103,7 @@ export function ForgotPasswordContent() {
 
     setIsLoading(true);
     try {
-      const response = await fetch('/api/auth/reset-password', {
+      const response = await fetch(apiUrl('/api/auth/reset-password'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, code, newPassword }),

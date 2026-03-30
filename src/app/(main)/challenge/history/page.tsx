@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { LoadingSpinner, Button } from '@/components/ui';
 import { useToast } from '@/hooks/use-toast';
+import { apiUrl } from '@/lib/api/client';
 import { getIdToken } from '@/lib/firebase/client';
 import { getScenarioById } from '@/lib/challenge';
 import { getScoreRank } from '@/lib/challenge';
@@ -33,7 +34,7 @@ export default function ChallengeHistoryPage() {
         const token = await getIdToken();
         if (!token) throw new Error('認証トークンの取得に失敗しました');
 
-        const response = await fetch('/api/challenge/sessions?status=completed&limit=50', {
+        const response = await fetch(apiUrl('/api/challenge/sessions?status=completed&limit=50'), {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -62,17 +63,11 @@ export default function ChallengeHistoryPage() {
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="py-6"
-    >
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="py-6">
       {/* Header */}
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-            チャレンジ履歴
-          </h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">チャレンジ履歴</h1>
           <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
             過去のチャレンジ結果を確認
           </p>
@@ -84,15 +79,11 @@ export default function ChallengeHistoryPage() {
 
       {sessions.length === 0 ? (
         <div className="py-12 text-center">
-          <div className="mb-4 text-4xl" aria-hidden="true">📜</div>
-          <p className="text-gray-500 dark:text-gray-400">
-            まだチャレンジ履歴がありません
-          </p>
-          <Button
-            type="button"
-            onClick={() => router.push('/challenge')}
-            className="mt-4"
-          >
+          <div className="mb-4 text-4xl" aria-hidden="true">
+            📜
+          </div>
+          <p className="text-gray-500 dark:text-gray-400">まだチャレンジ履歴がありません</p>
+          <Button type="button" onClick={() => router.push('/challenge')} className="mt-4">
             チャレンジを始める
           </Button>
         </div>
@@ -123,9 +114,7 @@ export default function ChallengeHistoryPage() {
                   <p className="font-medium text-gray-900 dark:text-gray-100">
                     {scenario?.title || session.scenarioId}
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    {completedDate}
-                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{completedDate}</p>
                 </div>
 
                 {/* Score & Rank */}
@@ -143,12 +132,12 @@ export default function ChallengeHistoryPage() {
                       rank === 'S'
                         ? 'border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20'
                         : rank === 'A'
-                        ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
-                        : rank === 'B'
-                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                        : rank === 'C'
-                        ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
-                        : 'border-gray-400 bg-gray-50 dark:bg-gray-950'
+                          ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
+                          : rank === 'B'
+                            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                            : rank === 'C'
+                              ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
+                              : 'border-gray-400 bg-gray-50 dark:bg-gray-950'
                     )}
                   >
                     {rank}

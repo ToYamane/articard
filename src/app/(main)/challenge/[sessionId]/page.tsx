@@ -14,6 +14,7 @@ import {
 } from '@/components/challenge';
 import { LoadingSpinner, Button } from '@/components/ui';
 import { useToast } from '@/hooks/use-toast';
+import { apiUrl } from '@/lib/api/client';
 import { getIdToken } from '@/lib/firebase/client';
 import { getScenarioById } from '@/lib/challenge';
 import type { Card } from '@prisma/client';
@@ -108,7 +109,7 @@ export default function ChallengeGamePage() {
       const token = await getIdToken();
       if (!token) throw new Error('認証トークンの取得に失敗しました');
 
-      const response = await fetch(`/api/challenge/sessions/${sessionId}`, {
+      const response = await fetch(apiUrl(`/api/challenge/sessions/${sessionId}`), {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -131,7 +132,7 @@ export default function ChallengeGamePage() {
       const token = await getIdToken();
       if (!token) throw new Error('認証トークンの取得に失敗しました');
 
-      const response = await fetch('/api/cards?limit=200', {
+      const response = await fetch(apiUrl('/api/cards?limit=200'), {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -153,7 +154,7 @@ export default function ChallengeGamePage() {
       const token = await getIdToken();
       if (!token) throw new Error('認証トークンの取得に失敗しました');
 
-      const response = await fetch(`/api/challenge/sessions/${sessionId}/challenge`, {
+      const response = await fetch(apiUrl(`/api/challenge/sessions/${sessionId}/challenge`), {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -215,7 +216,7 @@ export default function ChallengeGamePage() {
         const token = await getIdToken();
         if (!token) throw new Error('認証トークンの取得に失敗しました');
 
-        const response = await fetch(`/api/challenge/sessions/${sessionId}/deck`, {
+        const response = await fetch(apiUrl(`/api/challenge/sessions/${sessionId}/deck`), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -250,7 +251,7 @@ export default function ChallengeGamePage() {
         const token = await getIdToken();
         if (!token) throw new Error('認証トークンの取得に失敗しました');
 
-        const response = await fetch(`/api/challenge/sessions/${sessionId}/submit`, {
+        const response = await fetch(apiUrl(`/api/challenge/sessions/${sessionId}/submit`), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -318,7 +319,7 @@ export default function ChallengeGamePage() {
       if (!token) throw new Error('認証トークンの取得に失敗しました');
 
       // 新しいセッションを作成
-      const response = await fetch('/api/challenge/sessions', {
+      const response = await fetch(apiUrl('/api/challenge/sessions'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -19,7 +19,7 @@ export interface SubscriptionStatus {
   tier: SubscriptionTier | null;
   expiresAt: Date | null;
   bonusReceived: boolean;
-  plan: typeof SUBSCRIPTION_PLANS[SubscriptionTier] | null;
+  plan: (typeof SUBSCRIPTION_PLANS)[SubscriptionTier] | null;
 }
 
 /**
@@ -42,7 +42,7 @@ export async function activateSubscription(
       where: { id: userId },
       select: {
         subscriptionBonusReceived: true,
-        knowledgeBalance: true,
+        coinBalance: true,
         dailyFreeCoins: true,
       },
     });
@@ -53,7 +53,7 @@ export async function activateSubscription(
 
     // ボーナス付与（毎回）
     const bonusCoins = plan.bonus;
-    const newBalance = user.knowledgeBalance + bonusCoins;
+    const newBalance = user.coinBalance + bonusCoins;
 
     // ユーザー情報更新
     await tx.user.update({
@@ -63,7 +63,7 @@ export async function activateSubscription(
         isPremium: true,
         premiumExpiresAt: expiresAt,
         subscriptionBonusReceived: true,
-        knowledgeBalance: newBalance,
+        coinBalance: newBalance,
         // 日次コインも即時更新
         dailyFreeCoins: Math.max(user.dailyFreeCoins, plan.dailyFreeCoins),
       },
@@ -71,7 +71,7 @@ export async function activateSubscription(
 
     // ボーナス付与のトランザクション履歴
     if (bonusCoins > 0) {
-      await tx.knowledgeTransaction.create({
+      await tx.coinTransaction.create({
         data: {
           userId,
           amount: bonusCoins,
@@ -94,9 +94,7 @@ export async function activateSubscription(
 /**
  * サブスクリプション状態を取得
  */
-export async function getSubscriptionStatus(
-  userId: string
-): Promise<SubscriptionStatus> {
+export async function getSubscriptionStatus(userId: string): Promise<SubscriptionStatus> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {

@@ -36,7 +36,7 @@ const mockTxPrisma = {
     findUnique: jest.fn(),
     update: jest.fn(),
   },
-  knowledgeTransaction: {
+  coinTransaction: {
     create: jest.fn(),
   },
 };
@@ -47,7 +47,7 @@ jest.mock('@/lib/prisma', () => ({
       findUnique: (...args: unknown[]) => mockUserFindUnique(...args),
       update: (...args: unknown[]) => mockUserUpdate(...args),
     },
-    knowledgeTransaction: {
+    coinTransaction: {
       findMany: (...args: unknown[]) => mockTxnFindMany(...args),
       create: (...args: unknown[]) => mockTxnCreate(...args),
     },
@@ -202,9 +202,7 @@ describe('coin-service', () => {
     it('ユーザーが見つからない場合エラーを投げる', async () => {
       mockUserFindUnique.mockResolvedValue(null);
 
-      await expect(checkAndResetDaily('nonexistent')).rejects.toThrow(
-        'ユーザーが見つかりません'
-      );
+      await expect(checkAndResetDaily('nonexistent')).rejects.toThrow('ユーザーが見つかりません');
     });
   });
 
@@ -220,7 +218,7 @@ describe('coin-service', () => {
         })
         // getBalances用
         .mockResolvedValueOnce({
-          knowledgeBalance: 100,
+          coinBalance: 100,
           dailyFreeCoins: 90,
         });
 
@@ -244,9 +242,7 @@ describe('coin-service', () => {
         // getBalances用
         .mockResolvedValueOnce(null);
 
-      await expect(getBalances('nonexistent')).rejects.toThrow(
-        'ユーザーが見つかりません'
-      );
+      await expect(getBalances('nonexistent')).rejects.toThrow('ユーザーが見つかりません');
     });
   });
 
@@ -260,7 +256,7 @@ describe('coin-service', () => {
           subscriptionTier: null,
         })
         .mockResolvedValueOnce({
-          knowledgeBalance: 100,
+          coinBalance: 100,
           dailyFreeCoins: 90,
         });
 
@@ -282,11 +278,11 @@ describe('coin-service', () => {
 
       // tx内のfindUnique
       mockTxPrisma.user.findUnique.mockResolvedValue({
-        knowledgeBalance: 100,
+        coinBalance: 100,
         dailyFreeCoins: 90,
       });
       mockTxPrisma.user.update.mockResolvedValue({});
-      mockTxPrisma.knowledgeTransaction.create.mockResolvedValue({});
+      mockTxPrisma.coinTransaction.create.mockResolvedValue({});
 
       const result = await consumeCoins('test-user-id-123', 30, 'カード生成');
 
@@ -301,7 +297,7 @@ describe('coin-service', () => {
         expect.objectContaining({
           data: {
             dailyFreeCoins: 60,
-            knowledgeBalance: 100,
+            coinBalance: 100,
           },
         })
       );
@@ -315,11 +311,11 @@ describe('coin-service', () => {
       });
 
       mockTxPrisma.user.findUnique.mockResolvedValue({
-        knowledgeBalance: 100,
+        coinBalance: 100,
         dailyFreeCoins: 20,
       });
       mockTxPrisma.user.update.mockResolvedValue({});
-      mockTxPrisma.knowledgeTransaction.create.mockResolvedValue({});
+      mockTxPrisma.coinTransaction.create.mockResolvedValue({});
 
       const result = await consumeCoins('test-user-id-123', 30, 'カード生成');
 
@@ -339,25 +335,25 @@ describe('coin-service', () => {
       });
 
       mockTxPrisma.user.findUnique.mockResolvedValue({
-        knowledgeBalance: 0,
+        coinBalance: 0,
         dailyFreeCoins: 10,
       });
 
-      await expect(
-        consumeCoins('test-user-id-123', 30, 'カード生成')
-      ).rejects.toThrow('コインが不足しています');
+      await expect(consumeCoins('test-user-id-123', 30, 'カード生成')).rejects.toThrow(
+        'コインが不足しています'
+      );
     });
 
     it('消費額が0以下の場合エラーを投げる', async () => {
-      await expect(
-        consumeCoins('test-user-id-123', 0, 'テスト')
-      ).rejects.toThrow('消費額は正の値である必要があります');
+      await expect(consumeCoins('test-user-id-123', 0, 'テスト')).rejects.toThrow(
+        '消費額は正の値である必要があります'
+      );
     });
 
     it('負の消費額の場合エラーを投げる', async () => {
-      await expect(
-        consumeCoins('test-user-id-123', -10, 'テスト')
-      ).rejects.toThrow('消費額は正の値である必要があります');
+      await expect(consumeCoins('test-user-id-123', -10, 'テスト')).rejects.toThrow(
+        '消費額は正の値である必要があります'
+      );
     });
 
     it('トランザクション内でユーザーが見つからない場合エラーを投げる', async () => {
@@ -369,9 +365,9 @@ describe('coin-service', () => {
 
       mockTxPrisma.user.findUnique.mockResolvedValue(null);
 
-      await expect(
-        consumeCoins('nonexistent', 30, 'テスト')
-      ).rejects.toThrow('ユーザーが見つかりません');
+      await expect(consumeCoins('nonexistent', 30, 'テスト')).rejects.toThrow(
+        'ユーザーが見つかりません'
+      );
     });
 
     it('トランザクション履歴が正しく記録される', async () => {
@@ -382,15 +378,15 @@ describe('coin-service', () => {
       });
 
       mockTxPrisma.user.findUnique.mockResolvedValue({
-        knowledgeBalance: 100,
+        coinBalance: 100,
         dailyFreeCoins: 90,
       });
       mockTxPrisma.user.update.mockResolvedValue({});
-      mockTxPrisma.knowledgeTransaction.create.mockResolvedValue({});
+      mockTxPrisma.coinTransaction.create.mockResolvedValue({});
 
       await consumeCoins('test-user-id-123', 30, 'カード生成');
 
-      expect(mockTxPrisma.knowledgeTransaction.create).toHaveBeenCalledWith({
+      expect(mockTxPrisma.coinTransaction.create).toHaveBeenCalledWith({
         data: {
           userId: 'test-user-id-123',
           amount: -30,
@@ -406,28 +402,23 @@ describe('coin-service', () => {
   describe('addPermanentCoins', () => {
     it('永続コインを正しく加算する', async () => {
       mockTxPrisma.user.findUnique.mockResolvedValue({
-        knowledgeBalance: 100,
+        coinBalance: 100,
         dailyFreeCoins: 90,
       });
       mockTxPrisma.user.update.mockResolvedValue({});
-      mockTxPrisma.knowledgeTransaction.create.mockResolvedValue({});
+      mockTxPrisma.coinTransaction.create.mockResolvedValue({});
 
-      const result = await addPermanentCoins(
-        'test-user-id-123',
-        30,
-        'bonus',
-        'チャレンジ報酬'
-      );
+      const result = await addPermanentCoins('test-user-id-123', 30, 'bonus', 'チャレンジ報酬');
 
       expect(result).toBe(130);
 
       expect(mockTxPrisma.user.update).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: { knowledgeBalance: 130 },
+          data: { coinBalance: 130 },
         })
       );
 
-      expect(mockTxPrisma.knowledgeTransaction.create).toHaveBeenCalledWith({
+      expect(mockTxPrisma.coinTransaction.create).toHaveBeenCalledWith({
         data: {
           userId: 'test-user-id-123',
           amount: 30,
@@ -439,23 +430,23 @@ describe('coin-service', () => {
     });
 
     it('加算額が0以下の場合エラーを投げる', async () => {
-      await expect(
-        addPermanentCoins('test-user-id-123', 0, 'bonus', 'テスト')
-      ).rejects.toThrow('加算額は正の値である必要があります');
+      await expect(addPermanentCoins('test-user-id-123', 0, 'bonus', 'テスト')).rejects.toThrow(
+        '加算額は正の値である必要があります'
+      );
     });
 
     it('負の加算額の場合エラーを投げる', async () => {
-      await expect(
-        addPermanentCoins('test-user-id-123', -10, 'bonus', 'テスト')
-      ).rejects.toThrow('加算額は正の値である必要があります');
+      await expect(addPermanentCoins('test-user-id-123', -10, 'bonus', 'テスト')).rejects.toThrow(
+        '加算額は正の値である必要があります'
+      );
     });
 
     it('ユーザーが見つからない場合エラーを投げる', async () => {
       mockTxPrisma.user.findUnique.mockResolvedValue(null);
 
-      await expect(
-        addPermanentCoins('nonexistent', 30, 'bonus', 'テスト')
-      ).rejects.toThrow('ユーザーが見つかりません');
+      await expect(addPermanentCoins('nonexistent', 30, 'bonus', 'テスト')).rejects.toThrow(
+        'ユーザーが見つかりません'
+      );
     });
   });
 
@@ -463,18 +454,13 @@ describe('coin-service', () => {
   describe('addCoins', () => {
     it('addPermanentCoinsのエイリアスとして機能する', async () => {
       mockTxPrisma.user.findUnique.mockResolvedValue({
-        knowledgeBalance: 100,
+        coinBalance: 100,
         dailyFreeCoins: 90,
       });
       mockTxPrisma.user.update.mockResolvedValue({});
-      mockTxPrisma.knowledgeTransaction.create.mockResolvedValue({});
+      mockTxPrisma.coinTransaction.create.mockResolvedValue({});
 
-      const result = await addCoins(
-        'test-user-id-123',
-        50,
-        'purchase',
-        'コイン購入'
-      );
+      const result = await addCoins('test-user-id-123', 50, 'purchase', 'コイン購入');
 
       expect(result).toBe(150);
     });
@@ -490,7 +476,7 @@ describe('coin-service', () => {
           subscriptionTier: null,
         })
         .mockResolvedValueOnce({
-          knowledgeBalance: 100,
+          coinBalance: 100,
           dailyFreeCoins: 90,
         });
 
@@ -507,7 +493,7 @@ describe('coin-service', () => {
           subscriptionTier: null,
         })
         .mockResolvedValueOnce({
-          knowledgeBalance: 100,
+          coinBalance: 100,
           dailyFreeCoins: 90,
         });
 
@@ -618,9 +604,7 @@ describe('coin-service', () => {
         })
         .mockResolvedValueOnce(null);
 
-      await expect(checkChallengeLimit('nonexistent')).rejects.toThrow(
-        'ユーザーが見つかりません'
-      );
+      await expect(checkChallengeLimit('nonexistent')).rejects.toThrow('ユーザーが見つかりません');
     });
   });
 
@@ -648,8 +632,22 @@ describe('coin-service', () => {
   describe('getTransactions', () => {
     it('トランザクション一覧を取得できる', async () => {
       const txns = [
-        { id: 'txn-1', amount: -30, transactionType: 'consume', description: 'カード生成', balanceAfter: 70, createdAt: new Date() },
-        { id: 'txn-2', amount: 30, transactionType: 'bonus', description: '報酬', balanceAfter: 100, createdAt: new Date() },
+        {
+          id: 'txn-1',
+          amount: -30,
+          transactionType: 'consume',
+          description: 'カード生成',
+          balanceAfter: 70,
+          createdAt: new Date(),
+        },
+        {
+          id: 'txn-2',
+          amount: 30,
+          transactionType: 'bonus',
+          description: '報酬',
+          balanceAfter: 100,
+          createdAt: new Date(),
+        },
       ];
       mockTxnFindMany.mockResolvedValue(txns);
 

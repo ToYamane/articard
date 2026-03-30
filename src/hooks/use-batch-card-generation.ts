@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useRef } from 'react';
+import { apiUrl } from '@/lib/api/client';
 import { getIdToken } from '@/lib/firebase/client';
 import type { Card } from '@prisma/client';
 
@@ -62,8 +63,8 @@ export function useBatchCardGeneration() {
       if (!token) throw new Error('認証トークンの取得に失敗しました');
 
       const url = articleId
-        ? `/api/cards/batch/eligibility?articleId=${articleId}`
-        : '/api/cards/batch/eligibility';
+        ? apiUrl(`/api/cards/batch/eligibility?articleId=${articleId}`)
+        : apiUrl('/api/cards/batch/eligibility');
 
       const response = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },
@@ -120,7 +121,7 @@ export function useBatchCardGeneration() {
         index: number
       ): Promise<{ index: number; card?: Card; error?: string }> => {
         try {
-          const response = await fetch('/api/cards', {
+          const response = await fetch(apiUrl('/api/cards'), {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

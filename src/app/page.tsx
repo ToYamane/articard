@@ -6,6 +6,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useAuth } from '@/hooks/use-auth';
+import { signInAsGuest } from '@/lib/firebase/client';
+import { apiUrl } from '@/lib/api/client';
 
 const sparklePositions = [
   { top: '8%', left: '15%', delay: '0s', size: 4 },
@@ -296,6 +298,23 @@ function CardCarousel() {
 export default function LandingPage() {
   const router = useRouter();
   const { isAuthenticated, isRegistered, isInitialized } = useAuth();
+  const [guestLoading, setGuestLoading] = useState(false);
+
+  const handleGuestSignIn = useCallback(async () => {
+    setGuestLoading(true);
+    try {
+      const { user: guestUser } = await signInAsGuest();
+      const token = await guestUser.getIdToken();
+      await fetch(apiUrl('/api/auth/guest-register'), {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      router.push('/home');
+    } catch (error) {
+      console.error('Guest sign-in failed:', error);
+      setGuestLoading(false);
+    }
+  }, [router]);
 
   useEffect(() => {
     if (!isInitialized) return;
@@ -442,6 +461,13 @@ export default function LandingPage() {
               ログイン
             </Link>
           </div>
+          <button
+            onClick={handleGuestSignIn}
+            disabled={guestLoading}
+            className="mt-4 rounded-full border border-white/40 px-6 py-2.5 text-sm font-medium text-white/80 transition hover:border-white/60 hover:bg-white/10 hover:text-white disabled:opacity-50 md:text-base"
+          >
+            {guestLoading ? '準備中...' : '登録せずに試す →'}
+          </button>
         </motion.div>
 
         {/* Scroll indicator */}
@@ -737,6 +763,13 @@ export default function LandingPage() {
           >
             無料ではじめる
           </Link>
+          <button
+            onClick={handleGuestSignIn}
+            disabled={guestLoading}
+            className="rounded-full border border-white/40 px-6 py-2.5 text-sm font-medium text-white/80 transition hover:border-white/60 hover:bg-white/10 hover:text-white disabled:opacity-50 md:text-base"
+          >
+            {guestLoading ? '準備中...' : '登録せずに試す →'}
+          </button>
         </motion.div>
       </section>
 

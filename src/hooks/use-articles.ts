@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from 'react';
 import { useInfiniteScroll } from './use-infinite-scroll';
+import { apiUrl } from '@/lib/api/client';
 import { getIdToken } from '@/lib/firebase/client';
 import type { Article } from '@prisma/client';
 
@@ -40,7 +41,7 @@ export function useArticles() {
       }
       params.append('limit', '20');
 
-      const response = await fetch(`/api/articles?${params.toString()}`, {
+      const response = await fetch(apiUrl(`/api/articles?${params.toString()}`), {
         headers: {
           Authorization: `Bearer ${token}`,
         },

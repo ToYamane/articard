@@ -3,9 +3,12 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
+import Link from 'next/link';
 import { ScenarioCard } from '@/components/challenge';
 import { LoadingSpinner, Button } from '@/components/ui';
 import { useToast } from '@/hooks/use-toast';
+import { useAuthStore } from '@/stores/auth-store';
+import { apiUrl } from '@/lib/api/client';
 import { getIdToken } from '@/lib/firebase/client';
 import type { ScenarioListItem, ChallengeSessionStatus } from '@/types/challenge';
 import { DIFFICULTY_DISPLAY_NAMES } from '@/types/challenge';
@@ -31,8 +34,11 @@ interface ChallengeInfo {
 export default function ChallengePage() {
   const router = useRouter();
   const { addToast } = useToast();
+  const { profile } = useAuthStore();
 
-  const [scenarios, setScenarios] = useState<(ScenarioListItem & { highScore?: number | null; playCount?: number | null })[]>([]);
+  const [scenarios, setScenarios] = useState<
+    (ScenarioListItem & { highScore?: number | null; playCount?: number | null })[]
+  >([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState<string | null>(null);
   const [difficultyFilter, setDifficultyFilter] = useState<DifficultyFilter>('all');
@@ -69,13 +75,13 @@ export default function ChallengePage() {
 
         // シナリオ一覧、セッション一覧、コイン情報を並列取得
         const [scenariosRes, sessionsRes, coinsRes] = await Promise.all([
-          fetch('/api/challenge/scenarios', {
+          fetch(apiUrl('/api/challenge/scenarios'), {
             headers: { Authorization: `Bearer ${token}` },
           }),
-          fetch('/api/challenge/sessions?status=in_progress&limit=1', {
+          fetch(apiUrl('/api/challenge/sessions?status=in_progress&limit=1'), {
             headers: { Authorization: `Bearer ${token}` },
           }),
-          fetch('/api/coins', {
+          fetch(apiUrl('/api/coins'), {
             headers: { Authorization: `Bearer ${token}` },
           }),
         ]);
@@ -117,7 +123,7 @@ export default function ChallengePage() {
           throw new Error('認証トークンの取得に失敗しました');
         }
 
-        const response = await fetch('/api/challenge/sessions', {
+        const response = await fetch(apiUrl('/api/challenge/sessions'), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -135,10 +141,7 @@ export default function ChallengePage() {
         router.push(`/challenge/${data.data.id}`);
       } catch (error) {
         console.error('Create session error:', error);
-        addToast(
-          error instanceof Error ? error.message : 'エラーが発生しました',
-          'error'
-        );
+        addToast(error instanceof Error ? error.message : 'エラーが発生しました', 'error');
         setIsCreating(null);
       }
     },
@@ -160,9 +163,9 @@ export default function ChallengePage() {
       const token = await getIdToken();
       if (!token) {
         throw new Error('認証トークンの取得に失敗しました');
-        }
+      }
 
-      const response = await fetch(`/api/challenge/sessions/${existingSession.id}`, {
+      const response = await fetch(apiUrl(`/api/challenge/sessions/${existingSession.id}`), {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -177,12 +180,32 @@ export default function ChallengePage() {
       addToast('セッションを中断しました', 'success');
     } catch (error) {
       console.error('Abandon session error:', error);
-      addToast(
-        error instanceof Error ? error.message : 'エラーが発生しました',
-        'error'
-      );
+      addToast(error instanceof Error ? error.message : 'エラーが発生しました', 'error');
     }
   }, [existingSession, addToast]);
+
+  // ゲストユーザーはチャレンジモード利用不可
+  if (profile?.isGuest) {
+    return (
+      <div className="flex min-h-[60vh] flex-col items-center justify-center px-4">
+        <div className="text-center">
+          <p className="text-6xl">&#x2694;&#xFE0F;</p>
+          <h2 className="mt-4 text-xl font-bold text-gray-900 dark:text-white">
+            チャレンジモードはアカウント登録が必要です
+          </h2>
+          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+            登録すると300コインボーナスも受け取れます
+          </p>
+          <Link
+            href="/upgrade"
+            className="mt-6 inline-block rounded-full bg-gradient-to-r from-purple-600 to-blue-600 px-6 py-3 text-sm font-bold text-white shadow-lg transition hover:shadow-xl"
+          >
+            アカウント登録
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -201,9 +224,7 @@ export default function ChallengePage() {
     >
       {/* ヘッダー */}
       <div className="mb-8 text-center">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          チャレンジモード
-        </h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">チャレンジモード</h1>
         <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
           カードを使って冒険に挑戦しよう！
         </p>
@@ -211,21 +232,19 @@ export default function ChallengePage() {
         {/* チャレンジ回数情報 */}
         {challengeInfo && (
           <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-gray-100 px-4 py-2 dark:bg-gray-950">
-            <span className="text-sm text-gray-600 dark:text-gray-400">
-              本日の無料回数:
-            </span>
+            <span className="text-sm text-gray-600 dark:text-gray-400">本日の無料回数:</span>
             {challengeInfo.remainingFree === -1 ? (
-              <span className="font-medium text-green-600 dark:text-green-400">
-                無制限
-              </span>
+              <span className="font-medium text-green-600 dark:text-green-400">無制限</span>
             ) : (
               <>
-                <span className={cn(
-                  'font-medium',
-                  challengeInfo.remainingFree > 0
-                    ? 'text-green-600 dark:text-green-400'
-                    : 'text-orange-600 dark:text-orange-400'
-                )}>
+                <span
+                  className={cn(
+                    'font-medium',
+                    challengeInfo.remainingFree > 0
+                      ? 'text-green-600 dark:text-green-400'
+                      : 'text-orange-600 dark:text-orange-400'
+                  )}
+                >
                   {challengeInfo.remainingFree}/{challengeInfo.remainingFree + challengeInfo.count}
                 </span>
                 {!challengeInfo.isFree && (
@@ -293,9 +312,7 @@ export default function ChallengePage() {
               <p className="font-medium text-blue-900 dark:text-blue-100">
                 進行中のチャレンジがあります
               </p>
-              <p className="text-sm text-blue-700 dark:text-blue-300">
-                プレイ中
-              </p>
+              <p className="text-sm text-blue-700 dark:text-blue-300">プレイ中</p>
             </div>
             <div className="flex gap-2">
               <Button type="button" onClick={handleContinueSession} size="sm">
@@ -331,9 +348,7 @@ export default function ChallengePage() {
       {scenarios.length === 0 && (
         <div className="py-12 text-center">
           <div className="mb-4 text-4xl">🎮</div>
-          <p className="text-gray-500 dark:text-gray-400">
-            利用可能なシナリオがありません
-          </p>
+          <p className="text-gray-500 dark:text-gray-400">利用可能なシナリオがありません</p>
         </div>
       )}
 
@@ -341,9 +356,7 @@ export default function ChallengePage() {
       {scenarios.length > 0 && filteredScenarios.length === 0 && (
         <div className="py-12 text-center">
           <div className="mb-4 text-4xl">🔍</div>
-          <p className="text-gray-500 dark:text-gray-400">
-            該当するシナリオがありません
-          </p>
+          <p className="text-gray-500 dark:text-gray-400">該当するシナリオがありません</p>
           <button
             type="button"
             onClick={() => setDifficultyFilter('all')}
