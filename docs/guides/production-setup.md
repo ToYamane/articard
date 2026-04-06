@@ -64,14 +64,15 @@ gcloud sql instances create articard-prod-db \
   --region=asia-northeast1 \
   --storage-type=SSD \
   --storage-size=10GB \
-  --availability-type=REGIONAL \
+  --availability-type=ZONAL \
   --backup-start-time=03:00 \
   --enable-point-in-time-recovery
 ```
 
-**本番向け推奨設定:**
-- `--tier=db-custom-2-4096` (2vCPU, 4GB RAM)
-- `--availability-type=REGIONAL` (HA構成)
+**現在の設定:**
+
+- `--tier=db-f1-micro` (共有vCPU, 614MB RAM)
+- `--availability-type=ZONAL` (コスト削減のためHA構成なし)
 - `--backup-start-time` でバックアップ設定
 
 ### 2.2 データベース・ユーザー作成
@@ -293,7 +294,7 @@ gcloud run deploy articard \
   --region=asia-northeast1 \
   --platform=managed \
   --allow-unauthenticated \
-  --memory=1Gi \
+  --memory=512Mi \
   --cpu=1 \
   --timeout=3600 \
   --add-cloudsql-instances=articard-prod:asia-northeast1:articard-prod-db \
@@ -344,22 +345,26 @@ npx prisma db seed
 ## 9. 動作確認チェックリスト
 
 ### GCPリソース
+
 - [ ] Cloud SQL インスタンスが起動している
 - [ ] Cloud Storage バケットが作成されている
 - [ ] Cloud Run サービスがデプロイされている
 - [ ] Secret Manager にすべてのシークレットが登録されている
 
 ### Firebase
+
 - [ ] Authentication が有効になっている
 - [ ] Webアプリが登録されている
 - [ ] Admin SDK 秘密鍵が取得されている
 
 ### 外部API
+
 - [ ] OpenAI APIキーが有効
 - [ ] FLUX APIキーが有効
 - [ ] Gemini APIキーが有効
 
 ### アプリケーション
+
 - [ ] トップページが表示される
 - [ ] ログイン/新規登録ができる
 - [ ] 記事が生成できる
@@ -368,6 +373,7 @@ npx prisma db seed
 - [ ] コレクションが表示される
 
 ### セキュリティ
+
 - [ ] HTTPS が有効
 - [ ] 認証が正常に動作する
 - [ ] API エンドポイントが保護されている
@@ -415,17 +421,18 @@ MOCK_EXTERNAL_APIS="false"
 
 ## コスト見積もり（月額）
 
-| サービス | 用途 | 月額目安 |
-|---------|------|---------|
-| Cloud SQL | PostgreSQL | $10-50 |
-| Cloud Run | アプリホスティング | $5-30 |
-| Cloud Storage | 画像保存 | $1-5 |
-| Firebase Auth | 認証 | 無料（10K MAU以下） |
-| OpenAI API | 記事生成 + DALL-E | 従量課金 |
-| FLUX API | 画像生成 | 従量課金 |
-| Gemini API | 画像生成 | 従量課金 |
+| サービス      | 用途               | 月額目安            |
+| ------------- | ------------------ | ------------------- |
+| Cloud SQL     | PostgreSQL         | $10-50              |
+| Cloud Run     | アプリホスティング | $5-30               |
+| Cloud Storage | 画像保存           | $1-5                |
+| Firebase Auth | 認証               | 無料（10K MAU以下） |
+| OpenAI API    | 記事生成 + DALL-E  | 従量課金            |
+| FLUX API      | 画像生成           | 従量課金            |
+| Gemini API    | 画像生成           | 従量課金            |
 
 **カード生成コスト（1枚あたり）:**
+
 - legend: ~$0.10
 - super_rare: ~$0.04
 - rare: ~$0.03
@@ -464,11 +471,11 @@ Error: Firebase ID token has expired
 
 ## 開発環境との違い
 
-| 項目 | 開発環境 | 本番環境 |
-|------|---------|---------|
-| DB | Docker PostgreSQL | Cloud SQL (HA) |
-| 画像保存 | public/uploads | Cloud Storage |
-| Firebase | 開発プロジェクト | 本番プロジェクト |
-| シークレット | .env ファイル | Secret Manager |
-| デプロイ | npm run dev | Cloud Run |
-| ドメイン | localhost:3000 | articard.com |
+| 項目         | 開発環境          | 本番環境          |
+| ------------ | ----------------- | ----------------- |
+| DB           | Docker PostgreSQL | Cloud SQL (ZONAL) |
+| 画像保存     | public/uploads    | Cloud Storage     |
+| Firebase     | 開発プロジェクト  | 本番プロジェクト  |
+| シークレット | .env ファイル     | Secret Manager    |
+| デプロイ     | npm run dev       | Cloud Run         |
+| ドメイン     | localhost:3000    | articard.com      |

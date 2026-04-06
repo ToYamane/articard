@@ -22,8 +22,8 @@ Articard の本番デプロイ手順。単一 GCP プロジェクト `articard-f
 ├─────────────────────────────────────────────────────────────┤
 │  Cloud Run: articard                                        │
 │    - Image: gcr.io/articard-ff673/articard                  │
-│    - CPU: 2 / Memory: 2Gi                                   │
-│    - Min instances: 1 / Max: 50                             │
+│    - CPU: 1 / Memory: 512Mi                                  │
+│    - Min instances: 0 / Max: 50                             │
 │    - Concurrency: 100 / Timeout: 300s                       │
 │                                                             │
 │  Cloud SQL: articard-db (PostgreSQL)                        │
