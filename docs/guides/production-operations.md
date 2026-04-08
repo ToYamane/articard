@@ -10,6 +10,7 @@
 4. [バックアップ・災害対策](#4-バックアップ災害対策)
 5. [パフォーマンス管理](#5-パフォーマンス管理)
 6. [運用チェックリスト](#6-運用チェックリスト)
+7. [コスト管理・一時停止/再開](#7-コスト管理一時停止再開)
 
 ---
 
@@ -17,11 +18,11 @@
 
 ### 1.1 環境構成
 
-| 環境 | 用途 | 特徴 |
-|------|------|------|
-| Development | ローカル開発 | Cloud SQL Proxy経由、モック使用可 |
-| Staging | 検証・QA | 本番同等構成（小規模）、自動デプロイ |
-| Production | 本番サービス | HA構成、監視・アラート設定済み |
+| 環境        | 用途         | 特徴                                 |
+| ----------- | ------------ | ------------------------------------ |
+| Development | ローカル開発 | Cloud SQL Proxy経由、モック使用可    |
+| Staging     | 検証・QA     | 本番同等構成（小規模）、自動デプロイ |
+| Production  | 本番サービス | HA構成、監視・アラート設定済み       |
 
 ### 1.2 本番環境リソース一覧
 
@@ -47,11 +48,11 @@
 
 ### 1.3 運用担当者の役割
 
-| 役割 | 責任範囲 |
-|------|---------|
+| 役割           | 責任範囲                                    |
+| -------------- | ------------------------------------------- |
 | インフラ管理者 | GCPリソース管理、セキュリティ、バックアップ |
-| 開発チーム | デプロイ、アプリケーション監視、バグ修正 |
-| オンコール担当 | アラート対応、緊急時の初動対応 |
+| 開発チーム     | デプロイ、アプリケーション監視、バグ修正    |
+| オンコール担当 | アラート対応、緊急時の初動対応              |
 
 ---
 
@@ -360,97 +361,109 @@ gcloud logging sinks create articard-long-term-sink \
       {
         "title": "Cloud Run - Request Count",
         "xyChart": {
-          "dataSets": [{
-            "timeSeriesQuery": {
-              "timeSeriesFilter": {
-                "filter": "resource.type=\"cloud_run_revision\" AND metric.type=\"run.googleapis.com/request_count\"",
-                "aggregation": {
-                  "alignmentPeriod": "60s",
-                  "perSeriesAligner": "ALIGN_RATE"
+          "dataSets": [
+            {
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "resource.type=\"cloud_run_revision\" AND metric.type=\"run.googleapis.com/request_count\"",
+                  "aggregation": {
+                    "alignmentPeriod": "60s",
+                    "perSeriesAligner": "ALIGN_RATE"
+                  }
                 }
               }
             }
-          }]
+          ]
         }
       },
       {
         "title": "Cloud Run - Request Latency (P95)",
         "xyChart": {
-          "dataSets": [{
-            "timeSeriesQuery": {
-              "timeSeriesFilter": {
-                "filter": "resource.type=\"cloud_run_revision\" AND metric.type=\"run.googleapis.com/request_latencies\"",
-                "aggregation": {
-                  "alignmentPeriod": "60s",
-                  "perSeriesAligner": "ALIGN_PERCENTILE_95"
+          "dataSets": [
+            {
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "resource.type=\"cloud_run_revision\" AND metric.type=\"run.googleapis.com/request_latencies\"",
+                  "aggregation": {
+                    "alignmentPeriod": "60s",
+                    "perSeriesAligner": "ALIGN_PERCENTILE_95"
+                  }
                 }
               }
             }
-          }]
+          ]
         }
       },
       {
         "title": "Cloud Run - Error Rate",
         "xyChart": {
-          "dataSets": [{
-            "timeSeriesQuery": {
-              "timeSeriesFilter": {
-                "filter": "resource.type=\"cloud_run_revision\" AND metric.type=\"run.googleapis.com/request_count\" AND metric.labels.response_code_class=\"5xx\"",
-                "aggregation": {
-                  "alignmentPeriod": "60s",
-                  "perSeriesAligner": "ALIGN_RATE"
+          "dataSets": [
+            {
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "resource.type=\"cloud_run_revision\" AND metric.type=\"run.googleapis.com/request_count\" AND metric.labels.response_code_class=\"5xx\"",
+                  "aggregation": {
+                    "alignmentPeriod": "60s",
+                    "perSeriesAligner": "ALIGN_RATE"
+                  }
                 }
               }
             }
-          }]
+          ]
         }
       },
       {
         "title": "Cloud Run - Instance Count",
         "xyChart": {
-          "dataSets": [{
-            "timeSeriesQuery": {
-              "timeSeriesFilter": {
-                "filter": "resource.type=\"cloud_run_revision\" AND metric.type=\"run.googleapis.com/container/instance_count\"",
-                "aggregation": {
-                  "alignmentPeriod": "60s",
-                  "perSeriesAligner": "ALIGN_MEAN"
+          "dataSets": [
+            {
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "resource.type=\"cloud_run_revision\" AND metric.type=\"run.googleapis.com/container/instance_count\"",
+                  "aggregation": {
+                    "alignmentPeriod": "60s",
+                    "perSeriesAligner": "ALIGN_MEAN"
+                  }
                 }
               }
             }
-          }]
+          ]
         }
       },
       {
         "title": "Cloud SQL - CPU Utilization",
         "xyChart": {
-          "dataSets": [{
-            "timeSeriesQuery": {
-              "timeSeriesFilter": {
-                "filter": "resource.type=\"cloudsql_database\" AND metric.type=\"cloudsql.googleapis.com/database/cpu/utilization\"",
-                "aggregation": {
-                  "alignmentPeriod": "60s",
-                  "perSeriesAligner": "ALIGN_MEAN"
+          "dataSets": [
+            {
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "resource.type=\"cloudsql_database\" AND metric.type=\"cloudsql.googleapis.com/database/cpu/utilization\"",
+                  "aggregation": {
+                    "alignmentPeriod": "60s",
+                    "perSeriesAligner": "ALIGN_MEAN"
+                  }
                 }
               }
             }
-          }]
+          ]
         }
       },
       {
         "title": "Cloud SQL - Active Connections",
         "xyChart": {
-          "dataSets": [{
-            "timeSeriesQuery": {
-              "timeSeriesFilter": {
-                "filter": "resource.type=\"cloudsql_database\" AND metric.type=\"cloudsql.googleapis.com/database/postgresql/num_backends\"",
-                "aggregation": {
-                  "alignmentPeriod": "60s",
-                  "perSeriesAligner": "ALIGN_MEAN"
+          "dataSets": [
+            {
+              "timeSeriesQuery": {
+                "timeSeriesFilter": {
+                  "filter": "resource.type=\"cloudsql_database\" AND metric.type=\"cloudsql.googleapis.com/database/postgresql/num_backends\"",
+                  "aggregation": {
+                    "alignmentPeriod": "60s",
+                    "perSeriesAligner": "ALIGN_MEAN"
+                  }
                 }
               }
             }
-          }]
+          ]
         }
       }
     ]
@@ -574,12 +587,12 @@ gcloud sql instances patch articard-prod-db \
 
 #### バックアップ設定の詳細
 
-| 設定 | 値 | 説明 |
-|------|-----|------|
-| backup-start-time | 03:00 | バックアップ開始時刻（UTC） |
-| retained-backups-count | 30 | 保持するバックアップ数 |
-| retained-transaction-log-days | 7 | トランザクションログ保持日数 |
-| enable-point-in-time-recovery | true | PITR有効化 |
+| 設定                          | 値    | 説明                         |
+| ----------------------------- | ----- | ---------------------------- |
+| backup-start-time             | 03:00 | バックアップ開始時刻（UTC）  |
+| retained-backups-count        | 30    | 保持するバックアップ数       |
+| retained-transaction-log-days | 7     | トランザクションログ保持日数 |
+| enable-point-in-time-recovery | true  | PITR有効化                   |
 
 ### 4.2 Point-in-Time Recovery手順
 
@@ -603,10 +616,10 @@ gcloud sql instances describe articard-prod-db-restored
 
 ### 4.3 RTO/RPO定義
 
-| 指標 | 目標値 | 説明 |
-|------|-------|------|
-| **RPO** (Recovery Point Objective) | 5分 | 許容されるデータ損失時間。PITRにより5分以内の任意の時点に復元可能 |
-| **RTO** (Recovery Time Objective) | 1時間 | サービス復旧までの目標時間 |
+| 指標                               | 目標値 | 説明                                                              |
+| ---------------------------------- | ------ | ----------------------------------------------------------------- |
+| **RPO** (Recovery Point Objective) | 5分    | 許容されるデータ損失時間。PITRにより5分以内の任意の時点に復元可能 |
+| **RTO** (Recovery Time Objective)  | 1時間  | サービス復旧までの目標時間                                        |
 
 #### RPO達成のための設定
 
@@ -665,20 +678,20 @@ gcloud sql instances describe articard-prod-db-restored
 
 #### 緊急連絡先
 
-| 役割 | 連絡先 | 備考 |
-|------|--------|------|
-| オンコール担当 | PagerDuty / Slack | 24/7対応 |
-| インフラ管理者 | [電話番号/メール] | 重大障害時 |
-| GCPサポート | Cloud Console | Enterprise サポート契約時 |
+| 役割           | 連絡先            | 備考                      |
+| -------------- | ----------------- | ------------------------- |
+| オンコール担当 | PagerDuty / Slack | 24/7対応                  |
+| インフラ管理者 | [電話番号/メール] | 重大障害時                |
+| GCPサポート    | Cloud Console     | Enterprise サポート契約時 |
 
 #### 障害レベル定義
 
-| レベル | 定義 | 対応 |
-|--------|------|------|
+| レベル        | 定義             | 対応                               |
+| ------------- | ---------------- | ---------------------------------- |
 | P1 - Critical | サービス完全停止 | 即座に緊急対応、15分以内に初期報告 |
-| P2 - High | 主要機能の障害 | 1時間以内に対応開始 |
-| P3 - Medium | 一部機能の障害 | 当日中に対応 |
-| P4 - Low | 軽微な問題 | 次スプリントで対応 |
+| P2 - High     | 主要機能の障害   | 1時間以内に対応開始                |
+| P3 - Medium   | 一部機能の障害   | 当日中に対応                       |
+| P4 - Low      | 軽微な問題       | 次スプリントで対応                 |
 
 ### 4.5 Cloud Storage バックアップ
 
@@ -734,13 +747,13 @@ gcloud run services update articard-prod \
 
 #### スケーリングパラメータ
 
-| パラメータ | 本番推奨値 | 説明 |
-|-----------|-----------|------|
-| min-instances | 1 | コールドスタート回避のため最小1 |
-| max-instances | 20 | トラフィックに応じて調整 |
-| concurrency | 80 | 1インスタンスあたりの同時リクエスト数 |
-| cpu-throttling | false | リクエスト処理中以外もCPU割り当て |
-| execution-environment | gen2 | 第2世代実行環境（推奨） |
+| パラメータ            | 本番推奨値 | 説明                                  |
+| --------------------- | ---------- | ------------------------------------- |
+| min-instances         | 1          | コールドスタート回避のため最小1       |
+| max-instances         | 20         | トラフィックに応じて調整              |
+| concurrency           | 80         | 1インスタンスあたりの同時リクエスト数 |
+| cpu-throttling        | false      | リクエスト処理中以外もCPU割り当て     |
+| execution-environment | gen2       | 第2世代実行環境（推奨）               |
 
 ### 5.2 Cloud SQLチューニング
 
@@ -877,6 +890,99 @@ gcloud monitoring metrics list \
 - [ ] 復旧確認
 - [ ] ポストモーテムの作成
 - [ ] 再発防止策の実施
+
+---
+
+## 7. コスト管理・一時停止/再開
+
+### 7.1 現在のコスト構成
+
+運用コスト削減のため、以下の設定を適用済み:
+
+| リソース  | 設定                                      | 備考                                     |
+| --------- | ----------------------------------------- | ---------------------------------------- |
+| Cloud Run | CPU: 1 / Memory: 512Mi / min-instances: 0 | ゼロスケール（アクセスなければ課金なし） |
+| Cloud SQL | `db-f1-micro` / ZONAL                     | HA構成なし（個人運用前提）               |
+| GCS       | Standard クラス                           | 画像保存のみ                             |
+
+**稼働時の月額目安: ¥2,000〜3,000**
+（内訳: Cloud SQL ~¥1,500、Cloud Run ~¥500、GCS ~¥300、その他 ~¥200）
+
+### 7.2 一時停止（データ保持・課金最小化）
+
+個人プロジェクトで長期間利用しない場合、データを保持したまま課金をほぼゼロに抑えられます。
+
+#### 停止手順
+
+```bash
+# 1. Cloud SQL インスタンスを停止（データ保持、ストレージ代のみ）
+gcloud sql instances patch articard-db --activation-policy=NEVER
+
+# 2. Cloud Run の外部アクセスを遮断（誤アクセスによる起動を防ぐ）
+gcloud run services update articard --region=asia-northeast1 --ingress=internal
+```
+
+#### 停止中の課金
+
+**月額 ¥200〜400** 程度
+
+- Cloud SQL ストレージ（10GB SSD）: ~¥150
+- GCS ストレージ: ~¥50〜100
+- Secret Manager / Firebase: ほぼ¥0
+
+#### 停止中に保持されるもの
+
+- データベースの全データ（記事、カード、ユーザー情報）
+- GCS の画像データ
+- Secret Manager のシークレット
+- Cloud Run サービス設定・リビジョン
+- カスタムドメインマッピング
+- Firebase Authentication ユーザー
+
+### 7.3 再開手順
+
+```bash
+# 1. Cloud SQL を起動
+gcloud sql instances patch articard-db --activation-policy=ALWAYS
+
+# 2. Cloud Run の外部アクセスを復活
+gcloud run services update articard --region=asia-northeast1 --ingress=all
+
+# 3. 動作確認（起動まで数分かかる場合あり）
+curl https://<SERVICE_URL>/api/health
+```
+
+再デプロイは不要。設定・データはすべてそのまま復活します。
+
+### 7.4 状態確認コマンド
+
+```bash
+# Cloud SQL の状態確認
+gcloud sql instances describe articard-db --format="value(state,settings.activationPolicy)"
+# 停止中: STOPPED  NEVER
+# 稼働中: RUNNABLE  ALWAYS
+
+# Cloud Run の状態確認
+gcloud run services describe articard --region=asia-northeast1 \
+  --format="value(metadata.annotations['run.googleapis.com/ingress'])"
+# 停止中: internal
+# 稼働中: all
+```
+
+### 7.5 完全削除（データ消失）
+
+プロジェクトを完全にクローズする場合のみ実施。**データは復元できません**。
+
+```bash
+# Cloud Run サービス削除
+gcloud run services delete articard --region=asia-northeast1
+
+# Cloud SQL インスタンス削除
+gcloud sql instances delete articard-db
+
+# GCS バケット削除
+gsutil rm -r gs://articard-ff673.appspot.com
+```
 
 ---
 
